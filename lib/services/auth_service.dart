@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 import 'package:firebase_analytics/firebase_analytics.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/injection.dart';
 import '../core/security/e2ee_service.dart';
 import '../features/auth/domain/usecases/login_use_case.dart';
@@ -32,11 +32,15 @@ class AuthService with ChangeNotifier {
   final SignupUseCase _signupUseCase = sl<SignupUseCase>();
   final SignOutUseCase _signOutUseCase = sl<SignOutUseCase>();
 
+  bool _hasAcceptedTerms = false;
+  bool get hasAcceptedTerms => _hasAcceptedTerms;
+
   AuthService() {
     // Set initial user
     _currentUser = _supabaseClient.auth.currentUser;
     if (_currentUser != null) {
       sl<E2EEService>().initializeKeys();
+      checkTermsAccepted();
     }
 
     // Listen to Supabase auth events
@@ -46,10 +50,35 @@ class AuthService with ChangeNotifier {
       
       if (_currentUser != null && wasSignedOut) {
         sl<E2EEService>().initializeKeys();
+        checkTermsAccepted();
       }
       
       notifyListeners();
     });
+  }
+
+  Future<void> checkTermsAccepted() async {
+    if (_currentUser == null) {
+      _hasAcceptedTerms = false;
+      return;
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _hasAcceptedTerms = prefs.getBool('terms_accepted_${_currentUser!.id}') ?? true;
+    } catch (_) {
+      _hasAcceptedTerms = true;
+    }
+    notifyListeners();
+  }
+
+  Future<void> markTermsAccepted() async {
+    if (_currentUser == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('terms_accepted_${_currentUser!.id}', true);
+      _hasAcceptedTerms = true;
+    } catch (_) {}
+    notifyListeners();
   }
 
   bool _isSigningOut = false;
@@ -118,6 +147,7 @@ class AuthService with ChangeNotifier {
         }
         
         _currentUser = _supabaseClient.auth.currentUser;
+        await markTermsAccepted();
         _isLoading = false;
         notifyListeners();
         // Log analytics login
@@ -222,8 +252,16 @@ class AuthService with ChangeNotifier {
         notifyListeners();
         return false;
       },
-      (success) {
+      (success) async {
         _isLoading = false;
+        _currentUser = _supabaseClient.auth.currentUser;
+        _hasAcceptedTerms = false;
+        if (_currentUser != null) {
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setBool('terms_accepted_${_currentUser!.id}', false);
+          } catch (_) {}
+        }
         notifyListeners();
         // Log analytics signup
         try {

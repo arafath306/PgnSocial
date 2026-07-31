@@ -77,10 +77,24 @@ extension CreateThreadPublishExtensions on _CreateThreadScreenState {
     List<String>? pollOptions;
     Duration? pollDuration;
     if (_showPollInput) {
-      final filledOptions = _pollControllers
-          .map((c) => c.text.trim())
-          .where((t) => t.isNotEmpty)
-          .toList();
+      final List<String> filledOptions = [];
+      for (int i = 0; i < _pollControllers.length; i++) {
+        final text = _pollControllers[i].text.trim();
+        if (text.isNotEmpty) {
+          String optStr = text;
+          if (_pollOptionImageBytes.length > i && _pollOptionImageBytes[i] != null) {
+            try {
+              final uploadedOptionImg = await db.uploadPostImage(_pollOptionImageBytes[i]!);
+              if (uploadedOptionImg != null) {
+                optStr += '|DakOptionImg|$uploadedOptionImg';
+              }
+            } catch (optErr) {
+              debugPrint("Failed to upload poll option image: $optErr");
+            }
+          }
+          filledOptions.add(optStr);
+        }
+      }
       if (filledOptions.length >= 2) {
         pollOptions = filledOptions;
         pollDuration = _pollDuration;

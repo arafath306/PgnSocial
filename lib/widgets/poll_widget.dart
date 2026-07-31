@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/thread_post.dart';
 import '../services/database_service.dart';
 import '../utils/app_theme.dart';
@@ -45,13 +46,14 @@ class PollWidget extends StatelessWidget {
             final double percent = totalVotes > 0 ? (option.votesCount / totalVotes) : 0.0;
             final isWinner = showResults && option.votesCount == maxVotes && maxVotes > 0;
             final isUserChoice = showResults && option.id == votedOptionId;
+            final hasOptionImg = option.imageUrl != null && option.imageUrl!.isNotEmpty;
 
             if (showResults) {
               // --- Voted or Expired view: Animate progress bars ---
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 5.0),
                 child: Container(
-                  height: 38,
+                  height: 42,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
@@ -92,13 +94,25 @@ class PollWidget extends StatelessWidget {
                         ),
                         // Label & stats row
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Expanded(
                                 child: Row(
                                   children: [
+                                    if (hasOptionImg) ...[
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(6),
+                                        child: CachedNetworkImage(
+                                          imageUrl: option.imageUrl!,
+                                          width: 30,
+                                          height: 30,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                    ],
                                     Expanded(
                                       child: Text(
                                         option.optionText,
@@ -123,6 +137,7 @@ class PollWidget extends StatelessWidget {
                                   ],
                                 ),
                               ),
+                              const SizedBox(width: 8),
                               Text(
                                 '${(percent * 100).toStringAsFixed(1)}%',
                                 style: GoogleFonts.inter(
@@ -144,7 +159,7 @@ class PollWidget extends StatelessWidget {
             } else {
               // --- Active & Not Voted view: Interactive pill-shaped buttons ---
               return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 5.5),
+                padding: const EdgeInsets.symmetric(vertical: 5.0),
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
@@ -152,7 +167,7 @@ class PollWidget extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
@@ -160,14 +175,32 @@ class PollWidget extends StatelessWidget {
                           width: 0.9,
                         ),
                       ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        option.optionText,
-                        style: GoogleFonts.inter(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).primaryColor,
-                        ),
+                      child: Row(
+                        children: [
+                          if (hasOptionImg) ...[
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: CachedNetworkImage(
+                                imageUrl: option.imageUrl!,
+                                width: 34,
+                                height: 34,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                          ],
+                          Expanded(
+                            child: Text(
+                              option.optionText,
+                              textAlign: hasOptionImg ? TextAlign.left : TextAlign.center,
+                              style: GoogleFonts.inter(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

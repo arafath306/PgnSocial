@@ -6,11 +6,7 @@ import '../../utils/app_theme.dart';
 
 /// Horizontal image preview strip with edit/remove overlays, an
 /// "Add More" card, and a music track badge overlaid on the images.
-/// Also renders a loading skeleton while existing media is being
-/// downloaded (edit-post flow).
-///
-/// All mutations are delegated to callbacks so state stays in
-/// [_CreateThreadScreenState].
+/// Renders images with dynamic aspect ratio based on user edit/crop or natural dimensions.
 class MediaPreviewSection extends StatelessWidget {
   final List<Uint8List> selectedImagesBytesList;
   final bool isLoadingExistingMedia;
@@ -130,61 +126,13 @@ class MediaPreviewSection extends StatelessWidget {
                     );
                   }
 
-                  // Individual image card
+                  // Individual dynamic aspect-ratio image card
                   final bytes = selectedImagesBytesList[index];
-                  return Container(
-                    width: 140,
-                    margin: const EdgeInsets.only(right: 12, top: 4, bottom: 4),
-                    child: Stack(
-                      children: [
-                        // Image
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.memory(
-                            bytes,
-                            width: 140,
-                            height: 160,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        // Remove button
-                        Positioned(
-                          top: 6,
-                          right: 6,
-                          child: GestureDetector(
-                            onTap: () => onRemoveImage(index),
-                            child: const CircleAvatar(
-                              radius: 11,
-                              backgroundColor: Colors.black54,
-                              child: Icon(Icons.close,
-                                  color: Colors.white, size: 12),
-                            ),
-                          ),
-                        ),
-                        // Edit button
-                        Positioned(
-                          bottom: 6,
-                          left: 6,
-                          child: GestureDetector(
-                            onTap: () => onEditImage(index),
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.black54,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                    color: Colors.white24, width: 0.8),
-                              ),
-                              child: const Icon(
-                                Icons.edit_rounded,
-                                color: Colors.white,
-                                size: 13,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  return _DynamicMemoryImageCard(
+                    bytes: bytes,
+                    index: index,
+                    onRemove: onRemoveImage,
+                    onEdit: onEditImage,
                   );
                 },
               ),
@@ -234,6 +182,117 @@ class MediaPreviewSection extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class _DynamicMemoryImageCard extends StatefulWidget {
+  final Uint8List bytes;
+  final int index;
+  final void Function(int) onRemove;
+  final void Function(int) onEdit;
+
+  const _DynamicMemoryImageCard({
+    required this.bytes,
+    required this.index,
+    required this.onRemove,
+    required this.onEdit,
+  });
+
+  @override
+  State<_DynamicMemoryImageCard> createState() => _DynamicMemoryImageCardState();
+}
+
+class _DynamicMemoryImageCardState extends State<_DynamicMemoryImageCard> {
+  double _aspectRatio = 1.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveSize();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DynamicMemoryImageCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.bytes != widget.bytes) {
+      _resolveSize();
+    }
+  }
+
+  void _resolveSize() {
+    try {
+      final ImageStream stream = MemoryImage(widget.bytes).resolve(const ImageConfiguration());
+      stream.addListener(ImageStreamListener((ImageInfo info, bool _) {
+        if (mounted) {
+          final double w = info.image.width.toDouble();
+          final double h = info.image.height.toDouble();
+          if (w > 0 && h > 0) {
+            final double calculatedRatio = w / h;
+            setState(() {
+              _aspectRatio = calculatedRatio.clamp(0.75, 1.85);
+            });
+          }
+        }
+      }));
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final double cardWidth = (160 * _aspectRatio).clamp(110.0, 240.0);
+
+    return Container(
+      width: cardWidth,
+      margin: const EdgeInsets.only(right: 12, top: 4, bottom: 4),
+      child: Stack(
+        children: [
+          // Image
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.memory(
+              widget.bytes,
+              width: cardWidth,
+              height: 160,
+              fit: BoxFit.cover,
+            ),
+          ),
+          // Remove button
+          Positioned(
+            top: 6,
+            right: 6,
+            child: GestureDetector(
+              onTap: () => widget.onRemove(widget.index),
+              child: const CircleAvatar(
+                radius: 11,
+                backgroundColor: Colors.black54,
+                child: Icon(Icons.close, color: Colors.white, size: 12),
+              ),
+            ),
+          ),
+          // Edit/Crop button
+          Positioned(
+            bottom: 6,
+            left: 6,
+            child: GestureDetector(
+              onTap: () => widget.onEdit(widget.index),
+              child: Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white24, width: 0.8),
+                ),
+                child: const Icon(
+                  Icons.crop_rotate_rounded,
+                  color: Colors.white,
+                  size: 13,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -196,13 +196,7 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet>
         onTap: () {
           final parentCtx = widget.parentContext;
           Navigator.pop(context);
-          ContentReportHelper.showReportSheet(
-            context: parentCtx,
-            targetId: widget.post.id,
-            targetAuthorUsername: widget.post.author.username,
-            targetAuthorUserId: widget.post.userId,
-            contentType: 'post',
-          );
+          _showReportSheet(parentCtx);
         },
       ),
       if (widget.isCommunityModerator)
@@ -291,74 +285,242 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet>
     );
   }
 
-  void _showBlockConfirm(BuildContext ctx, String username) {
-    showDialog(
+  void _showReportSheet(BuildContext ctx) {
+    final categoryMap = <String, List<String>>{
+      'Harassment or Bullying': [
+        'It\'s harassing me directly',
+        'It\'s harassing a friend or family member',
+        'It\'s harassing someone else / public figure',
+      ],
+      'Hate Speech or Discrimination': [
+        'Race, ethnicity or national origin',
+        'Religious beliefs or practices',
+        'Gender identity or sexual orientation',
+        'Disability or medical condition',
+      ],
+      'Nudity or Sexual Content': [
+        'Nudity or explicit exposure',
+        'Explicit sexual acts or pornography',
+        'Non-consensual sexual content / abuse',
+      ],
+      'Violence, Threat or Danger': [
+        'Direct threat of physical violence',
+        'Self-harm or suicide encouragement',
+        'Dangerous or violent organization',
+      ],
+      'Scam, Fraud or Impersonation': [
+        'Pretending to be me or someone I know',
+        'Phishing, financial or crypto scam',
+        'Spam or fake automated account',
+      ],
+      'False Information / Misinformation': [
+        'Medical or health misinformation',
+        'Political or election misinformation',
+        'Fraudulent news / Dangerous hoax',
+      ],
+      'Intellectual Property Violation': [
+        'Copyright infringement',
+        'Trademark or brand violation',
+      ],
+      'Other Issue (specify details)': [],
+    };
+
+    showModalBottomSheet(
       context: ctx,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: context.cardBg,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Block @$username?',
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18,
-              color: context.textPrimary),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (reportCtx) => Container(
+        decoration: BoxDecoration(
+          color: ctx.cardBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('When you block someone:',
-                style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: context.textPrimary)),
-            const SizedBox(height: 8),
-            _bullet(ctx, '• They cannot message or follow you'),
-            _bullet(ctx, '• You will unfollow each other'),
-            _bullet(ctx, '• They won\'t see your posts'),
-            _bullet(ctx, '• You can unblock anytime from Settings'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: Text('Cancel',
-                style: GoogleFonts.inter(
-                    color: Colors.grey[600], fontWeight: FontWeight.w600)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(dialogCtx);
-              final settingsProvider =
-                  Provider.of<GeneralSettingsProvider>(ctx, listen: false);
-              await settingsProvider.blockUserById(widget.post.userId);
-              await widget.dbService.fetchBlockedMutedLists();
-              await widget.dbService.fetchFollowingList();
-              await widget.dbService.fetchFeed();
-              if (ctx.mounted) {
-                _showSuccessSnackBar(ctx, '@$username has been blocked');
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 12),
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: ctx.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'Report post',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: ctx.textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'Select a category that best describes this issue:',
+                    style: GoogleFonts.inter(fontSize: 13, color: ctx.textSecondary),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Divider(height: 1, color: ctx.border),
+                ...categoryMap.entries.map((entry) {
+                  final catTitle = entry.key;
+                  final subCats = entry.value;
+                  final isOther = subCats.isEmpty;
+
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(reportCtx);
+                        if (isOther) {
+                          _showCustomReasonDialog(ctx, 'Report Post', (finalReason) async {
+                            final success = await widget.dbService.reportPost(widget.post.id, finalReason);
+                            if (!ctx.mounted) return;
+                            if (success) {
+                              _showReportSuccessActionsSheet(ctx, widget.post.author.username);
+                            }
+                          });
+                        } else {
+                          _showSubCategoryReportSheet(ctx, catTitle, subCats);
+                        }
+                      },
+                      splashColor: Colors.red.withValues(alpha: 0.06),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 14),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                catTitle,
+                                style: GoogleFonts.inter(
+                                  fontSize: 14.5,
+                                  fontWeight: isOther ? FontWeight.w600 : FontWeight.w500,
+                                  color: isOther ? Colors.redAccent : ctx.textPrimary,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 18,
+                              color: ctx.textMuted,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+                const SizedBox(height: 16),
+              ],
             ),
-            child: Text('Block',
-                style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _bullet(BuildContext ctx, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 4),
-      child: Text(text,
-          style: GoogleFonts.inter(
-              fontSize: 13, color: context.textSecondary, height: 1.4)),
+  void _showSubCategoryReportSheet(BuildContext ctx, String mainCategory, List<String> subCategories) {
+    showModalBottomSheet(
+      context: ctx,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (subCtx) => Container(
+        decoration: BoxDecoration(
+          color: ctx.cardBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 12),
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: ctx.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  mainCategory,
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: ctx.textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'Select a specific reason to help us understand:',
+                  style: GoogleFonts.inter(fontSize: 13, color: ctx.textSecondary),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Divider(height: 1, color: ctx.border),
+              ...subCategories.map((subCat) => Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () async {
+                        Navigator.pop(subCtx);
+                        final fullReason = '$mainCategory - $subCat';
+                        final success = await widget.dbService.reportPost(widget.post.id, fullReason);
+                        if (!ctx.mounted) return;
+                        if (success) {
+                          _showReportSuccessActionsSheet(ctx, widget.post.author.username);
+                        }
+                      },
+                      splashColor: Colors.red.withValues(alpha: 0.06),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                subCat,
+                                style: GoogleFonts.inter(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: ctx.textPrimary,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 18,
+                              color: ctx.textMuted,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -643,259 +805,32 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet>
     );
   }
 
-  void _showSubCategoryReportSheet(BuildContext ctx, String mainCategory, List<String> subCategories) {
-    showModalBottomSheet(
-      context: ctx,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (subCtx) => Container(
-        decoration: BoxDecoration(
-          color: ctx.cardBg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 12),
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: ctx.border,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  mainCategory,
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    color: ctx.textPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  'Select a specific reason to help us understand:',
-                  style: GoogleFonts.inter(fontSize: 13, color: ctx.textSecondary),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Divider(height: 1, color: ctx.border),
-              ...subCategories.map((subCat) => Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () async {
-                        Navigator.pop(subCtx);
-                        final fullReason = '$mainCategory - $subCat';
-                        final success = await widget.dbService.reportPost(widget.post.id, fullReason);
-                        if (!ctx.mounted) return;
-                        if (success) {
-                          _showReportSuccessActionsSheet(ctx, widget.post.author.username);
-                        }
-                      },
-                      splashColor: Colors.red.withValues(alpha: 0.06),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                subCat,
-                                style: GoogleFonts.inter(
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w500,
-                                  color: ctx.textPrimary,
-                                ),
-                              ),
-                            ),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              size: 18,
-                              color: ctx.textMuted,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  )),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showReportSheet(BuildContext ctx) {
-    final categoryMap = <String, List<String>>{
-      'Harassment or Bullying': [
-        'It\'s harassing me directly',
-        'It\'s harassing a friend or family member',
-        'It\'s harassing someone else / public figure',
-      ],
-      'Hate Speech or Discrimination': [
-        'Race, ethnicity or national origin',
-        'Religious beliefs or practices',
-        'Gender identity or sexual orientation',
-        'Disability or medical condition',
-      ],
-      'Nudity or Sexual Content': [
-        'Nudity or explicit exposure',
-        'Explicit sexual acts or pornography',
-        'Non-consensual sexual content / abuse',
-      ],
-      'Violence, Threat or Danger': [
-        'Direct threat of physical violence',
-        'Self-harm or suicide encouragement',
-        'Dangerous or violent organization',
-      ],
-      'Scam, Fraud or Impersonation': [
-        'Pretending to be me or someone I know',
-        'Phishing, financial or crypto scam',
-        'Spam or fake automated account',
-      ],
-      'False Information / Misinformation': [
-        'Medical or health misinformation',
-        'Political or election misinformation',
-        'Fraudulent news / Dangerous hoax',
-      ],
-      'Intellectual Property Violation': [
-        'Copyright infringement',
-        'Trademark or brand violation',
-      ],
-      'Other Issue (specify details)': [],
-    };
-
-    showModalBottomSheet(
-      context: ctx,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (reportCtx) => Container(
-        decoration: BoxDecoration(
-          color: ctx.cardBg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 12),
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: ctx.border,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Text(
-                    'Report post',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      color: ctx.textPrimary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Text(
-                    'Select a category that best describes this issue:',
-                    style: GoogleFonts.inter(fontSize: 13, color: ctx.textSecondary),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Divider(height: 1, color: ctx.border),
-                ...categoryMap.entries.map((entry) {
-                  final catTitle = entry.key;
-                  final subCats = entry.value;
-                  final isOther = subCats.isEmpty;
-
-                  return Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.pop(reportCtx);
-                        if (isOther) {
-                          _showCustomReasonDialog(ctx, 'Report Post', (finalReason) async {
-                            final success = await widget.dbService.reportPost(widget.post.id, finalReason);
-                            if (!ctx.mounted) return;
-                            if (success) {
-                              _showReportSuccessActionsSheet(ctx, widget.post.author.username);
-                            }
-                          });
-                        } else {
-                          _showSubCategoryReportSheet(ctx, catTitle, subCats);
-                        }
-                      },
-                      splashColor: Colors.red.withValues(alpha: 0.06),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 14),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                catTitle,
-                                style: GoogleFonts.inter(
-                                  fontSize: 14.5,
-                                  fontWeight: isOther ? FontWeight.w600 : FontWeight.w500,
-                                  color: isOther ? Colors.redAccent : ctx.textPrimary,
-                                ),
-                              ),
-                            ),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              size: 18,
-                              color: ctx.textMuted,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showDeleteConfirm(BuildContext ctx) {
+  void _showBlockConfirm(BuildContext ctx, String username) {
     showDialog(
       context: ctx,
       builder: (dialogCtx) => AlertDialog(
         backgroundColor: context.cardBg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          'Delete Post?',
-          style: GoogleFonts.inter(
-              fontWeight: FontWeight.bold, color: context.textPrimary),
+          'Block @$username?',
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18,
+              color: context.textPrimary),
         ),
-        content: Text(
-          'As a moderator, you can delete this post. This action cannot be undone.',
-          style: GoogleFonts.inter(fontSize: 14, color: Colors.black54, height: 1.4),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('When you block someone:',
+                style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: context.textPrimary)),
+            const SizedBox(height: 8),
+            _bullet(ctx, '• They cannot message or follow you'),
+            _bullet(ctx, '• You will unfollow each other'),
+            _bullet(ctx, '• They won\'t see your posts'),
+            _bullet(ctx, '• You can unblock anytime from Settings'),
+          ],
         ),
         actions: [
           TextButton(
@@ -903,6 +838,65 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet>
             child: Text('Cancel',
                 style: GoogleFonts.inter(
                     color: Colors.grey[600], fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+              final settingsProvider =
+                  Provider.of<GeneralSettingsProvider>(ctx, listen: false);
+              await settingsProvider.blockUserById(widget.post.userId);
+              await widget.dbService.fetchBlockedMutedLists();
+              await widget.dbService.fetchFollowingList();
+              await widget.dbService.fetchFeed();
+              if (ctx.mounted) {
+                _showSuccessSnackBar(ctx, '@$username has been blocked');
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            child: Text('Block',
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _bullet(BuildContext ctx, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Text(text,
+          style: GoogleFonts.inter(
+              fontSize: 13, color: context.textSecondary, height: 1.4)),
+    );
+  }
+
+  void _showDeleteConfirm(BuildContext ctx) {
+    showDialog(
+      context: ctx,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: ctx.cardBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Delete Post?',
+          style: GoogleFonts.inter(
+              fontWeight: FontWeight.bold, fontSize: 18, color: ctx.textPrimary),
+        ),
+        content: Text(
+          'As a moderator, you can delete this post. This action cannot be undone.',
+          style: GoogleFonts.inter(fontSize: 14.5, color: ctx.textSecondary, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text('Cancel',
+                style: GoogleFonts.inter(
+                    color: ctx.textSecondary, fontWeight: FontWeight.w600, fontSize: 14.5)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -1074,21 +1068,22 @@ class _AuthorActionsSheetState extends State<_AuthorActionsSheet>
     showDialog(
       context: ctx,
       builder: (dialogCtx) => AlertDialog(
+        backgroundColor: ctx.cardBg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Delete Post?',
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18),
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18, color: ctx.textPrimary),
         ),
         content: Text(
           'This action is permanent and cannot be undone.',
-          style: GoogleFonts.inter(fontSize: 14, color: Colors.black54, height: 1.4),
+          style: GoogleFonts.inter(fontSize: 14.5, color: ctx.textSecondary, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
             child: Text('Cancel',
                 style: GoogleFonts.inter(
-                    color: Colors.grey[600], fontWeight: FontWeight.w600)),
+                    color: ctx.textSecondary, fontWeight: FontWeight.w600, fontSize: 14.5)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -1527,4 +1522,6 @@ class _HidePostForUsersSheetState extends State<_HidePostForUsersSheet> {
     );
   }
 }
+
+
 

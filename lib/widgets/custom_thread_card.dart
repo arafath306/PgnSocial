@@ -20,11 +20,11 @@ import 'poll_widget.dart';
 import 'comments_sheet.dart';
 import '../screens/profile/profile_screen.dart';
 import 'share_post_sheet.dart';
-import 'content_report_helper.dart';
 import 'thread_image_carousel.dart';
 import '../state/music_playback_controller.dart';
 import '../models/music_track.dart';
 import '../state/monetization_controller.dart';
+import 'expandable_post_text.dart';
 
 import 'voice_post_player.dart';
 import 'thread_card_components/thread_actions.dart';
@@ -489,14 +489,9 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
             ),
           )
         else ...[
-          Text(
-          post.content,
-          style: GoogleFonts.hindSiliguri(
-            fontSize: 16.5,
-            color: context.textPrimary,
-            height: 1.45,
+          ExpandablePostText(
+            text: post.content,
           ),
-        ),
         if (post.isRepost && post.repostedPost != null)
           _buildNestedOriginalPost(context, dbService, post.repostedPost!),
         if (post.imageUrls != null && post.imageUrls!.isNotEmpty) ...[

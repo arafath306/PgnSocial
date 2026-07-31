@@ -7,6 +7,7 @@ import '../screens/auth/onboarding_screen.dart';
 import '../screens/auth/auth_screen.dart';
 import '../screens/auth/splash_screen.dart';
 import '../screens/auth/email_verification_pending_screen.dart';
+import '../screens/auth/terms_acceptance_screen.dart';
 import '../screens/main_screen.dart';
 
 class AppRouter {
@@ -24,16 +25,29 @@ class AppRouter {
         final isOnboarding = state.matchedLocation == '/onboarding';
         final isSplash = state.matchedLocation == '/splash';
         final isVerifying = state.matchedLocation == '/verify-email';
+        final isTermsAcceptance = state.matchedLocation == '/terms-acceptance';
 
         final isSignedIn = authService.isUserSignedIn;
         final isEmailVerified = authService.isEmailVerified;
+        final hasAcceptedTerms = authService.hasAcceptedTerms;
+
+        // Allow splash screen to render smoothly before redirecting
+        if (isSplash) {
+          return null;
+        }
 
         // If signed in
         if (isSignedIn) {
           if (!isEmailVerified) {
             return '/verify-email';
           }
-          if (isSplash || isLoggingIn || isOnboarding || isVerifying) {
+          if (!hasAcceptedTerms) {
+            if (!isTermsAcceptance) {
+              return '/terms-acceptance';
+            }
+            return null;
+          }
+          if (isLoggingIn || isOnboarding || isVerifying || isTermsAcceptance) {
             return '/home';
           }
           return null; // Keep current path
@@ -41,14 +55,6 @@ class AppRouter {
 
         // Signed out
         dbService.clearUser();
-
-        if (isSplash) {
-          if (_showOnboarding) {
-            return '/onboarding';
-          } else {
-            return '/auth';
-          }
-        }
 
         if (!isLoggingIn && !isOnboarding) {
           return _showOnboarding ? '/onboarding' : '/auth';
@@ -86,6 +92,15 @@ class AppRouter {
         GoRoute(
           path: '/verify-email',
           builder: (context, state) => const EmailVerificationPendingScreen(),
+        ),
+        GoRoute(
+          path: '/terms-acceptance',
+          builder: (context, state) => TermsAcceptanceScreen(
+            onAccepted: () {
+              authService.markTermsAccepted();
+              context.go('/home');
+            },
+          ),
         ),
         GoRoute(
           path: '/home',

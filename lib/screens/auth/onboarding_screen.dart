@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../widgets/dak_logo.dart';
 import 'captcha_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -15,6 +14,9 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentStep = 0; // 0 for intro screen, 1 for globe options screen
+
+  double _cardDragOffset = 0.0;
+  bool _isDraggingCard = false;
 
   void _nextStep() {
     setState(() {
@@ -73,21 +75,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 8),
 
-                  // App Logo
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0x241B3A6B),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
+                  // Animated GIF Banner above Welcome to Pigeon (Transparent, mini size)
+                  SizedBox(
+                    width: 65,
+                    height: 65,
+                    child: Image.asset(
+                      'assets/15911180.gif',
+                      fit: BoxFit.contain,
                     ),
-                    child: DakLogo(size: 80),
                   ),
 
                   const SizedBox(height: 20),
@@ -188,6 +185,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   // ── Second Screen (Options Selection Card) ─────────────────────────────────
   Widget _buildSecondScreen() {
+    final double maxDragDistance = 240.0;
+    final double dragProgress = (_cardDragOffset / maxDragDistance).clamp(0.0, 1.0);
+
     return Stack(
       key: const ValueKey('second_screen'),
       children: [
@@ -249,8 +249,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Header Texts
-                  Padding(
+                  // Header Texts (Translates down to center when card is dragged down)
+                  AnimatedContainer(
+                    duration: _isDraggingCard ? Duration.zero : const Duration(milliseconds: 400),
+                    curve: Curves.easeOutCubic,
+                    transform: Matrix4.translationValues(0, dragProgress * 140.0, 0),
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,39 +297,68 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
                   const Spacer(),
 
-                  // Bottom white card with options
-                  Container(
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 24,
-                          offset: Offset(0, -6),
-                        ),
-                      ],
-                    ),
-                    padding: EdgeInsets.fromLTRB(
-                      24,
-                      28,
-                      24,
-                      MediaQuery.of(context).padding.bottom + 16,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'What would you like to do?',
-                          style: GoogleFonts.inter(
-                            fontSize: 18.5,
-                            fontWeight: FontWeight.w800,
-                            color: const Color(0xFF0F172A),
-                            letterSpacing: -0.4,
+                  // Bottom white card with options (Draggable & Responsive Spring Physics)
+                  GestureDetector(
+                    onVerticalDragUpdate: (details) {
+                      setState(() {
+                        _isDraggingCard = true;
+                        _cardDragOffset = (_cardDragOffset + details.delta.dy).clamp(0.0, maxDragDistance);
+                      });
+                    },
+                    onVerticalDragEnd: (_) {
+                      setState(() {
+                        _isDraggingCard = false;
+                        _cardDragOffset = 0.0;
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: _isDraggingCard ? Duration.zero : const Duration(milliseconds: 450),
+                      curve: Curves.elasticOut,
+                      transform: Matrix4.translationValues(0, _cardDragOffset, 0),
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 24,
+                            offset: Offset(0, -6),
                           ),
-                        ),
+                        ],
+                      ),
+                      padding: EdgeInsets.fromLTRB(
+                        24,
+                        12,
+                        24,
+                        MediaQuery.of(context).padding.bottom + 16,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Drag Handle Pill Indicator
+                          Center(
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              width: 38,
+                              height: 4.5,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFCBD5E1),
+                                borderRadius: BorderRadius.circular(2.5),
+                              ),
+                            ),
+                          ),
+
+                          Text(
+                            'What would you like to do?',
+                            style: GoogleFonts.inter(
+                              fontSize: 18.5,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF0F172A),
+                              letterSpacing: -0.4,
+                            ),
+                          ),
 
                         const SizedBox(height: 20),
 
@@ -403,14 +435,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   Widget _buildOptionCard({
     required String title,

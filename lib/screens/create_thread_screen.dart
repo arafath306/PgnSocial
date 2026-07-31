@@ -71,6 +71,7 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
     TextEditingController(),
     TextEditingController()
   ];
+  final List<Uint8List?> _pollOptionImageBytes = [null, null];
   Duration _pollDuration = const Duration(hours: 24);
   final List<Map<String, dynamic>> _durations = [
     {"label": "1 Hour", "duration": const Duration(hours: 1)},
@@ -384,6 +385,7 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
                       if (_showPollInput)
                         PollCreator(
                           controllers: _pollControllers,
+                          optionImageBytesList: _pollOptionImageBytes,
                           selectedDuration: _pollDuration,
                           durations: _durations,
                           onClose: () {
@@ -392,18 +394,43 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
                               for (var controller in _pollControllers) {
                                 controller.clear();
                               }
+                              _pollOptionImageBytes.clear();
+                              _pollOptionImageBytes.addAll([null, null]);
                             });
                           },
                           onAddOption: () {
                             setState(() {
                               _pollControllers.add(TextEditingController());
+                              _pollOptionImageBytes.add(null);
                             });
                           },
                           onRemoveOption: (index) {
                             setState(() {
-                              final controller =
-                                  _pollControllers.removeAt(index);
+                              final controller = _pollControllers.removeAt(index);
                               controller.dispose();
+                              if (index < _pollOptionImageBytes.length) {
+                                _pollOptionImageBytes.removeAt(index);
+                              }
+                            });
+                          },
+                          onPickOptionImage: (index) async {
+                            final picker = ImagePicker();
+                            final image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+                            if (image != null) {
+                              final bytes = await image.readAsBytes();
+                              setState(() {
+                                while (_pollOptionImageBytes.length <= index) {
+                                  _pollOptionImageBytes.add(null);
+                                }
+                                _pollOptionImageBytes[index] = bytes;
+                              });
+                            }
+                          },
+                          onRemoveOptionImage: (index) {
+                            setState(() {
+                              if (index < _pollOptionImageBytes.length) {
+                                _pollOptionImageBytes[index] = null;
+                              }
                             });
                           },
                           onDurationChanged: (val) {

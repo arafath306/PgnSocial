@@ -14,7 +14,7 @@ class GeneralSettingsProvider with ChangeNotifier {
 
   Future<void> _loadLocalSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    _isDarkTheme = prefs.getBool('isDarkTheme') ?? false;
+    _isDarkTheme = prefs.getBool('isDarkTheme') ?? true;
     _lowDataMode = prefs.getBool('lowDataMode') ?? false;
     String? langCode = prefs.getString('app_language');
     if (langCode != null) {
@@ -576,7 +576,7 @@ class GeneralSettingsProvider with ChangeNotifier {
   }
 
   // Theme Settings
-  bool _isDarkTheme = false;
+  bool _isDarkTheme = true;
 
   bool get isDarkTheme => _isDarkTheme;
   ThemeMode get themeMode => _isDarkTheme ? ThemeMode.dark : ThemeMode.light;
