@@ -21,28 +21,44 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
 
   // Step 1: Topic
   String? _selectedTopic;
+  String _topicSearchQuery = '';
   final List<Map<String, String>> _topics = [
+    {"icon": "🚀", "label": "AI & Future Tech"},
     {"icon": "🍣", "label": "Anime & Cosplay"},
-    {"icon": "👨‍🎨", "label": "Art"},
+    {"icon": "👨‍🎨", "label": "Art & Design"},
+    {"icon": "🚗", "label": "Automotive & Vehicles"},
+    {"icon": "📚", "label": "Books & Writing"},
     {"icon": "💵", "label": "Business & Finance"},
     {"icon": "🧩", "label": "Collectibles & Hobbies"},
+    {"icon": "🪙", "label": "Crypto & Web3"},
+    {"icon": "🛠️", "label": "DIY & Crafts"},
     {"icon": "👩‍🏫", "label": "Education & Career"},
+    {"icon": "🎮", "label": "Esports & Gaming"},
     {"icon": "🪞", "label": "Fashion & Beauty"},
-    {"icon": "🍔", "label": "Food & Drinks"},
-    {"icon": "🕹️", "label": "Games"},
-    {"icon": "❤️", "label": "Health"},
-    {"icon": "🏡", "label": "Home & Garden"},
+    {"icon": "🍔", "label": "Food & Cooking"},
+    {"icon": "🏋️", "label": "Gym & Fitness"},
+    {"icon": "❤️", "label": "Health & Wellness"},
+    {"icon": "🏡", "label": "Home & Living"},
     {"icon": "📜", "label": "Humanities & Law"},
-    {"icon": "🌈", "label": "Identity & Relationships"},
-    {"icon": "🤡", "label": "Internet Culture"},
-    {"icon": "🎞️", "label": "Movies & TV"},
-    {"icon": "🎶", "label": "Music"},
-    {"icon": "🌿", "label": "Nature & Outdoors"},
-    {"icon": "📰", "label": "News & Politics"},
+    {"icon": "🌈", "label": "Identity & Lifestyle"},
+    {"icon": "🤡", "label": "Internet Culture & Memes"},
+    {"icon": "🇧🇩", "label": "Local & Regional Community"},
+    {"icon": "🧘", "label": "Mental Health & Mindfulness"},
+    {"icon": "🎞️", "label": "Movies & Entertainment"},
+    {"icon": "🎶", "label": "Music & Audio"},
+    {"icon": "🌿", "label": "Nature & Environment"},
+    {"icon": "📰", "label": "News & Current Affairs"},
+    {"icon": "🐕", "label": "Pets & Animals"},
+    {"icon": "🧠", "label": "Philosophy & Psychology"},
+    {"icon": "📸", "label": "Photography & Video"},
     {"icon": "🌎", "label": "Places & Travel"},
+    {"icon": "🎧", "label": "Podcasts & Media"},
     {"icon": "✨", "label": "Pop Culture"},
-    {"icon": "✏️", "label": "Q&As & Stories"},
-    {"icon": "💻", "label": "Technology / Science / Coding"},
+    {"icon": "✏️", "label": "Q&As & Discussion"},
+    {"icon": "🧬", "label": "Science & Space"},
+    {"icon": "⚽", "label": "Sports & Athletics"},
+    {"icon": "💼", "label": "Startups & Tech"},
+    {"icon": "💻", "label": "Technology & Coding"},
   ];
 
   // Step 2: Privacy
@@ -291,69 +307,154 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
 
   // ─── STEP 1: TOPIC ───────────────────────────────────────────────
   Widget _buildStep1Topic() {
+    final filteredTopics = _topicSearchQuery.isEmpty
+        ? _topics
+        : _topics.where((t) =>
+            t['label']!.toLowerCase().contains(_topicSearchQuery.toLowerCase())).toList();
+
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const SizedBox(height: 12),
           Text(
             "What is your community about?",
             style: GoogleFonts.inter(
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: FontWeight.w900,
               color: context.textPrimary,
+              height: 1.2,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             "Choose a topic to help users discover your community.",
             style: GoogleFonts.inter(
-              fontSize: 14,
+              fontSize: 13.5,
               color: context.textSecondary,
             ),
           ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: _topics.map((t) {
-                  final isSelected = _selectedTopic == t['label'];
-                  return GestureDetector(
-                    onTap: () => setState(() => _selectedTopic = t['label']),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: isSelected 
-                            ? const Color(0xFF1E824C).withValues(alpha: 0.1) 
-                            : context.scaffoldBg,
-                        border: Border.all(
-                          color: isSelected ? const Color(0xFF1E824C) : context.border,
-                          width: isSelected ? 2 : 1,
-                        ),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(t['icon']!, style: const TextStyle(fontSize: 18)),
-                          const SizedBox(width: 8),
-                          Text(
-                            t['label']!,
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                              color: isSelected ? const Color(0xFF1E824C) : context.textPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
+          const SizedBox(height: 16),
+
+          // Search Bar
+          Container(
+            decoration: BoxDecoration(
+              color: context.isDarkMode ? const Color(0xFF161B22) : const Color(0xFFF6F8FA),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: context.border),
+            ),
+            child: TextField(
+              onChanged: (val) => setState(() => _topicSearchQuery = val),
+              style: GoogleFonts.inter(fontSize: 14, color: context.textPrimary),
+              decoration: InputDecoration(
+                hintText: 'Search topics...',
+                hintStyle: GoogleFonts.inter(fontSize: 13.5, color: context.textMuted),
+                prefixIcon: Icon(Icons.search_rounded, color: context.textMuted, size: 20),
+                suffixIcon: _topicSearchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.close_rounded, color: context.textMuted, size: 18),
+                        onPressed: () => setState(() => _topicSearchQuery = ''),
+                      )
+                    : null,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
+          ),
+          const SizedBox(height: 16),
+
+          // Grid View of Topics
+          Expanded(
+            child: filteredTopics.isEmpty
+                ? Center(
+                    child: Text(
+                      'No matching topics found',
+                      style: GoogleFonts.inter(color: context.textSecondary, fontSize: 14),
+                    ),
+                  )
+                : GridView.builder(
+                    padding: const EdgeInsets.only(bottom: 24),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 2.3,
+                    ),
+                    itemCount: filteredTopics.length,
+                    itemBuilder: (context, index) {
+                      final t = filteredTopics[index];
+                      final isSelected = _selectedTopic == t['label'];
+
+                      return InkWell(
+                        onTap: () => setState(() => _selectedTopic = t['label']),
+                        borderRadius: BorderRadius.circular(14),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xFF1E824C).withValues(alpha: 0.12)
+                                : (context.isDarkMode ? const Color(0xFF161B22) : Colors.white),
+                            border: Border.all(
+                              color: isSelected ? const Color(0xFF1E824C) : context.border,
+                              width: isSelected ? 2 : 1,
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: const Color(0xFF1E824C).withValues(alpha: 0.12),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    )
+                                  ]
+                                : [],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 34,
+                                height: 34,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? const Color(0xFF1E824C).withValues(alpha: 0.2)
+                                      : (context.isDarkMode ? Colors.grey[800] : Colors.grey[100]),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    t['icon']!,
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  t['label']!,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12.5,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                    color: isSelected ? const Color(0xFF1E824C) : context.textPrimary,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                const Icon(
+                                  Icons.check_circle_rounded,
+                                  color: Color(0xFF1E824C),
+                                  size: 16,
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),

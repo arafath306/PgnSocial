@@ -20,6 +20,7 @@ import 'poll_widget.dart';
 import 'comments_sheet.dart';
 import '../screens/profile/profile_screen.dart';
 import 'share_post_sheet.dart';
+import 'content_report_helper.dart';
 import 'thread_image_carousel.dart';
 import '../state/music_playback_controller.dart';
 import '../models/music_track.dart';
@@ -30,6 +31,39 @@ import 'thread_card_components/thread_actions.dart';
 part 'thread_card_components/quick_actions_sheet.dart';
 part 'thread_card_components/post_media_and_actions.dart';
 
+
+void showThreadQuickActionsSheet({
+  required BuildContext context,
+  required DatabaseService dbService,
+  required ThreadPost post,
+  bool isCommunityModerator = false,
+  VoidCallback? onDeletePost,
+}) {
+  final isAuthor = post.userId == dbService.currentUid;
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (sheetContext) {
+      if (isAuthor) {
+        return _AuthorActionsSheet(
+          post: post,
+          dbService: dbService,
+          parentContext: context,
+          onDeletePost: onDeletePost,
+        );
+      } else {
+        return _QuickActionsSheet(
+          post: post,
+          dbService: dbService,
+          parentContext: context,
+          isCommunityModerator: isCommunityModerator,
+          onDeletePost: onDeletePost,
+        );
+      }
+    },
+  );
+}
 
 class CustomThreadCard extends StatefulWidget {
   final ThreadPost post;
@@ -61,27 +95,11 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
   }
 
   void _showQuickActions(BuildContext context, DatabaseService dbService, ThreadPost post) {
-    final isAuthor = post.userId == dbService.currentUid;
-    showModalBottomSheet(
+    showThreadQuickActionsSheet(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        if (isAuthor) {
-          return _AuthorActionsSheet(
-            post: post,
-            dbService: dbService,
-            parentContext: context,
-          );
-        } else {
-          return _QuickActionsSheet(
-            post: post,
-            dbService: dbService,
-            parentContext: context,
-            isCommunityModerator: widget.isCommunityModerator,
-          );
-        }
-      },
+      dbService: dbService,
+      post: post,
+      isCommunityModerator: widget.isCommunityModerator,
     );
   }
 

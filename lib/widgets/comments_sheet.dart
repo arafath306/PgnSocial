@@ -11,6 +11,8 @@ import '../utils/app_theme.dart';
 
 import 'comment_attachment_picker_panel.dart';
 import 'comment_item.dart';
+import 'reply_input_composer.dart';
+import 'content_report_helper.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 part 'comments_sheet_extensions.dart';
 
@@ -367,143 +369,40 @@ class _CommentsSheetState extends State<CommentsSheet> {
                       ),
                     ),
 
-                  // 3. Input Row
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundColor: context.isDarkMode ? Colors.grey[800] : Colors.grey[200],
-                          backgroundImage: (myProf?.avatarUrl != null && myProf!.avatarUrl!.isNotEmpty)
-                              ? CachedNetworkImageProvider(myProf.avatarUrl!)
-                              : null,
-                          child: (myProf?.avatarUrl == null || myProf!.avatarUrl!.isEmpty)
-                              ? const Icon(Icons.person, size: 16, color: Colors.white54)
-                              : null,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: context.isDarkMode 
-                                  ? const Color(0xFF161922) 
-                                  : const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(22),
-                              border: Border.all(
-                                color: context.border,
-                                width: 0.8,
-                              ),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            child: TextField(
-                              controller: _commentController,
-                              focusNode: _focusNode,
-                              style: GoogleFonts.hindSiliguri(fontSize: 14.5, color: context.textPrimary),
-                              maxLines: 5,
-                              minLines: 1,
-                              onTap: () {
-                                setState(() {
-                                  _showEmojiPanel = false;
-                                });
-                              },
-                              decoration: InputDecoration(
-                                hintText: "Write a comment...",
-                                hintStyle: GoogleFonts.inter(color: context.textMuted, fontSize: 14.5),
-                                border: InputBorder.none,
-                                isDense: true,
-                                contentPadding: EdgeInsets.zero,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // 4. Action toolbar (media buttons + send button)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 44, right: 16, bottom: 8),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.image_outlined, size: 22, color: Theme.of(context).primaryColor),
-                          onPressed: _pickCommentImage,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                        const SizedBox(width: 12),
-                        IconButton(
-                          icon: Icon(Icons.gif_box_outlined, size: 22, color: Theme.of(context).primaryColor),
-                          onPressed: () {
-                            _focusNode.unfocus();
-                            setState(() {
-                              if (_showEmojiPanel && _pickerTabIndex == 1) {
-                                _showEmojiPanel = false;
-                              } else {
-                                _showEmojiPanel = true;
-                                _pickerTabIndex = 1;
-                              }
-                            });
-                          },
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                        const SizedBox(width: 12),
-                        IconButton(
-                          icon: Icon(
-                            _showEmojiPanel && _pickerTabIndex == 0 ? Icons.keyboard_hide_outlined : Icons.sentiment_satisfied_alt_outlined, 
-                            size: 22, 
-                            color: Theme.of(context).primaryColor
-                          ),
-                          onPressed: () {
-                            _focusNode.unfocus();
-                            setState(() {
-                              if (_showEmojiPanel && _pickerTabIndex == 0) {
-                                _showEmojiPanel = false;
-                              } else {
-                                _showEmojiPanel = true;
-                                _pickerTabIndex = 0;
-                              }
-                            });
-                          },
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                        const Spacer(),
-                        ValueListenableBuilder<TextEditingValue>(
-                          valueListenable: _commentController,
-                          builder: (context, value, child) {
-                            final hasText = value.text.trim().isNotEmpty;
-                            final hasImage = _selectedImageBytes != null;
-                            final hasGif = _selectedGifUrl != null;
-                            final isEnabled = (hasText || hasImage || hasGif) && !_isUploading;
-
-                            return TextButton(
-                              onPressed: isEnabled ? _submitComment : null,
-                              style: TextButton.styleFrom(
-                                backgroundColor: isEnabled ? Theme.of(context).primaryColor : Colors.grey[300]?.withValues(alpha: 0.4),
-                                foregroundColor: isEnabled ? Colors.white : Colors.grey[400],
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                                minimumSize: const Size(60, 0),
-                              ),
-                              child: _isUploading
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                    )
-                                  : Text(
-                                      "Reply",
-                                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
-                                    ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
+                  // Smooth Reusable Capsule Pill Box (X Style)
+                  ReplyInputComposer(
+                    controller: _commentController,
+                    focusNode: _focusNode,
+                    avatarUrl: myProf?.avatarUrl,
+                    hintText: "Post your reply",
+                    onPickImage: _pickCommentImage,
+                    onOpenGif: () {
+                      _focusNode.unfocus();
+                      setState(() {
+                        if (_showEmojiPanel && _pickerTabIndex == 1) {
+                          _showEmojiPanel = false;
+                        } else {
+                          _showEmojiPanel = true;
+                          _pickerTabIndex = 1;
+                        }
+                      });
+                    },
+                    onOpenEmoji: () {
+                      _focusNode.unfocus();
+                      setState(() {
+                        if (_showEmojiPanel && _pickerTabIndex == 0) {
+                          _showEmojiPanel = false;
+                        } else {
+                          _showEmojiPanel = true;
+                          _pickerTabIndex = 0;
+                        }
+                      });
+                    },
+                    onSubmit: _submitComment,
+                    isUploading: _isUploading,
+                    hasSelectedMedia: _selectedImageBytes != null || _selectedGifUrl != null,
+                    showEmojiPanel: _showEmojiPanel,
+                    pickerTabIndex: _pickerTabIndex,
                   ),
 
                   // Premium Emoji / GIF Picker Panel

@@ -53,23 +53,26 @@ class CommunityService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Fetch public communities the user hasn't joined
-      final joinedIds = joinedCommunities.map((c) => c.id).toList();
-      
-      var query = _supabase
+      // Fetch joined community IDs directly from community_members table
+      final joinedRes = await _supabase
+          .from('community_members')
+          .select('community_id')
+          .eq('user_id', _currentUid!);
+
+      final Set<String> joinedIds = (joinedRes as List)
+          .map((row) => row['community_id'].toString())
+          .toSet();
+
+      // Also include any IDs from in-memory joinedCommunities list
+      joinedIds.addAll(joinedCommunities.map((c) => c.id));
+
+      final response = await _supabase
           .from('communities')
           .select('*')
           .eq('privacy', 'public')
           .order('member_count', ascending: false)
-          .limit(20);
+          .limit(30);
 
-      if (joinedIds.isNotEmpty) {
-        // We filter out joined in Dart if NOT IN is too complex or just use simple filter
-        // Actually, we can just fetch top and filter in memory for simplicity
-      }
-
-      final response = await query;
-      
       final List<Community> loaded = [];
       for (var row in response) {
         final c = Community.fromJson(row);
@@ -84,6 +87,11 @@ class CommunityService extends ChangeNotifier {
       isLoadingRecommended = false;
       notifyListeners();
     }
+  }
+
+  Future<void> refreshAllCommunities() async {
+    await fetchJoinedCommunities();
+    await fetchRecommendedCommunities();
   }
 
   Future<Community?> getCommunityDetails(String communityId) async {

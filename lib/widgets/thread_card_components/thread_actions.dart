@@ -39,13 +39,13 @@ class ThreadActions extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
-            child: Icon(icon, color: color, size: 18),
+            child: Icon(icon, color: color, size: 19),
           ),
           if (count > 0) ...[
             const SizedBox(width: 2),
             Text(
               '$count',
-              style: GoogleFonts.inter(fontSize: 12, color: context.textPrimary.withValues(alpha: 0.75)),
+              style: GoogleFonts.inter(fontSize: 13, color: context.textPrimary.withValues(alpha: 0.75)),
             ),
           ]
         ],

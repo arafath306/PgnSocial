@@ -5,12 +5,14 @@ class _QuickActionsSheet extends StatefulWidget {
   final DatabaseService dbService;
   final BuildContext parentContext;
   final bool isCommunityModerator;
+  final VoidCallback? onDeletePost;
 
   const _QuickActionsSheet({
     required this.post,
     required this.dbService,
     required this.parentContext,
     this.isCommunityModerator = false,
+    this.onDeletePost,
   });
 
   @override
@@ -194,7 +196,13 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet>
         onTap: () {
           final parentCtx = widget.parentContext;
           Navigator.pop(context);
-          _showReportSheet(parentCtx);
+          ContentReportHelper.showReportSheet(
+            context: parentCtx,
+            targetId: widget.post.id,
+            targetAuthorUsername: widget.post.author.username,
+            targetAuthorUserId: widget.post.userId,
+            contentType: 'post',
+          );
         },
       ),
       if (widget.isCommunityModerator)
@@ -354,23 +362,295 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet>
     );
   }
 
+  void _showCustomReasonDialog(BuildContext parentCtx, String title, Function(String) onSubmit) {
+    final controller = TextEditingController();
+    showModalBottomSheet(
+      context: parentCtx,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetCtx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(sheetCtx).viewInsets.bottom),
+        child: Container(
+          decoration: BoxDecoration(
+            color: parentCtx.cardBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: parentCtx.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E824C).withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.flag_rounded, color: Color(0xFF1E824C), size: 22),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: GoogleFonts.inter(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                color: parentCtx.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Please describe the issue in detail',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: parentCtx.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  TextField(
+                    controller: controller,
+                    autofocus: true,
+                    maxLines: 4,
+                    minLines: 3,
+                    style: GoogleFonts.inter(
+                      fontSize: 14.5,
+                      color: parentCtx.textPrimary,
+                      height: 1.4,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Provide details about why you are reporting this...',
+                      hintStyle: GoogleFonts.inter(
+                        fontSize: 13.5,
+                        color: parentCtx.textMuted,
+                      ),
+                      filled: true,
+                      fillColor: parentCtx.isDarkMode ? const Color(0xFF161B22) : const Color(0xFFF6F8FA),
+                      contentPadding: const EdgeInsets.all(16),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: parentCtx.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: parentCtx.border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(color: Color(0xFF1E824C), width: 1.5),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(sheetCtx),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: Text(
+                            'Cancel',
+                            style: GoogleFonts.inter(
+                              color: parentCtx.textSecondary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            final customReason = controller.text.trim();
+                            if (customReason.isNotEmpty) {
+                              Navigator.pop(sheetCtx);
+                              onSubmit('Other: $customReason');
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1E824C),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Submit Report',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-  void _showReportSheet(BuildContext ctx) {
-    final reasons = [
-      'Spam',
-      'Hate speech',
-      'Harassment or bullying',
-      'Misinformation',
-      'Violence or threat',
-      'Other',
-    ];
+  void _showReportSuccessActionsSheet(BuildContext ctx, String username) {
     showModalBottomSheet(
       context: ctx,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (reportCtx) => Container(
+      builder: (sheetCtx) => Container(
         decoration: BoxDecoration(
-          color: context.cardBg,
+          color: ctx.cardBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: ctx.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF1E824C),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.check_rounded, color: Colors.white, size: 24),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Thanks for letting us know',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 17,
+                              color: ctx.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'We use these reports to keep Pigeon safe for everyone.',
+                            style: GoogleFonts.inter(fontSize: 12.5, color: ctx.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Divider(height: 1, color: ctx.border),
+                const SizedBox(height: 16),
+                Text(
+                  'What else you can do:',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: ctx.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.block_outlined, color: Colors.redAccent),
+                  title: Text('Block @$username', style: GoogleFonts.inter(fontSize: 14.5, fontWeight: FontWeight.w600, color: Colors.redAccent)),
+                  subtitle: Text('They won\'t be able to see your posts or contact you.', style: GoogleFonts.inter(fontSize: 12, color: ctx.textSecondary)),
+                  onTap: () {
+                    Navigator.pop(sheetCtx);
+                    _showBlockConfirm(ctx, username);
+                  },
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.volume_off_outlined, color: Colors.orangeAccent),
+                  title: Text('Mute @$username', style: GoogleFonts.inter(fontSize: 14.5, fontWeight: FontWeight.w600, color: ctx.textPrimary)),
+                  subtitle: Text('Stop seeing posts from @$username in your feed.', style: GoogleFonts.inter(fontSize: 12, color: ctx.textSecondary)),
+                  onTap: () async {
+                    Navigator.pop(sheetCtx);
+                    final settingsProvider = Provider.of<GeneralSettingsProvider>(ctx, listen: false);
+                    await settingsProvider.muteUserById(widget.post.userId);
+                    await widget.dbService.fetchBlockedMutedLists();
+                    await widget.dbService.fetchFeed();
+                    if (ctx.mounted) {
+                      _showSuccessSnackBar(ctx, '@$username has been muted');
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(sheetCtx),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E824C),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: Text('Done', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 15)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSubCategoryReportSheet(BuildContext ctx, String mainCategory, List<String> subCategories) {
+    showModalBottomSheet(
+      context: ctx,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (subCtx) => Container(
+        decoration: BoxDecoration(
+          color: ctx.cardBg,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
@@ -384,20 +664,20 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet>
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: context.border,
+                    color: ctx.border,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
-                  'Report post',
+                  mainCategory,
                   style: GoogleFonts.inter(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
-                    color: context.textPrimary,
+                    color: ctx.textPrimary,
                   ),
                 ),
               ),
@@ -405,44 +685,44 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet>
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
-                  'Why are you reporting this post?',
-                  style: GoogleFonts.inter(fontSize: 13, color: context.textSecondary),
+                  'Select a specific reason to help us understand:',
+                  style: GoogleFonts.inter(fontSize: 13, color: ctx.textSecondary),
                 ),
               ),
               const SizedBox(height: 12),
-              Divider(height: 1, color: context.border),
-              ...reasons.map((reason) => Material(
+              Divider(height: 1, color: ctx.border),
+              ...subCategories.map((subCat) => Material(
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () async {
-                        Navigator.pop(reportCtx);
-                        final success = await widget.dbService.reportPost(widget.post.id, reason);
+                        Navigator.pop(subCtx);
+                        final fullReason = '$mainCategory - $subCat';
+                        final success = await widget.dbService.reportPost(widget.post.id, fullReason);
                         if (!ctx.mounted) return;
                         if (success) {
-                          _showSuccessSnackBar(
-                            ctx,
-                            'Report submitted. Thank you for helping keep Pigeon safe.',
-                          );
+                          _showReportSuccessActionsSheet(ctx, widget.post.author.username);
                         }
                       },
                       splashColor: Colors.red.withValues(alpha: 0.06),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                         child: Row(
                           children: [
                             Expanded(
                               child: Text(
-                                reason,
+                                subCat,
                                 style: GoogleFonts.inter(
-                                  fontSize: 15,
+                                  fontSize: 14.5,
                                   fontWeight: FontWeight.w500,
-                                  color: context.textPrimary,
+                                  color: ctx.textPrimary,
                                 ),
                               ),
                             ),
-                            Icon(Icons.chevron_right,
-                                color: context.textSecondary, size: 20),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 18,
+                              color: ctx.textMuted,
+                            ),
                           ],
                         ),
                       ),
@@ -450,6 +730,152 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet>
                   )),
               const SizedBox(height: 16),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showReportSheet(BuildContext ctx) {
+    final categoryMap = <String, List<String>>{
+      'Harassment or Bullying': [
+        'It\'s harassing me directly',
+        'It\'s harassing a friend or family member',
+        'It\'s harassing someone else / public figure',
+      ],
+      'Hate Speech or Discrimination': [
+        'Race, ethnicity or national origin',
+        'Religious beliefs or practices',
+        'Gender identity or sexual orientation',
+        'Disability or medical condition',
+      ],
+      'Nudity or Sexual Content': [
+        'Nudity or explicit exposure',
+        'Explicit sexual acts or pornography',
+        'Non-consensual sexual content / abuse',
+      ],
+      'Violence, Threat or Danger': [
+        'Direct threat of physical violence',
+        'Self-harm or suicide encouragement',
+        'Dangerous or violent organization',
+      ],
+      'Scam, Fraud or Impersonation': [
+        'Pretending to be me or someone I know',
+        'Phishing, financial or crypto scam',
+        'Spam or fake automated account',
+      ],
+      'False Information / Misinformation': [
+        'Medical or health misinformation',
+        'Political or election misinformation',
+        'Fraudulent news / Dangerous hoax',
+      ],
+      'Intellectual Property Violation': [
+        'Copyright infringement',
+        'Trademark or brand violation',
+      ],
+      'Other Issue (specify details)': [],
+    };
+
+    showModalBottomSheet(
+      context: ctx,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (reportCtx) => Container(
+        decoration: BoxDecoration(
+          color: ctx.cardBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 12),
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: ctx.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'Report post',
+                    style: GoogleFonts.inter(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: ctx.textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    'Select a category that best describes this issue:',
+                    style: GoogleFonts.inter(fontSize: 13, color: ctx.textSecondary),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Divider(height: 1, color: ctx.border),
+                ...categoryMap.entries.map((entry) {
+                  final catTitle = entry.key;
+                  final subCats = entry.value;
+                  final isOther = subCats.isEmpty;
+
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(reportCtx);
+                        if (isOther) {
+                          _showCustomReasonDialog(ctx, 'Report Post', (finalReason) async {
+                            final success = await widget.dbService.reportPost(widget.post.id, finalReason);
+                            if (!ctx.mounted) return;
+                            if (success) {
+                              _showReportSuccessActionsSheet(ctx, widget.post.author.username);
+                            }
+                          });
+                        } else {
+                          _showSubCategoryReportSheet(ctx, catTitle, subCats);
+                        }
+                      },
+                      splashColor: Colors.red.withValues(alpha: 0.06),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 14),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                catTitle,
+                                style: GoogleFonts.inter(
+                                  fontSize: 14.5,
+                                  fontWeight: isOther ? FontWeight.w600 : FontWeight.w500,
+                                  color: isOther ? Colors.redAccent : ctx.textPrimary,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 18,
+                              color: ctx.textMuted,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),
@@ -484,6 +910,7 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet>
               final success = await widget.dbService.deletePost(widget.post.id);
               if (success && ctx.mounted) {
                 _showSuccessSnackBar(ctx, 'Post deleted successfully');
+                widget.onDeletePost?.call();
               }
             },
             style: ElevatedButton.styleFrom(
@@ -520,11 +947,13 @@ class _AuthorActionsSheet extends StatefulWidget {
   final ThreadPost post;
   final DatabaseService dbService;
   final BuildContext parentContext;
+  final VoidCallback? onDeletePost;
 
   const _AuthorActionsSheet({
     required this.post,
     required this.dbService,
     required this.parentContext,
+    this.onDeletePost,
   });
 
   @override
@@ -667,6 +1096,7 @@ class _AuthorActionsSheetState extends State<_AuthorActionsSheet>
               final success = await widget.dbService.deletePost(widget.post.id);
               if (success && ctx.mounted) {
                 _showSuccessSnackBar(ctx, 'Post deleted successfully');
+                widget.onDeletePost?.call();
               }
             },
             style: ElevatedButton.styleFrom(
@@ -726,6 +1156,7 @@ class _AuthorActionsSheetState extends State<_AuthorActionsSheet>
             final success = await widget.dbService.deleteRepost(widget.post.id, widget.post.repostedPost?.id ?? '');
             if (success && parentCtx.mounted) {
               _showSuccessSnackBar(parentCtx, 'Repost removed');
+              widget.onDeletePost?.call();
             }
           },
         ),

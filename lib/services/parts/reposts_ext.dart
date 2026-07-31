@@ -280,21 +280,21 @@ extension RepostsExtension on DatabaseService {
     try {
       await _supabase.from('reports').insert({
         'user_id': _currentUid,
-        'reply_id': replyId,
+        'comment_id': replyId,
         'reason': reason,
       });
       return true;
     } catch (e) {
-      debugPrint("Report comment error (reply_id): $e");
+      debugPrint("Report comment error (comment_id): $e");
       try {
         await _supabase.from('reports').insert({
           'user_id': _currentUid,
-          'comment_id': replyId,
+          'reply_id': replyId,
           'reason': reason,
         });
         return true;
       } catch (inner) {
-        debugPrint("Report comment error (comment_id): $inner");
+        debugPrint("Report comment error (reply_id): $inner");
         return false;
       }
     }

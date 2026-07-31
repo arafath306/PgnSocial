@@ -472,8 +472,15 @@ class CommentQuickActionsSheetState extends State<CommentQuickActionsSheet>
           label: 'Report comment',
           isDanger: true,
           onTap: () {
+            final parentCtx = widget.parentContext;
             Navigator.pop(context);
-            _showReportSheet(context, commentId);
+            ContentReportHelper.showReportSheet(
+              context: parentCtx,
+              targetId: commentId,
+              targetAuthorUsername: author.username,
+              targetAuthorUserId: author.id,
+              contentType: 'comment',
+            );
           },
         ),
       ];
@@ -631,104 +638,6 @@ class CommentQuickActionsSheetState extends State<CommentQuickActionsSheet>
     }
   }
 
-  void _showReportSheet(BuildContext ctx, String commentId) {
-    final reasons = [
-      'Spam',
-      'Hate speech',
-      'Harassment or bullying',
-      'Misinformation',
-      'Violence or threat',
-      'Other',
-    ];
-    showModalBottomSheet(
-      context: ctx,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (reportCtx) => Container(
-        decoration: BoxDecoration(
-          color: context.cardBg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 12),
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: context.isDarkMode ? Colors.grey[800] : Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  'Report comment',
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    color: context.textPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  'Why are you reporting this comment?',
-                  style: GoogleFonts.inter(fontSize: 13, color: context.textSecondary),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Divider(height: 1, color: context.border),
-              ...reasons.map((reason) => Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () async {
-                        Navigator.pop(reportCtx);
-                        await widget.dbService.reportComment(commentId, reason);
-                        if (!ctx.mounted) return;
-                        _showSuccessSnackBar(
-                          ctx,
-                          'Report submitted. Thank you for helping keep Pigeon safe.',
-                        );
-                      },
-                      splashColor: Colors.red.withValues(alpha: 0.06),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 16),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                reason,
-                                style: GoogleFonts.inter(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w500,
-                                  color: context.textPrimary,
-                                ),
-                              ),
-                            ),
-                            Icon(Icons.chevron_right,
-                                color: context.textSecondary, size: 20),
-                          ],
-                        ),
-                      ),
-                    ),
-                  )),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _CommentQuickActionItem {
@@ -744,4 +653,3 @@ class _CommentQuickActionItem {
     this.isDanger = false,
   });
 }
-

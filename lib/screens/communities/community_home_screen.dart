@@ -34,8 +34,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen>
     _loadPinnedIds();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final commService = Provider.of<CommunityService>(context, listen: false);
-      commService.fetchJoinedCommunities();
-      commService.fetchRecommendedCommunities();
+      commService.refreshAllCommunities();
     });
   }
 
@@ -171,7 +170,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen>
 
     return RefreshIndicator(
       color: context.primaryAccent,
-      onRefresh: () => service.fetchJoinedCommunities(),
+      onRefresh: () => service.refreshAllCommunities(),
       child: ListView.separated(
         padding: const EdgeInsets.only(bottom: 80),
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
@@ -190,7 +189,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen>
                 MaterialPageRoute(builder: (_) => CommunityDetailScreen(community: community)),
               ).then((_) {
                 _loadPinnedIds();
-                service.fetchJoinedCommunities();
+                service.refreshAllCommunities();
               });
             },
             child: Padding(
@@ -333,7 +332,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen>
 
     return RefreshIndicator(
       color: context.primaryAccent,
-      onRefresh: () => service.fetchRecommendedCommunities(),
+      onRefresh: () => service.refreshAllCommunities(),
       child: ListView.separated(
         padding: const EdgeInsets.only(bottom: 80),
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
@@ -350,8 +349,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen>
                 MaterialPageRoute(builder: (_) => CommunityDetailScreen(community: community)),
               ).then((_) {
                 _loadPinnedIds();
-                service.fetchJoinedCommunities();
-                service.fetchRecommendedCommunities();
+                service.refreshAllCommunities();
               });
             },
             child: Padding(
