@@ -20,11 +20,22 @@ class _MusicSearchSheetState extends State<MusicSearchSheet> {
   bool _isLoading = false;
   Timer? _debounceTimer;
 
+  // Facebook-standard English category options
+  final List<Map<String, String>> _categories = [
+    {"label": "🔥 Bangla Hits", "query": "Bangla Hits"},
+    {"label": "🎸 Bangla Band", "query": "Bangla Band"},
+    {"label": "❤️ Romantic", "query": "Bangla Romantic"},
+    {"label": "🎉 Party Hits", "query": "Bangla Party"},
+    {"label": "🌍 Global Hits", "query": "Top Hits"},
+  ];
+
+  String _selectedCategoryQuery = "Bangla Hits";
+
   @override
   void initState() {
     super.initState();
-    // Default search on load to show some music right away
-    _search("hits");
+    // Default search on load to show Bangla Hits first
+    _search(_selectedCategoryQuery);
   }
 
   void _search(String query) {
@@ -48,9 +59,17 @@ class _MusicSearchSheetState extends State<MusicSearchSheet> {
 
   void _onSearchChanged(String query) {
     _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 600), () {
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
       _search(query);
     });
+  }
+
+  void _onCategorySelected(String label, String query) {
+    setState(() {
+      _selectedCategoryQuery = query;
+      _searchController.clear();
+    });
+    _search(query);
   }
 
   @override
@@ -67,7 +86,7 @@ class _MusicSearchSheetState extends State<MusicSearchSheet> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.75,
+      height: MediaQuery.of(context).size.height * 0.78,
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF0D0F1A) : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -85,7 +104,8 @@ class _MusicSearchSheetState extends State<MusicSearchSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          // Title
+
+          // Title Header
           Text(
             "Select Music",
             style: GoogleFonts.inter(
@@ -94,7 +114,8 @@ class _MusicSearchSheetState extends State<MusicSearchSheet> {
               color: isDark ? Colors.white : Colors.black87,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
+
           // Search input field
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -108,10 +129,10 @@ class _MusicSearchSheetState extends State<MusicSearchSheet> {
                 prefixIcon: Icon(Icons.search, color: isDark ? Colors.white54 : Colors.black54),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear),
+                        icon: const Icon(Icons.clear, size: 18),
                         onPressed: () {
                           _searchController.clear();
-                          _onSearchChanged("");
+                          _search(_selectedCategoryQuery);
                         },
                       )
                     : null,
@@ -126,12 +147,60 @@ class _MusicSearchSheetState extends State<MusicSearchSheet> {
             ),
           ),
           const SizedBox(height: 12),
+
+          // Facebook-Standard Horizontal Category Chips Bar
+          SizedBox(
+            height: 36,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _categories.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final cat = _categories[index];
+                final isSelected = _selectedCategoryQuery == cat["query"] && _searchController.text.isEmpty;
+
+                return GestureDetector(
+                  onTap: () => _onCategorySelected(cat["label"]!, cat["query"]!),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFF1D9BF0)
+                          : (isDark ? const Color(0xFF1E2030) : const Color(0xFFF0F2F5)),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xFF1D9BF0)
+                            : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05)),
+                        width: 1,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      cat["label"]!,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        color: isSelected
+                            ? Colors.white
+                            : (isDark ? Colors.white70 : Colors.black87),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+
           // Tracks List / Loading / Empty State
           Expanded(
             child: _isLoading
                 ? const Center(
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1E824C)),
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1D9BF0)),
                     ),
                   )
                 : _tracks.isEmpty
@@ -181,13 +250,13 @@ class _MusicSearchSheetState extends State<MusicSearchSheet> {
                                       width: 44,
                                       height: 44,
                                       decoration: BoxDecoration(
+                                        color: Colors.black.withValues(alpha: 0.35),
                                         shape: BoxShape.circle,
-                                        color: Colors.black.withValues(alpha: isPlaying ? 0.3 : 0.4),
                                       ),
                                       child: Icon(
                                         isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                                         color: Colors.white,
-                                        size: 24,
+                                        size: 26,
                                       ),
                                     ),
                                   ),
@@ -195,32 +264,42 @@ class _MusicSearchSheetState extends State<MusicSearchSheet> {
                               ),
                               title: Text(
                                 track.trackName,
-                                style: GoogleFonts.inter(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  color: isDark ? Colors.white : Colors.black87,
-                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? Colors.white : Colors.black87,
+                                ),
                               ),
                               subtitle: Text(
                                 track.artistName,
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  color: isDark ? Colors.white54 : Colors.black54,
-                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  fontSize: 12.5,
+                                  color: isDark ? Colors.white54 : Colors.black54,
+                                ),
                               ),
                               trailing: Icon(
                                 Icons.add_circle_outline_rounded,
-                                color: theme.primaryColor,
+                                color: isDark ? Colors.white54 : Colors.black54,
                               ),
                             ),
                           );
                         },
                       ),
           ),
+
+          // Mini Player Bar if something is currently playing inside search sheet
+          if (playbackController.currentTrackId != null && _tracks.any((t) => t.trackId == playbackController.currentTrackId))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+              child: MusicPlayerBar(
+                musicTrack: _tracks.firstWhere((t) => t.trackId == playbackController.currentTrackId),
+                miniMode: true,
+              ),
+            ),
         ],
       ),
     );
