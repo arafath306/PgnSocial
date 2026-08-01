@@ -143,6 +143,7 @@ class MockCreateThreadUseCase implements CreateThreadUseCase {
     DateTime? pollExpiresAt,
     String? communityId,
     bool isSubscriberOnly = false,
+    bool isAnonymous = false,
   }) async {
     mockDb.addMockThread(content);
     return const Right(true);

@@ -169,6 +169,7 @@ class MockCreateThreadUseCase implements CreateThreadUseCase {
     DateTime? pollExpiresAt,
     String? communityId,
     bool isSubscriberOnly = false,
+    bool isAnonymous = false,
   }) async {
     return const Right(true);
   }
