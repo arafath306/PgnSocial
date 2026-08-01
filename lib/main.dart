@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:dak/l10n/generated/app_localizations.dart';
@@ -28,8 +29,6 @@ import 'widgets/custom_error_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
-import 'package:flutter/foundation.dart';
-
 void main() {
   runZonedGuarded(() async {
     if (kReleaseMode) {
@@ -42,29 +41,31 @@ void main() {
       return CustomErrorScreen(details: details);
     };
 
-    // Initialize Firebase
-    try {
-      await Firebase.initializeApp();
-      
-      // Pass all uncaught framework errors to Crashlytics
-      FlutterError.onError = (FlutterErrorDetails details) {
-        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
-      };
+    // Initialize Firebase (Mobile/Desktop platforms)
+    if (!kIsWeb) {
+      try {
+        await Firebase.initializeApp();
+        
+        // Pass all uncaught framework errors to Crashlytics
+        FlutterError.onError = (FlutterErrorDetails details) {
+          FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+        };
 
-      // Pass all uncaught asynchronous errors to Crashlytics
-      PlatformDispatcher.instance.onError = (error, stack) {
-        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-        return true;
-      };
-    } catch (e) {
-      debugPrint("Firebase initialization failed: $e");
+        // Pass all uncaught asynchronous errors to Crashlytics
+        PlatformDispatcher.instance.onError = (error, stack) {
+          FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+          return true;
+        };
+      } catch (e) {
+        debugPrint("Firebase initialization failed: $e");
+      }
     }
 
     // Initialize Supabase
     await Supabase.initialize(
       url: AppConfig.supabaseUrl,
       publishableKey: AppConfig.supabaseAnonKey,
-      httpClient: PinnedHttpClient(),
+      httpClient: kIsWeb ? null : PinnedHttpClient(),
     );
 
     // Initialize dependency injection
