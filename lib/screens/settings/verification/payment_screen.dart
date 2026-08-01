@@ -92,9 +92,18 @@ class _PaymentScreenState extends State<PaymentScreen> {
     final selectedPlanId = controller.request.selectedPlanId;
     final isDark = context.isDarkMode;
 
+    final Map<String, Map<String, dynamic>> fallbackCustomPlans = {
+      'general_weekly_basic': {'id': 'general_weekly_basic', 'name': 'General Weekly Basic', 'price': 59.0, 'interval_unit': 'week'},
+      'general_weekly_premium': {'id': 'general_weekly_premium', 'name': 'General Weekly Premium', 'price': 99.0, 'interval_unit': 'week'},
+      'general_monthly_basic': {'id': 'general_monthly_basic', 'name': 'General Monthly Basic', 'price': 199.0, 'interval_unit': 'month'},
+      'general_monthly_premium': {'id': 'general_monthly_premium', 'name': 'General Monthly Premium', 'price': 349.0, 'interval_unit': 'month'},
+      'general_yearly_basic': {'id': 'general_yearly_basic', 'name': 'General Yearly Basic', 'price': 1599.0, 'interval_unit': 'year'},
+      'general_yearly_premium': {'id': 'general_yearly_premium', 'name': 'General Yearly Premium', 'price': 2499.0, 'interval_unit': 'year'},
+    };
+
     final plan = verificationPlans.firstWhere(
       (p) => p['id'] == selectedPlanId,
-      orElse: () => {
+      orElse: () => fallbackCustomPlans[selectedPlanId] ?? {
         'id': 'monthly',
         'name': 'Monthly Plan',
         'price': 199.0,
