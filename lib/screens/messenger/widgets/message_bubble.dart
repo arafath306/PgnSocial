@@ -139,9 +139,14 @@ class MessageBubble extends StatelessWidget {
             );
 
       final imageWidget = bytesOrUrl is Uint8List
-          ? image
+          ? GestureDetector(
+              onTap: onTap,
+              onLongPress: onTap,
+              child: image,
+            )
           : GestureDetector(
               onTap: () => onOpenMedia(bytesOrUrl as String),
+              onLongPress: onTap,
               child: image,
             );
 
@@ -295,6 +300,7 @@ class MessageBubble extends StatelessWidget {
               maxWidth: (MediaQuery.of(context).size.width * 0.75).clamp(200.0, 450.0)),
           child: GestureDetector(
             onTap: onTap,
+            onLongPress: onTap,
             child: Container(
               padding: hasMedia
                   ? EdgeInsets.zero

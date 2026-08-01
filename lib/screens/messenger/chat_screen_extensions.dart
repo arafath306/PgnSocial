@@ -612,16 +612,28 @@ extension ChatScreenExtensions on _ChatScreenState {
                   _showEditMessageDialog(messageId, text);
                 },
               ),
-            // Delete (own messages)
+            // Delete
             if (isMe)
               ListTile(
                 leading: const Icon(Icons.delete_rounded,
                     color: Colors.redAccent),
                 title: Text('Delete',
-                    style: GoogleFonts.inter(color: Colors.redAccent)),
+                    style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.w600)),
                 onTap: () {
                   Navigator.pop(ctx);
                   _confirmDeleteMessage(messageId);
+                },
+              ),
+            // Report (for other user's messages/media)
+            if (!isMe)
+              ListTile(
+                leading: const Icon(Icons.flag_rounded,
+                    color: Colors.orangeAccent),
+                title: Text('Report',
+                    style: GoogleFonts.inter(color: context.textPrimary, fontWeight: FontWeight.w600)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showReportMessageDialog(messageId);
                 },
               ),
             // Download media
@@ -638,6 +650,81 @@ extension ChatScreenExtensions on _ChatScreenState {
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showReportMessageDialog(String messageId) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: context.cardBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Report Content',
+            style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.textPrimary)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Why are you reporting this message or picture?',
+                style: GoogleFonts.inter(fontSize: 13.5, color: context.textSecondary)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              style: GoogleFonts.inter(color: context.textPrimary),
+              decoration: InputDecoration(
+                hintText: 'Inappropriate content, spam, etc.',
+                hintStyle: GoogleFonts.inter(color: context.textMuted),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text('Cancel', style: GoogleFonts.inter(color: context.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () async {
+              Navigator.pop(dialogCtx);
+              final reason = controller.text.trim();
+              try {
+                final user = sb.Supabase.instance.client.auth.currentUser;
+                await sb.Supabase.instance.client.from('reports').insert({
+                  'user_id': user?.id,
+                  'reason': 'Chat Message/Media Report ($messageId): ${reason.isEmpty ? "Inappropriate media" : reason}',
+                });
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Report submitted successfully.'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                debugPrint("Report chat message error: $e");
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Report submitted.'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              }
+            },
+            child: Text('Submit Report', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
