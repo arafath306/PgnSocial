@@ -56,7 +56,7 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
   int _charCount = 0;
   bool _showImageInput = false;
   final bool _showVideoInput = false;
-  final bool _isAnonymous = false;
+  bool _isAnonymous = false;
   bool _isSubscriberOnly = false;
 
   final List<Uint8List> _selectedImagesBytesList = [];
@@ -473,6 +473,7 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
             isActiveMusic: _selectedMusic != null,
             isActivePoll: _showPollInput,
             isActiveVoice: _showVoiceRecorder,
+            isActiveAnonymous: _isAnonymous,
             isActiveSubscriber: _isSubscriberOnly,
             canMonetize: context.select<DatabaseService, bool>(
                 (db) => db.myProfile?.canMonetize == true),
@@ -514,6 +515,36 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
               } else {
                 _showComingSoonDialog("Voice messaging (Pending Admin Approval)");
               }
+            },
+            onAnonymousTap: () {
+              setState(() {
+                _isAnonymous = !_isAnonymous;
+              });
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Icon(
+                        _isAnonymous ? Icons.security_rounded : Icons.person_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        _isAnonymous
+                            ? 'Anonymous Mode ON 🕵️ (Name & avatar hidden)'
+                            : 'Anonymous Mode OFF 👤 (Posting as yourself)',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: _isAnonymous ? Colors.indigo : const Color(0xFF1E824C),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
             },
             onSubscriberTap: () =>
                 setState(() => _isSubscriberOnly = !_isSubscriberOnly),

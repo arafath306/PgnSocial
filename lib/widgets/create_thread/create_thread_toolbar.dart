@@ -8,6 +8,7 @@ class CreateThreadToolbar extends StatelessWidget {
   final bool isActiveMusic;
   final bool isActivePoll;
   final bool isActiveVoice;
+  final bool isActiveAnonymous;
   final bool isActiveSubscriber;
   final bool canMonetize;
   
@@ -16,6 +17,7 @@ class CreateThreadToolbar extends StatelessWidget {
   final VoidCallback onMusicTap;
   final VoidCallback onPollTap;
   final VoidCallback onVoiceTap;
+  final VoidCallback onAnonymousTap;
   final VoidCallback onSubscriberTap;
   final Function(String) onComingSoonTap;
 
@@ -26,6 +28,7 @@ class CreateThreadToolbar extends StatelessWidget {
     required this.isActiveMusic,
     required this.isActivePoll,
     required this.isActiveVoice,
+    required this.isActiveAnonymous,
     required this.isActiveSubscriber,
     required this.canMonetize,
     required this.onImageTap,
@@ -33,6 +36,7 @@ class CreateThreadToolbar extends StatelessWidget {
     required this.onMusicTap,
     required this.onPollTap,
     required this.onVoiceTap,
+    required this.onAnonymousTap,
     required this.onSubscriberTap,
     required this.onComingSoonTap,
   });
@@ -152,8 +156,8 @@ class CreateThreadToolbar extends StatelessWidget {
                     icon: Icons.security_outlined,
                     tooltip: "Anonymous Post",
                     color: Colors.indigo,
-                    isActive: false,
-                    onTap: () => onComingSoonTap("Anonymous posting"),
+                    isActive: isActiveAnonymous,
+                    onTap: onAnonymousTap,
                   ),
                   if (canMonetize)
                     _buildToolbarIcon(

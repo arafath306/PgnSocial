@@ -168,6 +168,7 @@ extension CreateThreadPublishExtensions on _CreateThreadScreenState {
           pollDuration: pollDuration,
           communityId: widget.communityId,
           isSubscriberOnly: _isSubscriberOnly,
+          isAnonymous: _isAnonymous,
         );
       }
 

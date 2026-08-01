@@ -101,10 +101,18 @@ class ThreadPost {
   }
 
   factory ThreadPost.fromJson(Map<String, dynamic> json, {String? currentUid}) {
+    final bool isAnon = (json['is_anonymous'] as bool?) ?? false;
     final authorMap = json['profiles'] as Map<String, dynamic>?;
-    final authorProfile = authorMap != null 
-        ? Profile.fromJson(authorMap) 
-        : Profile(id: json['user_id'] ?? '', username: 'unknown', fullName: 'Unknown User');
+    final Profile authorProfile = isAnon
+        ? Profile(
+            id: 'anonymous',
+            username: 'anonymous',
+            fullName: 'Anonymous User',
+            avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150',
+          )
+        : (authorMap != null 
+            ? Profile.fromJson(authorMap) 
+            : Profile(id: json['user_id'] ?? '', username: 'unknown', fullName: 'Unknown User'));
 
     // Likes check logic
     final likesList = json['likes'] as List<dynamic>?;

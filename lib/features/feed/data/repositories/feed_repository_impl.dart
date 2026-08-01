@@ -185,6 +185,7 @@ class FeedRepositoryImpl implements IFeedRepository {
     DateTime? pollExpiresAt,
     String? communityId,
     bool isSubscriberOnly = false,
+    bool isAnonymous = false,
   }) async {
     try {
       final result = await remoteDataSource.createThread(
@@ -198,6 +199,7 @@ class FeedRepositoryImpl implements IFeedRepository {
         pollExpiresAt: pollExpiresAt,
         communityId: communityId,
         isSubscriberOnly: isSubscriberOnly,
+        isAnonymous: isAnonymous,
       );
       return Right(result);
     } catch (e) {

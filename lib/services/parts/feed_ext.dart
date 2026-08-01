@@ -54,6 +54,7 @@ extension FeedExtension on DatabaseService {
     Duration? pollDuration,
     String? communityId,
     bool isSubscriberOnly = false,
+    bool isAnonymous = false,
   }) async {
     final now = DateTime.now();
     if (_lastPostTime != null) {
@@ -77,6 +78,7 @@ extension FeedExtension on DatabaseService {
       pollExpiresAt: pollExpiresAt,
       communityId: communityId,
       isSubscriberOnly: isSubscriberOnly,
+      isAnonymous: isAnonymous,
     );
     return result.fold(
       (failure) {

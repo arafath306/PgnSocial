@@ -18,6 +18,7 @@ abstract class FeedRemoteDataSource {
     DateTime? pollExpiresAt,
     String? communityId,
     bool isSubscriberOnly = false,
+    bool isAnonymous = false,
   });
   Future<void> toggleLike(String userId, String threadId, bool shouldLike);
   Future<bool> togglePinPost(String threadId, bool isPinned);
@@ -126,6 +127,7 @@ class FeedRemoteDataSourceImpl implements FeedRemoteDataSource {
     DateTime? pollExpiresAt,
     String? communityId,
     bool isSubscriberOnly = false,
+    bool isAnonymous = false,
   }) async {
     final Map<String, dynamic> insertData = {
       'user_id': userId,
@@ -136,6 +138,7 @@ class FeedRemoteDataSourceImpl implements FeedRemoteDataSource {
       'audience': ?audience,
       'community_id': ?communityId,
       'is_subscriber_only': isSubscriberOnly,
+      'is_anonymous': isAnonymous,
     };
     if (pollExpiresAt != null) {
       insertData['poll_expires_at'] = pollExpiresAt.toUtc().toIso8601String();

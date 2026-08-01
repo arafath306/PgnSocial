@@ -16,6 +16,7 @@ class CreateThreadUseCase {
     DateTime? pollExpiresAt,
     String? communityId,
     bool isSubscriberOnly = false,
+    bool isAnonymous = false,
   }) {
     return repository.createThread(
       content,
@@ -27,6 +28,7 @@ class CreateThreadUseCase {
       pollExpiresAt: pollExpiresAt,
       communityId: communityId,
       isSubscriberOnly: isSubscriberOnly,
+      isAnonymous: isAnonymous,
     );
   }
 }
