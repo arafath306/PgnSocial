@@ -811,13 +811,16 @@ class _PulsingAvatarHeaderState extends State<_PulsingAvatarHeader> with SingleT
     return Center(
       child: Column(
         children: [
-          AnimatedBuilder(
-            animation: _pulseController,
-            builder: (context, child) {
-              final wave = _pulseController.value;
-              return Stack(
-                alignment: Alignment.center,
-                children: [
+          SizedBox(
+            width: 120,
+            height: 120,
+            child: AnimatedBuilder(
+              animation: _pulseController,
+              builder: (context, child) {
+                final wave = _pulseController.value;
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
                   // Pulse Wave 1
                   Container(
                     width: 96 + (wave * 24),
@@ -891,7 +894,8 @@ class _PulsingAvatarHeaderState extends State<_PulsingAvatarHeader> with SingleT
               );
             },
           ),
-          const SizedBox(height: 24),
+        ),
+        const SizedBox(height: 24),
           Text(
             AppLocalizations.of(context)!.pigeonVerified,
             style: GoogleFonts.inter(
