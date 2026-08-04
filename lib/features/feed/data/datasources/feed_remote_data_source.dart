@@ -132,14 +132,26 @@ class FeedRemoteDataSourceImpl implements FeedRemoteDataSource {
     final Map<String, dynamic> insertData = {
       'user_id': userId,
       'content': content,
-      'image_urls': imageUrls,
-      'video_url': videoUrl,
-      'audio_url': ?audioUrl,
-      'audience': ?audience,
-      'community_id': ?communityId,
       'is_subscriber_only': isSubscriberOnly,
       'is_anonymous': isAnonymous,
     };
+
+    // Only add optional fields if they have values (avoid sending null keys to Supabase)
+    if (imageUrls != null && imageUrls.isNotEmpty) {
+      insertData['image_urls'] = imageUrls;
+    }
+    if (videoUrl != null && videoUrl.isNotEmpty) {
+      insertData['video_url'] = videoUrl;
+    }
+    if (audioUrl != null && audioUrl.isNotEmpty) {
+      insertData['audio_url'] = audioUrl;
+    }
+    if (audience != null && audience.isNotEmpty) {
+      insertData['audience'] = audience;
+    }
+    if (communityId != null && communityId.isNotEmpty) {
+      insertData['community_id'] = communityId;
+    }
     if (pollExpiresAt != null) {
       insertData['poll_expires_at'] = pollExpiresAt.toUtc().toIso8601String();
     }
