@@ -107,7 +107,17 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
     _audioPlayer.onPlayerComplete.listen((_) {
       if (mounted) setState(() => _isPlayingAudio = false);
     });
-    
+
+    // Always refresh feature flags when this screen opens so that
+    // admin changes (e.g. toggling anonymous posting) take effect
+    // immediately without requiring an app restart.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<GeneralSettingsProvider>(context, listen: false)
+            .refreshFeatureFlags();
+      }
+    });
+
     if (widget.draftPost != null) {
       _contentController.text = widget.draftPost!.content;
       _privacy = widget.draftPost!.audience;

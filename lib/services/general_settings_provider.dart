@@ -192,6 +192,70 @@ class GeneralSettingsProvider with ChangeNotifier {
     }
   }
 
+  /// Lightweight re-fetch of only the feature flags from system_settings.
+  /// Call this when opening CreateThreadScreen or any feature-gated screen
+  /// so the latest admin-set flags are always respected without a full reload.
+  Future<void> refreshFeatureFlags() async {
+    final uid = _currentUid;
+    if (uid.isEmpty) return;
+    try {
+      final sysRes = await _supabase
+          .from('system_settings')
+          .select('key, value')
+          .inFilter('key', [
+        'enable_voice_posts',
+        'enable_tiered_badges',
+        'enable_algorithmic_priority',
+        'enable_anonymous_posting',
+      ]);
+
+      // Re-use the same profile badge so verified-only access still works
+      final profileRes = await _supabase
+          .from('profiles')
+          .select('verified_badge')
+          .eq('id', uid)
+          .maybeSingle();
+      final String? badgeType = profileRes?['verified_badge'] as String?;
+
+      bool evaluateAccess(String? val) {
+        if (val == null) return false;
+        try {
+          final parsed = jsonDecode(val);
+          if (parsed is Map) {
+            final access = parsed['access'];
+            if (access == 'global') return true;
+            if (access == 'verified' && badgeType != null && badgeType != 'none') return true;
+            if (access == 'specific') {
+              final users = parsed['users'];
+              if (users is List && users.contains(uid)) return true;
+            }
+            return false;
+          }
+        } catch (_) {
+          return val == 'true';
+        }
+        return false;
+      }
+
+      for (var row in sysRes) {
+        final key = row['key'] as String;
+        final isEnabled = evaluateAccess(row['value'] as String?);
+        if (key == 'enable_voice_posts') {
+          _isVoicePostEnabled = isEnabled;
+        } else if (key == 'enable_tiered_badges') {
+          _isTieredBadgesEnabled = isEnabled;
+        } else if (key == 'enable_algorithmic_priority') {
+          _isAlgorithmicPriorityEnabled = isEnabled;
+        } else if (key == 'enable_anonymous_posting') {
+          _isAnonymousPostingEnabled = isEnabled;
+        }
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('[GeneralSettings] refreshFeatureFlags error: $e');
+    }
+  }
+
   Future<void> updatePrivacy({
     bool? isPrivateAccount,
     String? allowMentionsFrom,
