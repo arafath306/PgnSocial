@@ -517,6 +517,11 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
               }
             },
             onAnonymousTap: () {
+              final settings = context.read<GeneralSettingsProvider>();
+              if (!settings.isAnonymousPostingEnabled) {
+                _showComingSoonDialog("Anonymous Posting (Pending Admin Approval)");
+                return;
+              }
               setState(() {
                 _isAnonymous = !_isAnonymous;
               });

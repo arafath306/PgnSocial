@@ -51,6 +51,9 @@ class GeneralSettingsProvider with ChangeNotifier {
   bool _isAlgorithmicPriorityEnabled = false;
   bool get isAlgorithmicPriorityEnabled => _isAlgorithmicPriorityEnabled;
 
+  bool _isAnonymousPostingEnabled = false;
+  bool get isAnonymousPostingEnabled => _isAnonymousPostingEnabled;
+
   Future<void> fetchSettings() async {
     final uid = _currentUid;
     if (uid.isEmpty) return;
@@ -84,7 +87,7 @@ class GeneralSettingsProvider with ChangeNotifier {
         _supabase
             .from('system_settings')
             .select('key, value')
-            .inFilter('key', ['enable_voice_posts', 'enable_tiered_badges', 'enable_algorithmic_priority']) as Future<dynamic>,
+            .inFilter('key', ['enable_voice_posts', 'enable_tiered_badges', 'enable_algorithmic_priority', 'enable_anonymous_posting']) as Future<dynamic>,
       ]);
 
       // ── [0] Apply profile/privacy settings ────────────────────────────
@@ -170,6 +173,8 @@ class GeneralSettingsProvider with ChangeNotifier {
             _isTieredBadgesEnabled = isEnabled;
           } else if (key == 'enable_algorithmic_priority') {
             _isAlgorithmicPriorityEnabled = isEnabled;
+          } else if (key == 'enable_anonymous_posting') {
+            _isAnonymousPostingEnabled = isEnabled;
           }
         }
       } catch (e) {
