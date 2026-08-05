@@ -29,7 +29,7 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => MainScreenState();
 }
 
-class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMixin {
+class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
 
   void openDrawer() {
@@ -44,6 +44,7 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
   Timer? _scrollStopTimer;
   bool _isOffline = false;
   Timer? _connectivityTimer;
+  Timer? _flagRefreshTimer;
 
   void _startScrollStopTimer() {
     _scrollStopTimer?.cancel();
@@ -63,6 +64,7 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _pageController = PageController(initialPage: _currentIndex);
     _fabAnimationController = AnimationController(
       vsync: this,
@@ -102,13 +104,32 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
         }
       });
     });
+
+    // Periodic refresh every 5 minutes while app is in foreground
+    _flagRefreshTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+      if (mounted) {
+        Provider.of<GeneralSettingsProvider>(context, listen: false)
+            .refreshFeatureFlags();
+      }
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Refresh feature flags whenever app comes back to foreground
+    if (state == AppLifecycleState.resumed && mounted) {
+      Provider.of<GeneralSettingsProvider>(context, listen: false)
+          .refreshFeatureFlags();
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _notificationSubscription?.cancel();
     _scrollStopTimer?.cancel();
     _connectivityTimer?.cancel();
+    _flagRefreshTimer?.cancel();
     _pageController.dispose();
     _fabAnimationController.dispose();
     super.dispose();
