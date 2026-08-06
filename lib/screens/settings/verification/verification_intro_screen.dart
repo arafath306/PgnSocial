@@ -1,16 +1,12 @@
-import 'package:dak/l10n/generated/app_localizations.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-import '../../../models/verification_request.dart';
-import '../../../state/verification_controller.dart';
 import '../../../services/database_service.dart';
+import '../../../state/verification_controller.dart';
 import '../../../utils/app_theme.dart';
-import '../../../widgets/verification/pigeon_primary_button.dart';
 import 'personal_details_screen.dart';
-import 'pending_screen.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class VerificationIntroScreen extends StatefulWidget {
   const VerificationIntroScreen({super.key});
@@ -20,419 +16,529 @@ class VerificationIntroScreen extends StatefulWidget {
 }
 
 class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
-  // Category-First Selection State:
-  // 'general' (Blue Badge), 'business' (Gold Badge - In Review), 'media' (Gray Badge - In Review)
-  String _selectedCategory = 'general';
-  String _selectedDuration = 'monthly'; // 'weekly', 'monthly', 'yearly'
-  String _selectedTier = 'premium';     // 'basic', 'premium'
+  final PageController _pageController = PageController();
+  int _currentStep = 0;
+
+  // Step 1 State: Category
+  String _selectedCategory = 'general'; // 'general', 'business', 'media'
+
+  // Step 2 State: Duration & Tier
+  String _selectedDuration = 'weekly'; // 'weekly', 'monthly', 'yearly', 'lifetime'
+  String _selectedTier = 'premium'; // 'basic', 'premium'
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final dbService = Provider.of<DatabaseService>(context, listen: false);
-      dbService.fetchVerificationPlans();
+      final db = context.read<DatabaseService>();
+      if (db.myProfile == null) {
+        db.fetchMyProfile();
+      }
     });
   }
 
-  // Tier prices breakdown for General Category
-  Map<String, dynamic> _getPlanInfo(String duration, String tier) {
-    if (duration == 'weekly') {
-      if (tier == 'basic') {
-        return {
-          'id': 'general_weekly_basic',
-          'name': 'Weekly Basic',
-          'price': 59.0,
-          'interval': 'week',
-          'badge': '🔵 Blue Verification Badge',
-          'perks': [
-            'Official Blue Verification Badge (🔵)',
-            '24/7 Standard Account Support',
-          ]
-        };
-      } else {
-        return {
-          'id': 'general_weekly_premium',
-          'name': 'Weekly Premium',
-          'price': 99.0,
-          'interval': 'week',
-          'badge': '🔵 Blue Verification Badge',
-          'bonus': '🎁 Extra 7 Days Free Badge Included!',
-          'perks': [
-            'Official Blue Verification Badge (🔵)',
-            '🎙️ Voice Posting Access',
-            '🕵️ Anonymous Posting (2 posts / month)',
-            '🔥 Algorithm Feed Priority Boost',
-            '🛡️ Screenshot Protection (E2EE Privacy)',
-            '⚡ Direct VIP Support Line',
-            '🎁 Extra 7 Days Free Badge Bonus',
-          ]
-        };
-      }
-    } else if (duration == 'yearly') {
-      if (tier == 'basic') {
-        return {
-          'id': 'general_yearly_basic',
-          'name': 'Yearly Basic',
-          'price': 1599.0,
-          'interval': 'year',
-          'badge': '🔵 Blue Verification Badge',
-          'perks': [
-            'Official Blue Verification Badge (🔵)',
-            '24/7 Standard Account Support',
-          ]
-        };
-      } else {
-        return {
-          'id': 'general_yearly_premium',
-          'name': 'Yearly Premium',
-          'price': 2499.0,
-          'interval': 'year',
-          'badge': '🔵 Blue Verification Badge',
-          'bonus': '🎁 2 Months Free + Early Access + Priority Member Badge!',
-          'perks': [
-            'Official Blue Verification Badge (🔵)',
-            '🎙️ Voice Posting Access',
-            '🕵️ Anonymous Posting (2 posts / month)',
-            '🔥 Algorithm Feed Priority Boost',
-            '🛡️ Screenshot Protection (E2EE Privacy)',
-            '⚡ Direct VIP Support Line',
-            '🎁 2 Months Free Badge Included',
-            '✨ Early Access to New Features',
-            '⭐ Priority Member Badge Status',
-          ]
-        };
-      }
+  void _nextStep() {
+    if (_currentStep < 2) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     } else {
-      // Monthly (Default)
-      if (tier == 'basic') {
-        return {
-          'id': 'general_monthly_basic',
-          'name': 'Monthly Basic',
-          'price': 199.0,
-          'interval': 'month',
-          'badge': '🔵 Blue Verification Badge',
-          'perks': [
-            'Official Blue Verification Badge (🔵)',
-            '24/7 Standard Account Support',
-          ]
-        };
-      } else {
-        return {
-          'id': 'general_monthly_premium',
-          'name': 'Monthly Premium',
-          'price': 349.0,
-          'interval': 'month',
-          'badge': '🔵 Blue Verification Badge',
-          'bonus': '🚀 Complete VIP Creator Features Package',
-          'perks': [
-            'Official Blue Verification Badge (🔵)',
-            '🎙️ Voice Posting Access',
-            '🕵️ Anonymous Posting (2 posts / month)',
-            '🔥 Algorithm Feed Priority Boost',
-            '🛡️ Screenshot Protection (E2EE Privacy)',
-            '⚡ Direct VIP Support Line',
-          ]
-        };
-      }
+      // Step 3 -> Move to Personal Details
+      final controller = context.read<VerificationController>();
+      controller.selectPlan('${_selectedCategory}_${_selectedDuration}_$_selectedTier');
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const PersonalDetailsScreen()),
+      );
     }
   }
 
-  void _showComingSoonDialog(String categoryName) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: context.cardBg,
-        title: Row(
-          children: [
-            const Icon(Icons.info_outline_rounded, color: Colors.amber, size: 24),
-            const SizedBox(width: 10),
-            Text(
-              "Category in Review",
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: context.textPrimary,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          "$categoryName verification requires direct documentation review. Applications for this category will open soon.\n\nPlease select 'General User / Creator' for individual verification.",
-          style: GoogleFonts.inter(fontSize: 13.5, color: context.textSecondary, height: 1.45),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text("Understood", style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: const Color(0xFF0095F6))),
-          ),
-        ],
-      ),
-    );
+  void _previousStep() {
+    if (_currentStep > 0) {
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      Navigator.pop(context);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final myAvatarUrl = context.select<DatabaseService, String?>((db) => db.myProfile?.avatarUrl);
-    final controller = context.watch<VerificationController>();
-    final status = controller.request.status;
-
-    final currentPlan = _getPlanInfo(_selectedDuration, _selectedTier);
-    final double activePrice = currentPlan['price'] as double;
-    final String currentPlanId = currentPlan['id'] as String;
-
-    return Scaffold(
-      backgroundColor: context.scaffoldBg,
-      appBar: AppBar(
+    return PopScope(
+      canPop: _currentStep == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _currentStep > 0) {
+          _previousStep();
+        }
+      },
+      child: Scaffold(
         backgroundColor: context.scaffoldBg,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.textPrimary, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          AppLocalizations.of(context)!.pigeonVerified,
-          style: GoogleFonts.inter(
-            fontSize: 16.5,
-            fontWeight: FontWeight.w800,
-            color: context.textPrimary,
-            letterSpacing: -0.3,
+        appBar: AppBar(
+          backgroundColor: context.scaffoldBg,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: context.textPrimary, size: 22),
+            onPressed: _previousStep,
           ),
+          title: _currentStep == 0
+              ? null
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Pigeon Verified",
+                      style: GoogleFonts.inter(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: context.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(Icons.verified_rounded, color: Color(0xFF0095F6), size: 19),
+                  ],
+                ),
+          centerTitle: true,
         ),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        body: SafeArea(
+          child: PageView(
+            controller: _pageController,
+            physics: const NeverScrollableScrollPhysics(),
+            onPageChanged: (index) {
+              setState(() {
+                _currentStep = index;
+              });
+            },
             children: [
-              // 1. Avatar Header
-              _PulsingAvatarHeader(avatarUrl: myAvatarUrl),
-              const SizedBox(height: 28),
-
-              // 2. Step 1: Select Account Category
-              _buildSectionHeader(context, "1. Select Account Category"),
-              const SizedBox(height: 12),
-
-              _buildCategoryCard(
-                context,
-                id: 'general',
-                icon: Icons.verified_rounded,
-                badgeColor: const Color(0xFF0095F6),
-                title: "General User / Creator",
-                subtitle: "Blue Badge (🔵) — Personal identity, creators, influencers & public figures",
-                isSelected: _selectedCategory == 'general',
-                onTap: () => setState(() => _selectedCategory = 'general'),
-              ),
-              const SizedBox(height: 10),
-
-              _buildCategoryCard(
-                context,
-                id: 'business',
-                icon: Icons.business_center_rounded,
-                badgeColor: Colors.amber,
-                title: "Business or Brand",
-                subtitle: "Gold Badge (🟡) — Registered companies, organizations & corporate brands",
-                isSelected: _selectedCategory == 'business',
-                isComingSoon: true,
-                onTap: () => _showComingSoonDialog("Business or Brand"),
-              ),
-              const SizedBox(height: 10),
-
-              _buildCategoryCard(
-                context,
-                id: 'media',
-                icon: Icons.account_balance_rounded,
-                badgeColor: Colors.blueGrey,
-                title: "Media or Government",
-                subtitle: "Gray Badge (🩶) — Official news outlets & government departments",
-                isSelected: _selectedCategory == 'media',
-                isComingSoon: true,
-                onTap: () => _showComingSoonDialog("Media or Government"),
-              ),
-              const SizedBox(height: 28),
-
-              // If General category is active, show Duration & Tier plans
-              if (_selectedCategory == 'general') ...[
-                // 3. Step 2: Select Duration
-                _buildSectionHeader(context, "2. Select Duration"),
-                const SizedBox(height: 12),
-
-                Container(
-                  height: 48,
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: context.isDarkMode ? const Color(0xFF1E2030) : const Color(0xFFF1F3F5),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    children: [
-                      _buildDurationTab("weekly", "🗓️ Weekly"),
-                      _buildDurationTab("monthly", "📅 Monthly"),
-                      _buildDurationTab("yearly", "🌟 Yearly (Save 20%)"),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // 4. Step 3: Select Plan Tier (Basic vs Premium)
-                _buildSectionHeader(context, "3. Select Plan Tier"),
-                const SizedBox(height: 12),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildTierCard(
-                        context,
-                        tierId: 'basic',
-                        title: "Basic Tier",
-                        badgeText: "🔵 Blue Badge",
-                        priceText: _selectedDuration == 'weekly'
-                            ? "৳59/wk"
-                            : (_selectedDuration == 'yearly' ? "৳1,599/yr" : "৳199/mo"),
-                        isSelected: _selectedTier == 'basic',
-                        onTap: () => setState(() => _selectedTier = 'basic'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildTierCard(
-                        context,
-                        tierId: 'premium',
-                        title: "Premium Tier",
-                        badgeText: "👑 VIP Creator",
-                        tagText: "RECOMMENDED",
-                        priceText: _selectedDuration == 'weekly'
-                            ? "৳99/wk"
-                            : (_selectedDuration == 'yearly' ? "৳2,499/yr" : "৳349/mo"),
-                        isSelected: _selectedTier == 'premium',
-                        onTap: () => setState(() => _selectedTier = 'premium'),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // 5. Featured Selected Plan Benefits Card
-                _buildSelectedPlanSummaryCard(context, currentPlan),
-                const SizedBox(height: 28),
-              ],
-
-              // 6. Requirements
-              _buildSectionHeader(context, "Eligibility Requirements"),
-              const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: context.cardBg,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: context.border, width: 0.8),
-                ),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    _buildRequirementItem(context, "Must be at least 18 years of age"),
-                    _buildRequirementItem(context, "Must provide a government-issued photo ID card"),
-                    _buildRequirementItem(context, "Full profile picture showing your face clearly"),
-                    _buildRequirementItem(context, "Enabled 2FA or secure recovery email on account"),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 28),
-
-              // 7. Security Privacy Card
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0095F6).withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF0095F6).withValues(alpha: 0.15)),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.verified_user_outlined, color: Color(0xFF0095F6), size: 22),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context)!.yourIdentityIsSecure,
-                            style: GoogleFonts.inter(
-                              color: context.textPrimary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            AppLocalizations.of(context)!.weDoNotSellOrShareYourIdentityDetailsNid,
-                            style: GoogleFonts.inter(
-                              color: context.textSecondary,
-                              fontSize: 12,
-                              height: 1.45,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // 8. Sticky Action Button
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: context.cardBg,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: context.border, width: 0.8),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, -2),
-                    )
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    PigeonPrimaryButton(
-                      label: "Continue with ${currentPlan['name']} (৳${activePrice.toStringAsFixed(0)})",
-                      onPressed: () {
-                        controller.selectPlan(currentPlanId);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const PersonalDetailsScreen()),
-                        );
-                      },
-                    ),
-                    if (status != VerificationStatus.incomplete) ...[
-                      const SizedBox(height: 12),
-                      PigeonPrimaryButton(
-                        label: AppLocalizations.of(context)!.checkCurrentStatus,
-                        outlined: true,
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const PendingScreen()),
-                          );
-                        },
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
+              _buildScreen1CategorySelection(context),
+              _buildScreen2SubscriptionPlans(context),
+              _buildScreen3WhyGetVerified(context),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  // ==========================================
+  // SCREEN 1: Choose Your Verification Type
+  // ==========================================
+  Widget _buildScreen1CategorySelection(BuildContext context) {
+    final dbService = Provider.of<DatabaseService>(context);
+    final myProfile = dbService.myProfile;
+    final avatarUrl = myProfile?.avatarUrl;
+
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Column(
+              children: [
+                const SizedBox(height: 8),
+
+                // User Profile Picture Container
+                Center(
+                  child: Container(
+                    width: 78,
+                    height: 78,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFF0095F6).withValues(alpha: 0.35),
+                        width: 2.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        )
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(39),
+                      child: (avatarUrl != null && avatarUrl.isNotEmpty)
+                          ? CachedNetworkImage(
+                              imageUrl: avatarUrl,
+                              fit: BoxFit.cover,
+                              width: 78,
+                              height: 78,
+                              placeholder: (context, url) => Container(
+                                color: context.isDarkMode
+                                    ? const Color(0xFF1E293B)
+                                    : const Color(0xFFF1F5F9),
+                                child: const Center(
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                color: const Color(0xFF0095F6).withValues(alpha: 0.1),
+                                child: const Icon(Icons.person, size: 42, color: Color(0xFF0095F6)),
+                              ),
+                            )
+                          : Container(
+                              color: const Color(0xFF0095F6).withValues(alpha: 0.1),
+                              child: const Icon(Icons.person, size: 42, color: Color(0xFF0095F6)),
+                            ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Title: Pigeon Verified 🔵
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Pigeon Verified",
+                      style: GoogleFonts.inter(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: context.textPrimary,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.verified_rounded, color: Color(0xFF0095F6), size: 24),
+                  ],
+                ),
+                const SizedBox(height: 6),
+
+                Text(
+                  "Get verified. Build trust. Stand out.",
+                  style: GoogleFonts.inter(
+                    fontSize: 13.5,
+                    color: context.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 26),
+
+                // Section Header
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Choose your verification type",
+                    style: GoogleFonts.inter(
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.bold,
+                      color: context.textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Select the category that best describes you.",
+                    style: GoogleFonts.inter(
+                      fontSize: 12.5,
+                      color: context.textSecondary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+                // Card 1: General / Creator (Blue Badge)
+                _buildCategoryCard(
+                  context,
+                  id: 'general',
+                  badgeColor: const Color(0xFF0095F6),
+                  badgeLabel: "Blue Badge",
+                  badgeBgColor: const Color(0xFFEFF6FF),
+                  title: "General / Creator",
+                  subtitle: "For creators, influencers and public figures.",
+                  titleColor: const Color(0xFF1D4ED8),
+                ),
+                const SizedBox(height: 14),
+
+                // Card 2: Business / Corporate (Gold Badge)
+                _buildCategoryCard(
+                  context,
+                  id: 'business',
+                  badgeColor: const Color(0xFFD97706),
+                  badgeLabel: "Gold Badge",
+                  badgeBgColor: const Color(0xFFFFFBEB),
+                  title: "Business / Corporate",
+                  subtitle: "For brands, startups and organizations.",
+                  titleColor: context.textPrimary,
+                ),
+                const SizedBox(height: 14),
+
+                // Card 3: Government / Media (Gray Badge)
+                _buildCategoryCard(
+                  context,
+                  id: 'media',
+                  badgeColor: const Color(0xFF64748B),
+                  badgeLabel: "Gray Badge",
+                  badgeBgColor: const Color(0xFFF1F5F9),
+                  title: "Government / Media",
+                  subtitle: "For government agencies, news and public institutions.",
+                  titleColor: context.textPrimary,
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ),
+
+        // Footer note
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.verified_user_outlined, size: 16, color: Color(0xFF64748B)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  "Verified badge shows authenticity and helps you grow your presence.",
+                  style: GoogleFonts.inter(
+                    fontSize: 11.5,
+                    color: context.textSecondary,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryCard(
+    BuildContext context, {
+    required String id,
+    required Color badgeColor,
+    required String badgeLabel,
+    required Color badgeBgColor,
+    required String title,
+    required String subtitle,
+    required Color titleColor,
+  }) {
+    final isSelected = _selectedCategory == id;
+    final isDark = context.isDarkMode;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedCategory = id;
+        });
+        _nextStep();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : (isSelected ? const Color(0xFFF8FAFC) : Colors.white),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isSelected
+                ? badgeColor
+                : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+            width: isSelected ? 1.8 : 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            )
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Original Profile Verification Badge Icon
+            Icon(
+              Icons.verified_rounded,
+              color: badgeColor,
+              size: 44,
+            ),
+            const SizedBox(width: 12),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.bold,
+                            color: titleColor,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                        decoration: BoxDecoration(
+                          color: isDark ? badgeColor.withValues(alpha: 0.2) : badgeBgColor,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          badgeLabel,
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: badgeColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: context.textSecondary,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(width: 6),
+            const Icon(Icons.chevron_right_rounded, color: Color(0xFF94A3B8), size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // SCREEN 2: Choose Your Subscription
+  // ==========================================
+  Widget _buildScreen2SubscriptionPlans(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Center(
+                  child: Column(
+                    children: [
+                      Text(
+                        "Choose your subscription",
+                        style: GoogleFonts.inter(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: context.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Pick the plan that fits your needs.",
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: context.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Segmented Tab Bar
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      _buildDurationTab("weekly", "Weekly"),
+                      _buildDurationTab("monthly", "Monthly"),
+                      _buildDurationTab("yearly", "Yearly"),
+                      _buildDurationTab("lifetime", "Lifetime"),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Sub-header
+                Row(
+                  children: [
+                    Text(
+                      "${_selectedDuration[0].toUpperCase()}${_selectedDuration.substring(1)} Plans",
+                      style: GoogleFonts.inter(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.bold,
+                        color: context.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFDCFCE7),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        "Best for short-term",
+                        style: GoogleFonts.inter(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF15803D),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // Basic Plan Card
+                _buildBasicPlanCard(context),
+                const SizedBox(height: 16),
+
+                // Premium Plan Card
+                _buildPremiumPlanCard(context),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ),
+
+        // Footer Note
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.lock_outline_rounded, size: 14, color: Color(0xFF64748B)),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  "Secure payment. Cancel anytime. Your subscription will auto-renew.",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: context.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -444,15 +550,16 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(vertical: 9),
           decoration: BoxDecoration(
             color: isSelected
-                ? (context.isDarkMode ? const Color(0xFF2E3045) : Colors.white)
+                ? (context.isDarkMode ? const Color(0xFF334155) : Colors.white)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
+                      color: Colors.black.withValues(alpha: 0.06),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     )
@@ -462,8 +569,8 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
           child: Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+              fontSize: 12.5,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
               color: isSelected ? context.textPrimary : context.textSecondary,
             ),
           ),
@@ -472,300 +579,279 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
     );
   }
 
-  Widget _buildCategoryCard(
-    BuildContext context, {
-    required String id,
-    required IconData icon,
-    required Color badgeColor,
-    required String title,
-    required String subtitle,
-    required bool isSelected,
-    bool isComingSoon = false,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? badgeColor.withValues(alpha: 0.08)
-              : (context.isDarkMode ? const Color(0xFF1E2030) : const Color(0xFFF8F9FA)),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected
-                ? badgeColor
-                : (context.isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08)),
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: badgeColor.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: badgeColor, size: 22),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        title,
-                        style: GoogleFonts.inter(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: context.textPrimary,
-                        ),
-                      ),
-                      if (isComingSoon) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            "IN REVIEW",
-                            style: GoogleFonts.inter(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.amber[800],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      color: context.textSecondary,
-                      height: 1.35,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: isSelected ? badgeColor : context.textSecondary,
-              size: 20,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildBasicPlanCard(BuildContext context) {
+    final isSelected = _selectedTier == 'basic';
+    final isDark = context.isDarkMode;
 
-  Widget _buildTierCard(
-    BuildContext context, {
-    required String tierId,
-    required String title,
-    required String badgeText,
-    String? tagText,
-    required String priceText,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
+    String priceStr;
+    switch (_selectedDuration) {
+      case 'weekly':
+        priceStr = "৳59 / week";
+        break;
+      case 'yearly':
+        priceStr = "৳1,599 / year";
+        break;
+      case 'lifetime':
+        priceStr = "৳4,999 / lifetime";
+        break;
+      case 'monthly':
+      default:
+        priceStr = "৳199 / month";
+        break;
+    }
+
     return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(14),
+      onTap: () => setState(() => _selectedTier = 'basic'),
+      child: Container(
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: isSelected
-              ? (tierId == 'premium'
-                  ? const Color(0xFF0095F6).withValues(alpha: 0.1)
-                  : context.cardBg)
-              : (context.isDarkMode ? const Color(0xFF1E2030) : const Color(0xFFF8F9FA)),
-          borderRadius: BorderRadius.circular(16),
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isSelected
                 ? const Color(0xFF0095F6)
-                : (context.isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08)),
-            width: isSelected ? 2 : 1,
+                : (isDark ? const Color(0xFF334155) : const Color(0xFFBFDBFE)),
+            width: isSelected ? 2.0 : 1.2,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            if (tagText != null)
-              Container(
-                margin: const EdgeInsets.only(bottom: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0095F6),
-                  borderRadius: BorderRadius.circular(6),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Basic",
+                  style: GoogleFonts.inter(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF0095F6),
+                  ),
                 ),
-                child: Text(
-                  tagText,
-                  style: GoogleFonts.inter(fontSize: 8.5, fontWeight: FontWeight.w900, color: Colors.white),
+                const SizedBox(height: 6),
+                Text(
+                  priceStr,
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: context.textPrimary,
+                  ),
                 ),
-              ),
-            Text(
-              title,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: context.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              badgeText,
-              style: GoogleFonts.inter(fontSize: 11.5, color: context.textSecondary),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              priceText,
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-                color: const Color(0xFF0095F6),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+                const SizedBox(height: 14),
 
-  Widget _buildSelectedPlanSummaryCard(BuildContext context, Map<String, dynamic> planInfo) {
-    final String name = planInfo['name'] as String;
-    final double price = planInfo['price'] as double;
-    final String? bonus = planInfo['bonus'] as String?;
-    final List<String> perks = List<String>.from(planInfo['perks']);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: context.cardBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF0095F6).withValues(alpha: 0.3), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0095F6).withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "$name Package",
-                style: GoogleFonts.inter(
-                  fontSize: 16.5,
-                  fontWeight: FontWeight.w900,
-                  color: context.textPrimary,
-                ),
-              ),
-              Text(
-                "৳${price.toStringAsFixed(0)}",
-                style: GoogleFonts.inter(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: const Color(0xFF0095F6),
-                ),
-              ),
-            ],
-          ),
-          if (bonus != null) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: Colors.amber.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
-              ),
-              child: Text(
-                bonus,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.amber[800],
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          const Divider(height: 1),
-          const SizedBox(height: 16),
-          Text(
-            "Included Perks:",
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: context.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 10),
-          ...perks.map((perk) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
+                // Perk checklist
+                Row(
                   children: [
-                    const Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF10B981)),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        perk,
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: context.textPrimary,
-                        ),
+                    const Icon(Icons.check_rounded, size: 16, color: Color(0xFF0095F6)),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Verified Badge",
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: context.textPrimary,
                       ),
                     ),
                   ],
                 ),
-              )),
-        ],
+                const SizedBox(height: 18),
+
+                // Continue Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() => _selectedTier = 'basic');
+                      _nextStep();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFEFF6FF),
+                      foregroundColor: const Color(0xFF1D4ED8),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: Color(0xFFBFDBFE)),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Continue",
+                          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.arrow_forward_rounded, size: 16),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            // Original Badge Illustration on right
+            const Positioned(
+              top: 4,
+              right: 4,
+              child: Icon(Icons.verified_rounded, color: Color(0xFF60A5FA), size: 48),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Text(
-      title,
-      style: GoogleFonts.inter(
-        fontSize: 15,
-        fontWeight: FontWeight.w800,
-        color: context.textPrimary,
-        letterSpacing: -0.3,
+  Widget _buildPremiumPlanCard(BuildContext context) {
+    final isSelected = _selectedTier == 'premium';
+    final isDark = context.isDarkMode;
+
+    String priceStr;
+    switch (_selectedDuration) {
+      case 'weekly':
+        priceStr = "৳100 / week";
+        break;
+      case 'yearly':
+        priceStr = "৳2,500 / year";
+        break;
+      case 'lifetime':
+        priceStr = "৳8,999 / lifetime";
+        break;
+      case 'monthly':
+      default:
+        priceStr = "৳350 / month";
+        break;
+    }
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTier = 'premium'),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: const Color(0xFFF59E0B),
+            width: isSelected ? 2.2 : 1.4,
+          ),
+        ),
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text("👑 ", style: TextStyle(fontSize: 15)),
+                    Text(
+                      "Premium",
+                      style: GoogleFonts.inter(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFFD97706),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  priceStr,
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: context.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Perk checklist
+                _buildPerkRow("Verified Badge"),
+                _buildPerkRow("Anonymous Posts"),
+                _buildPerkRow("Voice Posts"),
+                _buildPerkRow("Screenshot Protection"),
+                _buildPerkRow("Algorithm Priority"),
+                const SizedBox(height: 18),
+
+                // Continue Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() => _selectedTier = 'premium');
+                      _nextStep();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD97706),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Continue",
+                          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.arrow_forward_rounded, size: 16),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            // Top Right Popular Badge
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFFFDE68A)),
+                ),
+                child: Text(
+                  "POPULAR",
+                  style: GoogleFonts.inter(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFFB45309),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ),
+
+            // Original Badge Illustration on right
+            const Positioned(
+              top: 36,
+              right: 4,
+              child: Icon(Icons.verified_rounded, color: Color(0xFFF59E0B), size: 48),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildRequirementItem(BuildContext context, String text) {
+  Widget _buildPerkRow(String perkText) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_outline, size: 16, color: Color(0xFF10B981)),
-          const SizedBox(width: 12),
+          const Icon(Icons.check_rounded, size: 16, color: Color(0xFFD97706)),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
-              text,
+              perkText,
               style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
                 color: context.textPrimary,
               ),
             ),
@@ -774,149 +860,184 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
       ),
     );
   }
-}
 
-// Custom pulsing avatar widget representing high quality multinational style
-class _PulsingAvatarHeader extends StatefulWidget {
-  final String? avatarUrl;
-  const _PulsingAvatarHeader({this.avatarUrl});
-
-  @override
-  State<_PulsingAvatarHeader> createState() => _PulsingAvatarHeaderState();
-}
-
-class _PulsingAvatarHeaderState extends State<_PulsingAvatarHeader> with SingleTickerProviderStateMixin {
-  late AnimationController _pulseController;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _pulseController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Center(
-      child: Column(
-        children: [
-          SizedBox(
-            width: 120,
-            height: 120,
-            child: AnimatedBuilder(
-              animation: _pulseController,
-              builder: (context, child) {
-                final wave = _pulseController.value;
-                return Stack(
-                  alignment: Alignment.center,
-                  children: [
-                  // Pulse Wave 1
-                  Container(
-                    width: 96 + (wave * 24),
-                    height: 96 + (wave * 24),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFF0095F6).withValues(alpha: (1 - wave) * 0.25),
+  // ==========================================
+  // SCREEN 3: Why Get Verified?
+  // ==========================================
+  Widget _buildScreen3WhyGetVerified(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Heading
+                RichText(
+                  text: TextSpan(
+                    text: "Why get ",
+                    style: GoogleFonts.inter(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: context.textPrimary,
                     ),
-                  ),
-                  // Pulse Wave 2
-                  Container(
-                    width: 86 + (wave * 12),
-                    height: 86 + (wave * 12),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFF0095F6).withValues(alpha: (1 - wave) * 0.35),
-                    ),
-                  ),
-                  // Glowing Border Ring
-                  Container(
-                    width: 84,
-                    height: 84,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: context.customCardBg,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF0095F6).withValues(alpha: 0.1),
-                          blurRadius: 10,
-                          spreadRadius: 2,
-                        )
-                      ],
-                    ),
-                  ),
-                  // Actual Avatar
-                  CircleAvatar(
-                    radius: 38,
-                    backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.grey[200],
-                    backgroundImage: widget.avatarUrl != null && widget.avatarUrl!.isNotEmpty
-                        ? CachedNetworkImageProvider(widget.avatarUrl!)
-                        : null,
-                    child: (widget.avatarUrl == null || widget.avatarUrl!.isEmpty)
-                        ? Icon(Icons.person, size: 36, color: isDark ? Colors.white30 : Colors.black26)
-                        : null,
-                  ),
-                  // Glowing Badge Checkmark icon
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          )
-                        ],
+                    children: [
+                      TextSpan(
+                        text: "verified?",
+                        style: GoogleFonts.inter(
+                          color: const Color(0xFF0E8345),
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                      padding: const EdgeInsets.all(2),
-                      child: const Icon(
-                        Icons.verified_rounded,
-                        color: Color(0xFF0095F6),
-                        size: 22,
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "Verified accounts get more trust, visibility and exclusive benefits.",
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: context.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // 5 Feature Item List
+                _buildBenefitTile(
+                  context,
+                  icon: Icons.verified_user_outlined,
+                  title: "Increase Trust",
+                  subtitle: "A verified badge shows authenticity and builds credibility.",
+                ),
+                _buildBenefitTile(
+                  context,
+                  icon: Icons.trending_up_rounded,
+                  title: "Higher Visibility",
+                  subtitle: "Reach more people with algorithm priority and ranking.",
+                ),
+                _buildBenefitTile(
+                  context,
+                  icon: Icons.headset_mic_outlined,
+                  title: "Priority Support",
+                  subtitle: "Get faster help whenever you need it.",
+                ),
+                _buildBenefitTile(
+                  context,
+                  icon: Icons.diamond_outlined,
+                  title: "Exclusive Features",
+                  subtitle: "Unlock premium tools and exclusive capabilities.",
+                ),
+                _buildBenefitTile(
+                  context,
+                  icon: Icons.bolt_rounded,
+                  title: "Fast Verification",
+                  subtitle: "Quick review and verification process.",
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ),
+
+        // Bottom Action Button Container
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Column(
+            children: [
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _nextStep,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0E8345),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(
+                    "Continue",
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.lock_outline_rounded, size: 14, color: Color(0xFF64748B)),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      "You can change or upgrade your plan anytime.",
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        color: context.textSecondary,
                       ),
                     ),
                   ),
                 ],
-              );
-            },
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 24),
-          Text(
-            AppLocalizations.of(context)!.pigeonVerified,
-            style: GoogleFonts.inter(
-              fontSize: 24,
-              fontWeight: FontWeight.w900,
-              color: context.textPrimary,
-              letterSpacing: -0.6,
+      ],
+    );
+  }
+
+  Widget _buildBenefitTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    final isDark = context.isDarkMode;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.3) : const Color(0xFFECFDF5),
+              borderRadius: BorderRadius.circular(14),
             ),
+            child: Icon(icon, color: const Color(0xFF0E8345), size: 24),
           ),
-          const SizedBox(height: 6),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              AppLocalizations.of(context)!.aSubscriptionBundleToBuildYourPresenceAn,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w500,
-                color: context.textSecondary,
-                height: 1.45,
-              ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: context.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    color: context.textSecondary,
+                    height: 1.35,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
