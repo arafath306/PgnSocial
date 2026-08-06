@@ -61,8 +61,12 @@ class GeneralSettingsProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
+    // ── Feature flags are loaded FIRST and INDEPENDENTLY ──────────────────
+    // Any failure in profile/blocks/mutes will NOT prevent flags from loading.
+    await _loadFeatureFlags(uid);
+
     try {
-      // ── Run all 4 independent queries in parallel ──────────────────────
+      // ── Run 3 independent queries in parallel ──────────────────────────
       final results = await Future.wait<dynamic>([
         // [0] Privacy settings + badge
         _supabase
@@ -82,24 +86,16 @@ class GeneralSettingsProvider with ChangeNotifier {
             .from('mutes')
             .select('muted_id')
             .eq('muter_id', uid) as Future<dynamic>,
-
-        // [3] Feature flags
-        _supabase
-            .from('system_settings')
-            .select('key, value')
-            .inFilter('key', ['enable_voice_posts', 'enable_tiered_badges', 'enable_algorithmic_priority', 'enable_anonymous_posting']) as Future<dynamic>,
       ]);
 
       // ── [0] Apply profile/privacy settings ────────────────────────────
       final profileRes = results[0] as Map<String, dynamic>?;
-      String? badgeType;
       if (profileRes != null) {
         _isPrivateAccount = profileRes['is_private'] as bool? ?? false;
         _allowMentionsFrom = profileRes['allow_mentions'] as String? ?? 'everyone';
         _filterAdultContent = profileRes['filter_adult'] as bool? ?? true;
         _autoplayVideos = profileRes['autoplay_videos'] as bool? ?? true;
         _isActiveStatusEnabled = profileRes['is_active_status_enabled'] as bool? ?? true;
-        badgeType = profileRes['verified_badge'] as String?;
       }
 
       // ── [1] Blocked accounts — fetch profiles for blocked IDs ─────────
@@ -140,48 +136,7 @@ class GeneralSettingsProvider with ChangeNotifier {
         }
       }
 
-      // ── [3] Feature flags ─────────────────────────────────────────────
-      try {
-        final sysRes = results[3] as List<dynamic>;
-
-        bool evaluateAccess(String? val) {
-          if (val == null) return false;
-          try {
-            final parsed = jsonDecode(val);
-            if (parsed is Map) {
-              final access = parsed['access'];
-              if (access == 'global') return true;
-              if (access == 'verified' && badgeType != null && badgeType != 'none') return true;
-              if (access == 'specific') {
-                final users = parsed['users'];
-                if (users is List && users.contains(uid)) return true;
-              }
-              return false;
-            }
-          } catch (e) {
-            return val == 'true'; // Fallback to old format
-          }
-          return false;
-        }
-
-        for (var row in sysRes) {
-          final key = row['key'] as String;
-          final isEnabled = evaluateAccess(row['value'] as String?);
-          if (key == 'enable_voice_posts') {
-            _isVoicePostEnabled = isEnabled;
-          } else if (key == 'enable_tiered_badges') {
-            _isTieredBadgesEnabled = isEnabled;
-          } else if (key == 'enable_algorithmic_priority') {
-            _isAlgorithmicPriorityEnabled = isEnabled;
-          } else if (key == 'enable_anonymous_posting') {
-            _isAnonymousPostingEnabled = isEnabled;
-          }
-        }
-      } catch (e) {
-        debugPrint('[GeneralSettings] Error parsing system settings: $e');
-      }
-
-      // ── [4] Active sessions (depends on profile, so kept sequential) ──
+      // ── [3] Active sessions (depends on profile) ──────────────────────
       await fetchActiveSessions();
 
     } catch (e) {
@@ -192,64 +147,59 @@ class GeneralSettingsProvider with ChangeNotifier {
     }
   }
 
-  /// Lightweight re-fetch of only the feature flags from system_settings.
-  /// Call this when opening CreateThreadScreen or any feature-gated screen
-  /// so the latest admin-set flags are always respected without a full reload.
-  Future<void> refreshFeatureFlags() async {
-    final uid = _currentUid;
-    if (uid.isEmpty) return;
+  /// Evaluates whether a feature flag grants access.
+  /// Handles both old 'true'/'false' string format and new JSON format.
+  /// Also handles both TEXT and JSONB column types (val may be String or Map).
+  bool _evaluateAccess(dynamic val, String uid, String? badgeType) {
+    if (val == null) return false;
     try {
-      final sysRes = await _supabase
-          .from('system_settings')
-          .select('key, value')
-          .inFilter('key', [
-        'enable_voice_posts',
-        'enable_tiered_badges',
-        'enable_algorithmic_priority',
-        'enable_anonymous_posting',
+      final Map<String, dynamic> parsed = val is String
+          ? Map<String, dynamic>.from(jsonDecode(val) as Map)
+          : Map<String, dynamic>.from(val as Map);
+      final access = parsed['access'];
+      if (access == 'global') return true;
+      if (access == 'verified' && badgeType != null && badgeType != 'none') return true;
+      if (access == 'specific') {
+        final users = parsed['users'];
+        if (users is List && users.contains(uid)) return true;
+      }
+      return false;
+    } catch (_) {
+      return val.toString() == 'true';
+    }
+  }
+
+  /// Loads ONLY feature flags from system_settings — isolated so any other
+  /// query failure cannot prevent flags from being applied.
+  Future<void> _loadFeatureFlags(String uid) async {
+    try {
+      final results = await Future.wait<dynamic>([
+        _supabase
+            .from('profiles')
+            .select('verified_badge')
+            .eq('id', uid)
+            .maybeSingle() as Future<dynamic>,
+        _supabase
+            .from('system_settings')
+            .select('key, value')
+            .inFilter('key', [
+          'enable_voice_posts',
+          'enable_tiered_badges',
+          'enable_algorithmic_priority',
+          'enable_anonymous_posting',
+        ]) as Future<dynamic>,
       ]);
 
-      // DEBUG: Print what we got from DB
-      debugPrint('[FeatureFlags] Raw DB rows count: ${sysRes.length}');
-      for (var row in sysRes) {
-        debugPrint('[FeatureFlags] Row: key=${row['key']} value=${row['value']}');
-      }
-
-      // Re-use the same profile badge so verified-only access still works
-      final profileRes = await _supabase
-          .from('profiles')
-          .select('verified_badge')
-          .eq('id', uid)
-          .maybeSingle();
+      final profileRes = results[0] as Map<String, dynamic>?;
       final String? badgeType = profileRes?['verified_badge'] as String?;
-      debugPrint('[FeatureFlags] User badge type: $badgeType');
+      final sysRes = results[1] as List<dynamic>;
 
-      bool evaluateAccess(String? val) {
-        if (val == null) return false;
-        try {
-          final parsed = jsonDecode(val);
-          if (parsed is Map) {
-            final access = parsed['access'];
-            debugPrint('[FeatureFlags] evaluateAccess: access=$access, badge=$badgeType, uid=$uid');
-            if (access == 'global') return true;
-            if (access == 'verified' && badgeType != null && badgeType != 'none') return true;
-            if (access == 'specific') {
-              final users = parsed['users'];
-              if (users is List && users.contains(uid)) return true;
-            }
-            return false;
-          }
-        } catch (e) {
-          debugPrint('[FeatureFlags] JSON parse error: $e, val=$val');
-          return val == 'true';
-        }
-        return false;
-      }
+      debugPrint('[FeatureFlags] _loadFeatureFlags: ${sysRes.length} rows, badge=$badgeType');
 
       for (var row in sysRes) {
         final key = row['key'] as String;
-        final isEnabled = evaluateAccess(row['value'] as String?);
-        debugPrint('[FeatureFlags] $key => $isEnabled');
+        final isEnabled = _evaluateAccess(row['value'], uid, badgeType);
+        debugPrint('[FeatureFlags] $key => $isEnabled (raw: ${row['value']})');
         if (key == 'enable_voice_posts') {
           _isVoicePostEnabled = isEnabled;
         } else if (key == 'enable_tiered_badges') {
@@ -262,8 +212,16 @@ class GeneralSettingsProvider with ChangeNotifier {
       }
       notifyListeners();
     } catch (e) {
-      debugPrint('[FeatureFlags] refreshFeatureFlags error: $e');
+      debugPrint('[FeatureFlags] _loadFeatureFlags error: $e');
     }
+  }
+
+  /// Public refresh of feature flags — delegates to the shared _loadFeatureFlags.
+  /// Call this when opening CreateThreadScreen or on app resume.
+  Future<void> refreshFeatureFlags() async {
+    final uid = _currentUid;
+    if (uid.isEmpty) return;
+    await _loadFeatureFlags(uid);
   }
 
   Future<void> updatePrivacy({
