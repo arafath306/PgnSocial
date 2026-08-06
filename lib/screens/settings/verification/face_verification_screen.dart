@@ -32,8 +32,6 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
   int _currentStep = 0;
   bool _isCapturing = false;
 
-  static const _steps = ['Personal', 'Identity', 'Face', 'Review', 'Payment'];
-
   // Crypto-style AI face check steps
   List<_AiStep> get _aiSteps => [
     _AiStep(

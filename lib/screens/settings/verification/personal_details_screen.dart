@@ -27,14 +27,6 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
   final _phoneController = TextEditingController();
   DateTime? _dob;
 
-  static const _steps = [
-    'Personal',
-    'Identity',
-    'Face',
-    'Review',
-    'Payment'
-  ];
-
   @override
   void initState() {
     super.initState();

@@ -26,14 +26,6 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
   XFile? _back;
   bool _isStudent = false;
 
-  static const _steps = [
-    'Personal',
-    'Identity',
-    'Face',
-    'Review',
-    'Payment'
-  ];
-
   @override
   void initState() {
     super.initState();

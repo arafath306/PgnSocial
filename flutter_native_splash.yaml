@@ -1,11 +1,9 @@
 flutter_native_splash:
-  color: "#ffffff"
-  color_dark: "#0F172A"
-  image: assets/dak_icon.png
-  image_dark: assets/dak_icon.png
+  background_image: assets/splash.png
+  background_image_dark: assets/splash.png
 
   android_12:
     image: assets/dak_icon.png
     image_dark: assets/dak_icon.png
-    color: "#ffffff"
-    color_dark: "#0F172A"
+    color: "#2a60c4"
+    color_dark: "#2a60c4"

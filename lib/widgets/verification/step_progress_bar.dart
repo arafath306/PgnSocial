@@ -232,8 +232,8 @@ class StepProgressBar extends StatelessWidget {
                 }),
               ),
             ],
-          );
-        },
+          ),
+        ],
       ),
     );
   }

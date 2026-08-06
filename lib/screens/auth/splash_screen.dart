@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
-import '../../widgets/dak_logo.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -41,28 +39,12 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          // Perfectly centered logo to match native splash screen
-          const Center(
-            child: DakLogo(size: 160),
-          ),
-          
-          // App Name below the logo
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 240), // 160/2 + spacing
-              child: Text(
-                'Pigeon',
-                style: GoogleFonts.poppins(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
-                  color: const Color(0xFF1E824C),
-                ),
-              ),
-            ),
+          Image.asset(
+            'assets/splash.png',
+            fit: BoxFit.cover,
           ),
           
           // Loading indicator at bottom
@@ -75,7 +57,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 height: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1E824C)),
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
                 ),
               ),
             ),

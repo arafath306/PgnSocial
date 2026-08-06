@@ -24,7 +24,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
   final _senderController = TextEditingController();
   final _trxController = TextEditingController();
 
-  static const _steps = ['Personal', 'Identity', 'Face', 'Review', 'Payment'];
   static const _bkashNumber = '01313961899';
 
   @override

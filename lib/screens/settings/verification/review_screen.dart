@@ -21,10 +21,6 @@ class ReviewScreen extends StatefulWidget {
 class _ReviewScreenState extends State<ReviewScreen> {
   bool _confirmed = false;
 
-  static const _steps = [
-    'Personal',
-    'Identity',
-    'Face',
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<VerificationController>();
