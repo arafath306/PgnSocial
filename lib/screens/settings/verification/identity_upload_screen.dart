@@ -12,6 +12,21 @@ import '../../../widgets/verification/pigeon_text_field.dart';
 import '../../../widgets/verification/step_progress_bar.dart';
 import 'face_verification_screen.dart';
 
+enum IdentityDocType {
+  nid('nid', 'National ID (NID)', Icons.badge_outlined, 'NID Card Front & Back'),
+  student('student_id', 'Student Card', Icons.school_outlined, 'Student ID / Academic Proof'),
+  passport('passport', 'Passport', Icons.flight_takeoff_outlined, 'Passport Bio Page'),
+  drivingLicense('driving_license', 'Driving License', Icons.directions_car_outlined, 'License Card Front & Back'),
+  taxToken('tax_token', 'Tax Token / TIN', Icons.receipt_long_outlined, 'Tax Token or TIN Certificate');
+
+  final String keyName;
+  final String title;
+  final IconData icon;
+  final String subtitle;
+
+  const IdentityDocType(this.keyName, this.title, this.icon, this.subtitle);
+}
+
 class IdentityUploadScreen extends StatefulWidget {
   const IdentityUploadScreen({super.key});
 
@@ -20,49 +35,90 @@ class IdentityUploadScreen extends StatefulWidget {
 }
 
 class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
-  final _nidController = TextEditingController();
+  final _idNumberController = TextEditingController();
   final _picker = ImagePicker();
   XFile? _front;
   XFile? _back;
-  bool _isStudent = false;
+  IdentityDocType _selectedType = IdentityDocType.nid;
 
   @override
   void initState() {
     super.initState();
     final controller = Provider.of<VerificationController>(context, listen: false);
-    _nidController.text = controller.request.nidNumber;
+    _idNumberController.text = controller.request.nidNumber;
     _front = controller.request.nidFront;
     _back = controller.request.nidBack;
-    _isStudent = controller.request.isStudent;
+    
+    // Map initial idType if set
+    final existingTypeKey = controller.request.idType;
+    if (controller.request.isStudent) {
+      _selectedType = IdentityDocType.student;
+    } else {
+      _selectedType = IdentityDocType.values.firstWhere(
+        (e) => e.keyName == existingTypeKey,
+        orElse: () => IdentityDocType.nid,
+      );
+    }
   }
 
   @override
   void dispose() {
-    _nidController.dispose();
+    _idNumberController.dispose();
     super.dispose();
   }
 
   Future<void> _pickImage({required bool isFront}) async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        color: context.cardBg,
+        decoration: BoxDecoration(
+          color: context.cardBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 16),
         child: SafeArea(
           child: Wrap(
             children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: context.textMuted.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
               ListTile(
-                leading: Icon(Icons.camera_alt_outlined,
-                    color: context.primaryAccent),
-                title: Text(AppLocalizations.of(context)!.takeAPhoto, style: GoogleFonts.inter(color: context.textPrimary, fontWeight: FontWeight.w600)),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: context.primaryAccent.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.camera_alt_outlined, color: context.primaryAccent, size: 20),
+                ),
+                title: Text(
+                  AppLocalizations.of(context)!.takeAPhoto,
+                  style: GoogleFonts.inter(color: context.textPrimary, fontWeight: FontWeight.w600),
+                ),
                 onTap: () => Navigator.pop(context, ImageSource.camera),
               ),
               ListTile(
-                leading: Icon(Icons.photo_library_outlined,
-                    color: context.primaryAccent),
-                title: Text(AppLocalizations.of(context)!.chooseFromGallery, style: GoogleFonts.inter(color: context.textPrimary, fontWeight: FontWeight.w600)),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: context.primaryAccent.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.photo_library_outlined, color: context.primaryAccent, size: 20),
+                ),
+                title: Text(
+                  AppLocalizations.of(context)!.chooseFromGallery,
+                  style: GoogleFonts.inter(color: context.textPrimary, fontWeight: FontWeight.w600),
+                ),
                 onTap: () => Navigator.pop(context, ImageSource.gallery),
               ),
             ],
@@ -85,26 +141,36 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
   }
 
   void _onContinue() {
-    if (_nidController.text.trim().isEmpty) {
+    final numberText = _idNumberController.text.trim();
+    if (numberText.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_isStudent ? 'Please enter your Student ID or Roll number' : AppLocalizations.of(context)!.pleaseEnterYourNidNumber)),
+        SnackBar(content: Text('Please enter your ${_selectedType.title} number / details')),
       );
       return;
     }
-    if (_front == null || _back == null) {
+    
+    // Passport requires at least front photo
+    if (_front == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(_isStudent ? 'Please upload both front & back or 2 proof images of your Student ID / Document' : AppLocalizations.of(context)!.pleaseUploadBothSidesOfYourNidCard)),
+        SnackBar(content: Text('Please upload a clear photo of your ${_selectedType.title}')),
+      );
+      return;
+    }
+
+    // NID, Student, License, Tax token require both sides unless user uploaded single proof
+    if (_selectedType != IdentityDocType.passport && _back == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please upload both Front and Back sides of your ${_selectedType.title}')),
       );
       return;
     }
 
     context.read<VerificationController>().updateIdentity(
-          nidNumber: _nidController.text.trim(),
+          nidNumber: numberText,
           front: _front,
-          back: _back,
-          isStudent: _isStudent,
-          idType: _isStudent ? 'student_id' : 'nid',
+          back: _back ?? _front, // fallback for passport or single proof
+          isStudent: _selectedType == IdentityDocType.student,
+          idType: _selectedType.keyName,
         );
 
     Navigator.push(
@@ -113,12 +179,73 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
     );
   }
 
+  String get _idNumberLabel {
+    switch (_selectedType) {
+      case IdentityDocType.nid:
+        return AppLocalizations.of(context)!.nationalIdNidNumber;
+      case IdentityDocType.student:
+        return 'Student ID / Roll Number';
+      case IdentityDocType.passport:
+        return 'Passport Number';
+      case IdentityDocType.drivingLicense:
+        return 'Driving License Number';
+      case IdentityDocType.taxToken:
+        return 'Tax Token / TIN Number';
+    }
+  }
+
+  String get _idNumberHint {
+    switch (_selectedType) {
+      case IdentityDocType.nid:
+        return 'Enter your 10 or 17 digit NID number';
+      case IdentityDocType.student:
+        return 'Enter your Student ID or Roll number';
+      case IdentityDocType.passport:
+        return 'Enter Passport number (e.g. A12345678)';
+      case IdentityDocType.drivingLicense:
+        return 'Enter Driving License reference number';
+      case IdentityDocType.taxToken:
+        return 'Enter Tax Token or TIN certificate number';
+    }
+  }
+
+  String get _frontCardTitle {
+    switch (_selectedType) {
+      case IdentityDocType.nid:
+        return AppLocalizations.of(context)!.frontSide;
+      case IdentityDocType.student:
+        return 'Student ID Front / Admission Letter';
+      case IdentityDocType.passport:
+        return 'Passport Info Page';
+      case IdentityDocType.drivingLicense:
+        return 'License Front Side';
+      case IdentityDocType.taxToken:
+        return 'Tax Token / TIN Front';
+    }
+  }
+
+  String get _backCardTitle {
+    switch (_selectedType) {
+      case IdentityDocType.nid:
+        return AppLocalizations.of(context)!.backSide;
+      case IdentityDocType.student:
+        return 'Student ID Back / Proof Document';
+      case IdentityDocType.passport:
+        return 'Visa / Back Page (Optional)';
+      case IdentityDocType.drivingLicense:
+        return 'License Back Side';
+      case IdentityDocType.taxToken:
+        return 'Document Back Side';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final steps = VerificationController.getSteps();
 
     return Scaffold(
       backgroundColor: context.scaffoldBg,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: context.scaffoldBg,
         elevation: 0,
@@ -127,7 +254,8 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.textPrimary, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(AppLocalizations.of(context)!.applyForBlueBadge,
+        title: Text(
+          AppLocalizations.of(context)!.applyForBlueBadge,
           style: GoogleFonts.inter(
             fontSize: 17,
             fontWeight: FontWeight.w800,
@@ -143,135 +271,208 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
             StepProgressBar(currentStep: 2, labels: steps),
             Expanded(
               child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const ClampingScrollPhysics(), // Prevents bouncing scroll glitches
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(AppLocalizations.of(context)!.confirmYourIdentity,
-                        style: GoogleFonts.inter(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w900,
-                            color: context.textPrimary,
-                            letterSpacing: -0.4)),
+                    Text(
+                      AppLocalizations.of(context)!.confirmYourIdentity,
+                      style: GoogleFonts.inter(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: context.textPrimary,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     Text(
-                      _isStudent 
-                          ? 'Provide clear photos of your Student ID card, Admission letter, or academic proof document.' 
-                          : AppLocalizations.of(context)!.provideAGovernmentissuedPhotoIdMakeSureT,
-                      style: GoogleFonts.inter(color: context.textSecondary, fontSize: 13, height: 1.45),
+                      'Please choose how you want to verify your identity. You can submit your NID, Student Document, Passport, Driving License, or Tax Token.',
+                      style: GoogleFonts.inter(
+                        color: context.textSecondary,
+                        fontSize: 13,
+                        height: 1.45,
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    
-                    // --- I don't have an NID / Student Verification Selector ---
-                    GestureDetector(
-                      onTap: () => setState(() => _isStudent = !_isStudent),
-                      child: Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: _isStudent ? const Color(0xFF6366F1).withValues(alpha: 0.08) : context.cardBg,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: _isStudent ? const Color(0xFF6366F1) : context.border,
-                            width: _isStudent ? 1.5 : 1,
+                    const SizedBox(height: 20),
+
+                    // --- SELECT YOUR DOCUMENT TYPE HEADER ---
+                    Row(
+                      children: [
+                        Icon(Icons.style_outlined, size: 18, color: context.primaryAccent),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Select Document Type',
+                          style: GoogleFonts.inter(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w800,
+                            color: context.textPrimary,
+                            letterSpacing: -0.2,
                           ),
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // --- DOCUMENT TYPE SELECTOR GRID / LIST ---
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: IdentityDocType.values.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final type = IdentityDocType.values[index];
+                        final isSelected = _selectedType == type;
+
+                        return Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              if (_selectedType != type) {
+                                setState(() {
+                                  _selectedType = type;
+                                  _front = null;
+                                  _back = null;
+                                });
+                              }
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                               decoration: BoxDecoration(
-                                color: _isStudent ? const Color(0xFF6366F1).withValues(alpha: 0.15) : context.scaffoldBg,
-                                shape: BoxShape.circle,
+                                color: isSelected
+                                    ? context.primaryAccent.withValues(alpha: 0.08)
+                                    : context.cardBg,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? context.primaryAccent
+                                      : context.border,
+                                  width: isSelected ? 1.8 : 1,
+                                ),
                               ),
-                              child: Icon(
-                                _isStudent ? Icons.school_rounded : Icons.badge_outlined,
-                                size: 20,
-                                color: _isStudent ? const Color(0xFF6366F1) : context.textSecondary,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              child: Row(
                                 children: [
-                                  Text(
-                                    _isStudent ? "Student Verification Selected" : "I don't have an NID (Student Verification)",
-                                    style: GoogleFonts.inter(
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: _isStudent ? const Color(0xFF6366F1) : context.textPrimary,
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? context.primaryAccent.withValues(alpha: 0.15)
+                                          : context.scaffoldBg,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      type.icon,
+                                      size: 20,
+                                      color: isSelected
+                                          ? context.primaryAccent
+                                          : context.textSecondary,
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    _isStudent 
-                                        ? "Uploading Student ID card / Admission letter" 
-                                        : "Tap here if you are a student without NID card",
-                                    style: GoogleFonts.inter(
-                                      fontSize: 11.5,
-                                      color: context.textSecondary,
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          type.title,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 14,
+                                            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                            color: isSelected
+                                                ? context.primaryAccent
+                                                : context.textPrimary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          type.subtitle,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            color: context.textSecondary,
+                                          ),
+                                        ),
+                                      ],
                                     ),
+                                  ),
+                                  Radio<IdentityDocType>(
+                                    value: type,
+                                    groupValue: _selectedType,
+                                    activeColor: context.primaryAccent,
+                                    onChanged: (val) {
+                                      if (val != null) {
+                                        setState(() {
+                                          _selectedType = val;
+                                          _front = null;
+                                          _back = null;
+                                        });
+                                      }
+                                    },
                                   ),
                                 ],
                               ),
                             ),
-                            Switch(
-                              value: _isStudent,
-                              onChanged: (val) => setState(() => _isStudent = val),
-                              activeColor: const Color(0xFF6366F1),
-                            ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                      },
                     ),
-                    const SizedBox(height: 20),
-                    
+
+                    const SizedBox(height: 24),
+
+                    // --- ID / DOCUMENT NUMBER TEXTFIELD ---
                     PigeonTextField(
-                      label: _isStudent ? 'Student ID / Roll Number' : AppLocalizations.of(context)!.nationalIdNidNumber,
-                      hint: _isStudent ? 'Enter your Student ID or Roll number' : 'Enter your 10 or 17 digit NID number',
-                      controller: _nidController,
-                      keyboardType: _isStudent ? TextInputType.text : TextInputType.number,
+                      label: _idNumberLabel,
+                      hint: _idNumberHint,
+                      controller: _idNumberController,
+                      keyboardType: _selectedType == IdentityDocType.nid
+                          ? TextInputType.number
+                          : TextInputType.text,
                       prefixIcon: Icon(
-                        _isStudent ? Icons.school_outlined : Icons.badge_outlined,
-                        size: 18, 
+                        _selectedType.icon,
+                        size: 18,
                         color: context.textMuted,
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    
+                    const SizedBox(height: 24),
+
+                    // --- UPLOAD SECTION HEADER ---
                     Text(
-                      _isStudent ? 'Upload Student Documents' : AppLocalizations.of(context)!.uploadIdDocuments,
+                      'Upload Document Photos',
                       style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14.5,
-                          color: context.textPrimary,
-                          letterSpacing: -0.2),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14.5,
+                        color: context.textPrimary,
+                        letterSpacing: -0.2,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _isStudent 
-                          ? 'Upload Student ID front & back, or ID front & admission letter / proof'
-                          : AppLocalizations.of(context)!.takeClearPhotosOfBothTheFrontAndBackOfYo,
+                      _selectedType == IdentityDocType.passport
+                          ? 'Upload a clear photo of your Passport biographical info page.'
+                          : 'Take or upload clear photos of both Front & Back of your ${_selectedType.title}.',
                       style: GoogleFonts.inter(color: context.textSecondary, fontSize: 12.5),
                     ),
                     const SizedBox(height: 16),
-                    
+
+                    // --- FILE PICKER CARDS ---
                     Row(
                       children: [
                         Expanded(
                           child: IdUploadCard(
-                            title: _isStudent ? 'Student Card Front' : AppLocalizations.of(context)!.frontSide,
-                            subtitle: _isStudent ? 'Tap to upload Student ID or Admission Letter' : AppLocalizations.of(context)!.tapToUploadNidFront,
+                            title: _frontCardTitle,
+                            subtitle: 'Tap to upload ${_selectedType.title} front photo',
                             file: _front,
                             onTap: () => _pickImage(isFront: true),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 14),
                         Expanded(
                           child: IdUploadCard(
-                            title: _isStudent ? 'Student Card Back' : AppLocalizations.of(context)!.backSide,
-                            subtitle: _isStudent ? 'Tap to upload Back Side or Proof Document' : AppLocalizations.of(context)!.tapToUploadNidBack,
+                            title: _backCardTitle,
+                            subtitle: _selectedType == IdentityDocType.passport
+                                ? 'Optional back page'
+                                : 'Tap to upload ${_selectedType.title} back photo',
                             file: _back,
                             onTap: () => _pickImage(isFront: false),
                           ),
@@ -279,24 +480,25 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    
+
+                    // --- GUIDANCE BANNER ---
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: _isStudent ? const Color(0xFF6366F1).withValues(alpha: 0.05) : Colors.amber.withValues(alpha: 0.05),
+                        color: context.primaryAccent.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: _isStudent ? const Color(0xFF6366F1).withValues(alpha: 0.2) : Colors.amber.withValues(alpha: 0.15)),
+                        border: Border.all(
+                          color: context.primaryAccent.withValues(alpha: 0.2),
+                        ),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(_isStudent ? Icons.school : Icons.info_outline_rounded, color: _isStudent ? const Color(0xFF6366F1) : Colors.amber, size: 20),
+                          Icon(Icons.info_outline_rounded, color: context.primaryAccent, size: 20),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              _isStudent 
-                                  ? 'Ensure all text on your Student ID or document is clear and readable. You will proceed to Face Verification next.' 
-                                  : AppLocalizations.of(context)!.ensureThereAreNoReflectionsOrGlaresOnThe,
+                              'Make sure all information and text on your ${_selectedType.title} are completely visible and clear. Reflection or blur may delay review.',
                               style: GoogleFonts.inter(
                                 fontSize: 12.5,
                                 color: context.textSecondary,

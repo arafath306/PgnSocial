@@ -105,6 +105,9 @@ class VerificationController extends ChangeNotifier {
           'nid_back_${DateTime.now().millisecondsSinceEpoch}.$ext',
         );
         backUrl = res.fold((l) => throw Exception(l.message), (r) => r);
+      } else if (frontUrl != null) {
+        // Fallback for passport or single-page document uploads
+        backUrl = frontUrl;
       }
 
       // 3. Upload Face image
@@ -120,7 +123,7 @@ class VerificationController extends ChangeNotifier {
       }
 
       if (frontUrl == null || backUrl == null) {
-        throw Exception("Failed to upload NID document images to storage");
+        throw Exception("Failed to upload document images to storage");
       }
 
       // 4. Submit request metadata to database
