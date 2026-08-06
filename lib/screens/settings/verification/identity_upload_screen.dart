@@ -48,8 +48,7 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
     _idNumberController.text = controller.request.nidNumber;
     _front = controller.request.nidFront;
     _back = controller.request.nidBack;
-    
-    // Map initial idType if set
+
     final existingTypeKey = controller.request.idType;
     if (controller.request.isStudent) {
       _selectedType = IdentityDocType.student;
@@ -148,8 +147,7 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
       );
       return;
     }
-    
-    // Passport requires at least front photo
+
     if (_front == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please upload a clear photo of your ${_selectedType.title}')),
@@ -157,7 +155,6 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
       return;
     }
 
-    // NID, Student, License, Tax token require both sides unless user uploaded single proof
     if (_selectedType != IdentityDocType.passport && _back == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Please upload both Front and Back sides of your ${_selectedType.title}')),
@@ -168,7 +165,7 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
     context.read<VerificationController>().updateIdentity(
           nidNumber: numberText,
           front: _front,
-          back: _back ?? _front, // fallback for passport or single proof
+          back: _back ?? _front,
           isStudent: _selectedType == IdentityDocType.student,
           idType: _selectedType.keyName,
         );
@@ -271,7 +268,7 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
             StepProgressBar(currentStep: 2, labels: steps),
             Expanded(
               child: SingleChildScrollView(
-                physics: const ClampingScrollPhysics(), // Prevents bouncing scroll glitches
+                physics: const ClampingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,7 +316,7 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: IdentityDocType.values.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      separatorBuilder: (context, index) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final type = IdentityDocType.values[index];
                         final isSelected = _selectedType == type;
@@ -396,19 +393,16 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
                                       ],
                                     ),
                                   ),
-                                  Radio<IdentityDocType>(
-                                    value: type,
-                                    groupValue: _selectedType,
-                                    activeColor: context.primaryAccent,
-                                    onChanged: (val) {
-                                      if (val != null) {
-                                        setState(() {
-                                          _selectedType = val;
-                                          _front = null;
-                                          _back = null;
-                                        });
-                                      }
-                                    },
+                                  Container(
+                                    width: 20,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isSelected ? context.primaryAccent : context.border,
+                                        width: isSelected ? 6 : 1.5,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
