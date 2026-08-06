@@ -209,6 +209,12 @@ class GeneralSettingsProvider with ChangeNotifier {
         'enable_anonymous_posting',
       ]);
 
+      // DEBUG: Print what we got from DB
+      debugPrint('[FeatureFlags] Raw DB rows count: ${sysRes.length}');
+      for (var row in sysRes) {
+        debugPrint('[FeatureFlags] Row: key=${row['key']} value=${row['value']}');
+      }
+
       // Re-use the same profile badge so verified-only access still works
       final profileRes = await _supabase
           .from('profiles')
@@ -216,6 +222,7 @@ class GeneralSettingsProvider with ChangeNotifier {
           .eq('id', uid)
           .maybeSingle();
       final String? badgeType = profileRes?['verified_badge'] as String?;
+      debugPrint('[FeatureFlags] User badge type: $badgeType');
 
       bool evaluateAccess(String? val) {
         if (val == null) return false;
@@ -223,6 +230,7 @@ class GeneralSettingsProvider with ChangeNotifier {
           final parsed = jsonDecode(val);
           if (parsed is Map) {
             final access = parsed['access'];
+            debugPrint('[FeatureFlags] evaluateAccess: access=$access, badge=$badgeType, uid=$uid');
             if (access == 'global') return true;
             if (access == 'verified' && badgeType != null && badgeType != 'none') return true;
             if (access == 'specific') {
@@ -231,7 +239,8 @@ class GeneralSettingsProvider with ChangeNotifier {
             }
             return false;
           }
-        } catch (_) {
+        } catch (e) {
+          debugPrint('[FeatureFlags] JSON parse error: $e, val=$val');
           return val == 'true';
         }
         return false;
@@ -240,6 +249,7 @@ class GeneralSettingsProvider with ChangeNotifier {
       for (var row in sysRes) {
         final key = row['key'] as String;
         final isEnabled = evaluateAccess(row['value'] as String?);
+        debugPrint('[FeatureFlags] $key => $isEnabled');
         if (key == 'enable_voice_posts') {
           _isVoicePostEnabled = isEnabled;
         } else if (key == 'enable_tiered_badges') {
@@ -252,7 +262,7 @@ class GeneralSettingsProvider with ChangeNotifier {
       }
       notifyListeners();
     } catch (e) {
-      debugPrint('[GeneralSettings] refreshFeatureFlags error: $e');
+      debugPrint('[FeatureFlags] refreshFeatureFlags error: $e');
     }
   }
 
