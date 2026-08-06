@@ -123,6 +123,8 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final steps = VerificationController.getSteps();
+
     return Scaffold(
       backgroundColor: context.scaffoldBg,
       appBar: AppBar(
@@ -146,7 +148,7 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const StepProgressBar(currentStep: 2, labels: _steps),
+            StepProgressBar(currentStep: 2, labels: steps),
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),

@@ -165,6 +165,7 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
     final isDark = context.isDarkMode;
     final step = _aiSteps[_currentStep];
     final bool captured = _faceImage != null;
+    final steps = VerificationController.getSteps();
 
     return Scaffold(
       backgroundColor: context.scaffoldBg,
@@ -189,7 +190,7 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
       body: SafeArea(
         child: Column(
           children: [
-            const StepProgressBar(currentStep: 3, labels: _steps),
+            StepProgressBar(currentStep: 3, labels: steps),
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),

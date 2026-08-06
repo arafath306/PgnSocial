@@ -126,6 +126,8 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final steps = VerificationController.getSteps();
+
     return Scaffold(
       backgroundColor: context.scaffoldBg,
       appBar: AppBar(
@@ -149,7 +151,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const StepProgressBar(currentStep: 1, labels: _steps),
+            StepProgressBar(currentStep: 1, labels: steps),
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),

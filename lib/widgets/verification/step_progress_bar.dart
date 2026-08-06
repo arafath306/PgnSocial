@@ -4,11 +4,13 @@ import '../../utils/app_theme.dart';
 class StepProgressBar extends StatelessWidget {
   final int currentStep; // 1-based
   final List<String> labels;
+  final bool showStepCounter;
 
   const StepProgressBar({
     super.key,
     required this.currentStep,
     required this.labels,
+    this.showStepCounter = true,
   });
 
   @override
@@ -16,33 +18,79 @@ class StepProgressBar extends StatelessWidget {
     if (labels.isEmpty) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final double totalWidth = constraints.maxWidth;
-          final int n = labels.length;
-          final double columnWidth = totalWidth / n;
-          final double halfColumnWidth = columnWidth / 2;
-          
-          // Line spans from center of first column to center of last column
-          final double lineLeft = halfColumnWidth;
-          final double lineRight = halfColumnWidth;
-          final double lineWidth = totalWidth - lineLeft - lineRight;
-          
-          // Active progress width
-          double activeProgressWidth = 0.0;
-          if (n > 1) {
-            final double progressFraction = (currentStep - 1) / (n - 1);
-            activeProgressWidth = lineWidth * progressFraction.clamp(0.0, 1.0);
-          }
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (showStepCounter)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: context.primaryAccent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: context.primaryAccent.withValues(alpha: 0.25),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle_outline, size: 13, color: context.primaryAccent),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Step $currentStep of ${labels.length}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: context.primaryAccent,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    (currentStep > 0 && currentStep <= labels.length) ? labels[currentStep - 1] : '',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: context.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final double totalWidth = constraints.maxWidth;
+              final int n = labels.length;
+              final double columnWidth = totalWidth / n;
+              final double halfColumnWidth = columnWidth / 2;
+              
+              // Line spans from center of first column to center of last column
+              final double lineLeft = halfColumnWidth;
+              final double lineRight = halfColumnWidth;
+              final double lineWidth = totalWidth - lineLeft - lineRight;
+              
+              // Active progress width
+              double activeProgressWidth = 0.0;
+              if (n > 1) {
+                final double progressFraction = (currentStep - 1) / (n - 1);
+                activeProgressWidth = lineWidth * progressFraction.clamp(0.0, 1.0);
+              }
 
-          return Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // 1. Background line
-              if (n > 1)
-                Positioned(
-                  left: lineLeft,
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // 1. Background line
+                  if (n > 1)
+                    Positioned(
+                      left: lineLeft,
                   top: 16, // center of 32px circle
                   child: Container(
                     height: 3,

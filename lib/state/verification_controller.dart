@@ -13,6 +13,16 @@ class VerificationController extends ChangeNotifier {
   VerificationRequest request = VerificationRequest();
   bool isSubmitting = false;
 
+  static List<String> getSteps() {
+    return const [
+      'Personal',
+      'Identity',
+      'Face',
+      'Review',
+      'Payment',
+    ];
+  }
+
   void updatePersonalDetails({
     required String fullName,
     required String username,

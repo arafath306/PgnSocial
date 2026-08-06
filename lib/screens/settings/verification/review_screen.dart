@@ -25,13 +25,11 @@ class _ReviewScreenState extends State<ReviewScreen> {
     'Personal',
     'Identity',
     'Face',
-    'Review',
-    'Payment'
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final request = context.watch<VerificationController>().request;
+    final controller = context.watch<VerificationController>();
+    final request = controller.request;
+    final steps = VerificationController.getSteps();
 
     return Scaffold(
       backgroundColor: context.scaffoldBg,
@@ -56,7 +54,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const StepProgressBar(currentStep: 4, labels: _steps),
+            StepProgressBar(currentStep: 4, labels: steps),
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),

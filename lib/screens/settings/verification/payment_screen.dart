@@ -84,6 +84,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final steps = VerificationController.getSteps();
 
     final verificationPlans = context.select<DatabaseService, List<Map<String, dynamic>>>((db) => db.verificationPlans);
     
@@ -151,7 +152,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const StepProgressBar(currentStep: 5, labels: _steps),
+            StepProgressBar(currentStep: 5, labels: steps),
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
