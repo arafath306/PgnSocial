@@ -100,16 +100,16 @@ class _ReviewScreenState extends State<ReviewScreen> {
                           _buildDetailRow(context, 'Phone Number', request.phone),
                           _buildDetailRow(context, 'Email Address', request.email),
                           
-                          _buildSectionHeader(context, 'Documents & Biometrics'),
-                          _buildDetailRow(context, 'NID Card Number', request.nidNumber),
+                          _buildSectionHeader(context, request.isStudent ? 'Student Identity Documents' : 'Documents & Biometrics'),
+                          _buildDetailRow(context, request.isStudent ? 'Student ID / Roll No' : 'NID Card Number', request.nidNumber),
                           
                           Padding(
                             padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
                             child: Row(
                               children: [
-                                Expanded(child: _buildImageThumb(context, 'NID Front', request.nidFront?.path)),
+                                Expanded(child: _buildImageThumb(context, request.isStudent ? 'Student Front' : 'NID Front', request.nidFront?.path)),
                                 const SizedBox(width: 12),
-                                Expanded(child: _buildImageThumb(context, 'NID Back', request.nidBack?.path)),
+                                Expanded(child: _buildImageThumb(context, request.isStudent ? 'Student Back' : 'NID Back', request.nidBack?.path)),
                                 const SizedBox(width: 12),
                                 Expanded(child: _buildImageThumb(context, 'Selfie Scan', request.faceImage?.path)),
                               ],

@@ -30,10 +30,14 @@ class VerificationController extends ChangeNotifier {
     required String nidNumber,
     XFile? front,
     XFile? back,
+    bool isStudent = false,
+    String idType = 'nid',
   }) {
     request.nidNumber = nidNumber;
     if (front != null) request.nidFront = front;
     if (back != null) request.nidBack = back;
+    request.isStudent = isStudent;
+    request.idType = idType;
     notifyListeners();
   }
 
@@ -125,6 +129,8 @@ class VerificationController extends ChangeNotifier {
         'bkash_trx_id': request.bkashTrxId,
         'plan_id': request.selectedPlanId,
         'is_renewal': request.isRenewal,
+        'is_student': request.isStudent,
+        'id_type': request.idType,
       });
 
       final success = res.fold((l) => throw Exception(l.message), (r) => r);

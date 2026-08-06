@@ -19,6 +19,8 @@ class VerificationRequest {
   String nidNumber;
   XFile? nidFront;
   XFile? nidBack;
+  bool isStudent;
+  String idType;
 
   // Step 3 — Face Verification
   XFile? faceImage;
@@ -46,6 +48,8 @@ class VerificationRequest {
     this.nidNumber = '',
     this.nidFront,
     this.nidBack,
+    this.isStudent = false,
+    this.idType = 'nid',
     this.faceImage,
     this.faceImageUrl,
     this.phone = '',
