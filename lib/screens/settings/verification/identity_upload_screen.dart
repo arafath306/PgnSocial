@@ -311,48 +311,42 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    // --- DOCUMENT TYPE SELECTOR GRID / LIST ---
-                    ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: IdentityDocType.values.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        final type = IdentityDocType.values[index];
-                        final isSelected = _selectedType == type;
-
-                        return Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () {
-                              if (_selectedType != type) {
-                                setState(() {
-                                  _selectedType = type;
-                                  _front = null;
-                                  _back = null;
-                                });
-                              }
-                            },
-                            borderRadius: BorderRadius.circular(16),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? context.primaryAccent.withValues(alpha: 0.08)
-                                    : context.cardBg,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? context.primaryAccent
-                                      : context.border,
-                                  width: isSelected ? 1.8 : 1,
-                                ),
-                              ),
+                    // --- ELEGANT DOCUMENT TYPE DROPDOWN SELECTOR ---
+                    Container(
+                      decoration: BoxDecoration(
+                        color: context.cardBg,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: context.border),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<IdentityDocType>(
+                          value: _selectedType,
+                          isExpanded: true,
+                          dropdownColor: context.cardBg,
+                          icon: Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: context.primaryAccent,
+                            size: 24,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          onChanged: (newType) {
+                            if (newType != null && newType != _selectedType) {
+                              setState(() {
+                                _selectedType = newType;
+                                _front = null;
+                                _back = null;
+                              });
+                            }
+                          },
+                          items: IdentityDocType.values.map((type) {
+                            final isSelected = type == _selectedType;
+                            return DropdownMenuItem<IdentityDocType>(
+                              value: type,
                               child: Row(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.all(10),
+                                    padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
                                       color: isSelected
                                           ? context.primaryAccent.withValues(alpha: 0.15)
@@ -361,55 +355,42 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
                                     ),
                                     child: Icon(
                                       type.icon,
-                                      size: 20,
+                                      size: 18,
                                       color: isSelected
                                           ? context.primaryAccent
                                           : context.textSecondary,
                                     ),
                                   ),
-                                  const SizedBox(width: 14),
+                                  const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
                                           type.title,
                                           style: GoogleFonts.inter(
                                             fontSize: 14,
                                             fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                            color: isSelected
-                                                ? context.primaryAccent
-                                                : context.textPrimary,
+                                            color: context.textPrimary,
                                           ),
                                         ),
-                                        const SizedBox(height: 2),
                                         Text(
                                           type.subtitle,
                                           style: GoogleFonts.inter(
-                                            fontSize: 12,
+                                            fontSize: 11.5,
                                             color: context.textSecondary,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  Container(
-                                    width: 20,
-                                    height: 20,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: isSelected ? context.primaryAccent : context.border,
-                                        width: isSelected ? 6 : 1.5,
-                                      ),
-                                    ),
-                                  ),
                                 ],
                               ),
-                            ),
-                          ),
-                        );
-                      },
+                            );
+                          }).toList(),
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 24),
