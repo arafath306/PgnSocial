@@ -65,13 +65,13 @@ extension CreateThreadPublishExtensions on _CreateThreadScreenState {
       return;
     }
 
-    // â”€â”€ Create / Quote mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ——— Create / Quote mode ——————————————————————————————————————————————————————
     String finalContent = text;
     if (_selectedLocation != null) {
-      finalContent += "\n\nðŸ“ $_selectedLocation";
+      finalContent += "\n\n📍 $_selectedLocation";
     }
     if (_selectedMusic != null) {
-      finalContent += " ðŸŽµDakMusicðŸŽµ${_selectedMusic!.toJson()}";
+      finalContent += " 🎵DakMusic🎵${_selectedMusic!.toJson()}";
     }
 
     List<String>? pollOptions;

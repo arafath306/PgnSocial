@@ -158,17 +158,21 @@ class ThreadPost {
     final expiresAtStr = json['poll_expires_at'] as String?;
     final expiresAt = expiresAtStr != null ? DateTime.parse(expiresAtStr).toLocal() : null;
 
-    // Parse Music Suffix from Content
+    // Parse Music Suffix from Content (supports 🎵DakMusic🎵 and Mojibake variants)
     String cleanContent = json['content'] as String? ?? '';
     MusicTrack? parsedMusicTrack;
-    if (cleanContent.contains('🎵DakMusic🎵')) {
-      final parts = cleanContent.split('🎵DakMusic🎵');
-      cleanContent = parts[0];
-      if (parts.length > 1) {
-        try {
-          parsedMusicTrack = MusicTrack.fromJson(parts[1].trim());
-        } catch (e) {
-          debugPrint("Error parsing music track from post JSON: $e");
+    if (cleanContent.contains('DakMusic')) {
+      final musicRegExp = RegExp(r'(\uD83C\uDFB5|🎵|ðŸŽµ)?DakMusic(\uD83C\uDFB5|🎵|ðŸŽµ)?');
+      final match = musicRegExp.firstMatch(cleanContent);
+      if (match != null) {
+        final rawJsonStr = cleanContent.substring(match.end).trim();
+        cleanContent = cleanContent.substring(0, match.start).trim();
+        if (rawJsonStr.isNotEmpty) {
+          try {
+            parsedMusicTrack = MusicTrack.fromJson(rawJsonStr);
+          } catch (e) {
+            debugPrint("Error parsing music track from post JSON: $e");
+          }
         }
       }
     }
