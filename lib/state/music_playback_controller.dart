@@ -66,13 +66,21 @@ class MusicPlaybackController with ChangeNotifier {
     }
   }
 
+  bool _userManuallyPaused = false;
+
   /// Called by VisibilityDetector when a post's visibility changes.
   /// [visibilityFraction] is between 0.0 (hidden) and 1.0 (fully visible).
   void onPostVisibilityChanged(
       String postId, MusicTrack track, double visibilityFraction) {
-    if (!_autoplayMusic) return;
+    if (!_autoplayMusic) {
+      if (_visiblePosts.isNotEmpty) {
+        _visiblePosts.clear();
+      }
+      return;
+    }
 
-    if (visibilityFraction > 0.0) {
+    // Require at least 60% visibility in viewport for autoplay
+    if (visibilityFraction >= 0.6) {
       _visiblePosts[postId] = _VisiblePost(
         postId: postId,
         track: track,
@@ -86,15 +94,15 @@ class MusicPlaybackController with ChangeNotifier {
   }
 
   void _evaluateBestPost() {
-    if (_visiblePosts.isEmpty) {
-      // Nothing visible – pause
+    if (!_autoplayMusic || _visiblePosts.isEmpty) {
+      // Nothing substantially visible or autoplay disabled – pause playback
       if (_isPlaying) {
         _audioPlayer.pause();
       }
       return;
     }
 
-    // Find the post with the highest visibility fraction
+    // Find the post with the highest visibility fraction (must be >= 0.6)
     _VisiblePost? best;
     for (final vp in _visiblePosts.values) {
       if (best == null || vp.fraction > best.fraction) {
@@ -102,21 +110,28 @@ class MusicPlaybackController with ChangeNotifier {
       }
     }
 
-    if (best == null) return;
+    if (best == null) {
+      if (_isPlaying) {
+        _audioPlayer.pause();
+      }
+      return;
+    }
 
     final bestTrackId = best.track.trackId;
 
     if (_currentTrackId == bestTrackId) {
-      // Same track: resume if paused
-      if (!_isPlaying) {
+      // Same track: resume only if not manually paused by user
+      if (!_isPlaying && !_userManuallyPaused) {
         _audioPlayer.resume();
       }
     } else {
-      // Different best post: switch to it
+      // Switched to a new visible post: reset manual pause and play track
+      _userManuallyPaused = false;
+      final newUrl = best.track.previewUrl;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _audioPlayer.stop().then((_) {
           _currentTrackId = bestTrackId;
-          _audioPlayer.play(UrlSource(best!.track.previewUrl));
+          _audioPlayer.play(UrlSource(newUrl));
           notifyListeners();
         });
       });
@@ -135,13 +150,16 @@ class MusicPlaybackController with ChangeNotifier {
   Future<void> play(String trackId, String url) async {
     if (_currentTrackId == trackId) {
       if (_isPlaying) {
+        _userManuallyPaused = true;
         await _audioPlayer.pause();
       } else {
+        _userManuallyPaused = false;
         await _audioPlayer.play(UrlSource(url));
       }
     } else {
       await _audioPlayer.stop();
       _currentTrackId = trackId;
+      _userManuallyPaused = false;
       await _audioPlayer.play(UrlSource(url));
     }
     notifyListeners();
