@@ -11,6 +11,7 @@ import '../models/thread_post.dart';
 import '../services/database_service.dart';
 import '../services/general_settings_provider.dart';
 import '../services/view_tracking_service.dart';
+import '../services/screenshot_protection_service.dart';
 import '../screens/thread_detail_screen.dart';
 import '../screens/create_thread_screen.dart';
 import '../screens/communities/community_detail_screen.dart';
@@ -249,12 +250,20 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
         if (dbService.isPostDeleted(post.id)) return const SizedBox.shrink();
 
         final isVerified = post.author.isVerified;
+        final isPremiumAuthor = post.author.hasScreenshotProtection || post.author.isPremium;
 
         return VisibilityDetector(
           key: Key('visibility_post_${post.id}'),
           onVisibilityChanged: (info) {
             if (info.visibleFraction > 0.5) {
               Provider.of<ViewTrackingService>(context, listen: false).trackView(post.id);
+            }
+            if (isPremiumAuthor) {
+              if (info.visibleFraction >= 0.4) {
+                ScreenshotProtectionService.enableProtection();
+              } else {
+                ScreenshotProtectionService.disableProtection();
+              }
             }
           },
           child: RepaintBoundary(

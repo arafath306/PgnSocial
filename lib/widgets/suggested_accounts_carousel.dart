@@ -33,16 +33,14 @@ class _SuggestedAccountsCarouselState extends State<SuggestedAccountsCarousel> {
     final dbService = Provider.of<DatabaseService>(context);
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 12),
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: context.isDarkMode
-            ? const Color(0xFF1E293B).withValues(alpha: 0.6)
-            : const Color(0xFFF8FAFC),
+        color: context.scaffoldBg,
         border: Border.symmetric(
           horizontal: BorderSide(
-            color: context.border.withValues(alpha: 0.6),
-            width: 0.8,
+            color: context.border,
+            width: 0.5,
           ),
         ),
       ),
@@ -54,14 +52,12 @@ class _SuggestedAccountsCarouselState extends State<SuggestedAccountsCarousel> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                const Text("✨ ", style: TextStyle(fontSize: 15)),
                 Text(
                   "Suggested for You",
-                  style: GoogleFonts.inter(
+                  style: GoogleFonts.hindSiliguri(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: context.textPrimary,
-                    letterSpacing: -0.2,
                   ),
                 ),
                 const Spacer(),
@@ -84,7 +80,7 @@ class _SuggestedAccountsCarouselState extends State<SuggestedAccountsCarousel> {
 
           // Horizontal Carousel
           SizedBox(
-            height: 200,
+            height: 190,
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               scrollDirection: Axis.horizontal,
@@ -119,59 +115,52 @@ class _SuggestedAccountsCarouselState extends State<SuggestedAccountsCarousel> {
         );
       },
       child: Container(
-        width: 145,
+        width: 140,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: context.cardBg,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: context.border.withValues(alpha: 0.8),
-            width: 1,
+            color: context.border,
+            width: 0.8,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: context.isDarkMode ? 0.2 : 0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // User Avatar
             Container(
-              width: 56,
-              height: 56,
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: profile.isVerified
                       ? const Color(0xFF0095F6).withValues(alpha: 0.4)
                       : context.border,
-                  width: 1.5,
+                  width: 1,
                 ),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(26),
                 child: (profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty)
                     ? CachedNetworkImage(
                         imageUrl: profile.avatarUrl!,
                         fit: BoxFit.cover,
-                        width: 56,
-                        height: 56,
+                        width: 52,
+                        height: 52,
                         placeholder: (context, url) => Container(
-                          color: context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                          color: context.cardBg,
                         ),
                         errorWidget: (context, url, err) => Icon(
                           Icons.person,
-                          size: 30,
+                          size: 28,
                           color: context.textMuted,
                         ),
                       )
                     : Icon(
                         Icons.person,
-                        size: 30,
+                        size: 28,
                         color: context.textMuted,
                       ),
               ),
@@ -187,8 +176,8 @@ class _SuggestedAccountsCarouselState extends State<SuggestedAccountsCarousel> {
                     profile.fullName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 13.5,
                       fontWeight: FontWeight.bold,
                       color: context.textPrimary,
                     ),
@@ -220,7 +209,7 @@ class _SuggestedAccountsCarouselState extends State<SuggestedAccountsCarousel> {
             // Follow Button
             SizedBox(
               width: double.infinity,
-              height: 32,
+              height: 30,
               child: ElevatedButton(
                 onPressed: () async {
                   setState(() {
@@ -234,21 +223,22 @@ class _SuggestedAccountsCarouselState extends State<SuggestedAccountsCarousel> {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isFollowing
-                      ? (context.isDarkMode ? const Color(0xFF334155) : const Color(0xFFE2E8F0))
+                      ? context.cardBg
                       : const Color(0xFF1E824C),
                   foregroundColor: isFollowing
                       ? context.textPrimary
                       : Colors.white,
                   elevation: 0,
                   padding: EdgeInsets.zero,
+                  side: isFollowing ? BorderSide(color: context.border, width: 0.8) : BorderSide.none,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: Text(
                   isFollowing ? 'Following' : 'Follow',
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
