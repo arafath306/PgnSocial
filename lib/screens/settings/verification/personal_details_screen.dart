@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import '../../../services/database_service.dart';
 import '../../../state/verification_controller.dart';
 import '../../../utils/app_theme.dart';
 import '../../../widgets/verification/pigeon_primary_button.dart';
 import '../../../widgets/verification/pigeon_text_field.dart';
 import '../../../widgets/verification/step_progress_bar.dart';
+import 'business_identity_upload_screen.dart';
+import 'government_identity_upload_screen.dart';
 import 'identity_upload_screen.dart';
 
 class PersonalDetailsScreen extends StatefulWidget {
@@ -33,27 +37,54 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
     final controller = Provider.of<VerificationController>(context, listen: false);
     final dbService = Provider.of<DatabaseService>(context, listen: false);
     final myProfile = dbService.myProfile;
+    final authUser = Supabase.instance.client.auth.currentUser;
 
-    _nameController.text = controller.request.fullName.isNotEmpty
-        ? controller.request.fullName
-        : (myProfile?.fullName ?? '');
-    _usernameController.text = controller.request.username.isNotEmpty
-        ? controller.request.username
-        : (myProfile?.username ?? '');
-    _bioController.text = controller.request.bio.isNotEmpty
-        ? controller.request.bio
-        : (myProfile?.bio ?? '');
-    _emailController.text = controller.request.email.isNotEmpty
-        ? controller.request.email
-        : (myProfile?.email ?? '');
-    _phoneController.text = controller.request.phone.isNotEmpty
-        ? controller.request.phone
-        : (myProfile?.phone ?? '');
+    // Get live logged-in user profile details
+    final String liveFullName = (myProfile?.fullName.isNotEmpty == true)
+        ? myProfile!.fullName
+        : (authUser?.userMetadata?['full_name'] as String? ??
+            authUser?.userMetadata?['name'] as String? ??
+            '');
 
-    if (controller.request.dateOfBirth != null) {
+    final String liveUsername = (myProfile?.username.isNotEmpty == true)
+        ? myProfile!.username
+        : (authUser?.userMetadata?['username'] as String? ?? '');
+
+    final String liveEmail = (myProfile?.email?.isNotEmpty == true)
+        ? myProfile!.email!
+        : (authUser?.email ?? '');
+
+    final String livePhone = (myProfile?.phone?.isNotEmpty == true)
+        ? myProfile!.phone!
+        : (authUser?.phone ?? '');
+
+    final String liveBio = myProfile?.bio ?? '';
+
+    // Prefer live logged-in user profile details
+    _nameController.text = liveFullName.isNotEmpty
+        ? liveFullName
+        : controller.request.fullName;
+
+    _usernameController.text = liveUsername.isNotEmpty
+        ? liveUsername
+        : controller.request.username;
+
+    _bioController.text = liveBio.isNotEmpty
+        ? liveBio
+        : controller.request.bio;
+
+    _emailController.text = liveEmail.isNotEmpty
+        ? liveEmail
+        : controller.request.email;
+
+    _phoneController.text = livePhone.isNotEmpty
+        ? livePhone
+        : controller.request.phone;
+
+    if (myProfile?.birthdate?.isNotEmpty == true) {
+      _dob = DateTime.tryParse(myProfile!.birthdate!);
+    } else if (controller.request.dateOfBirth != null) {
       _dob = controller.request.dateOfBirth;
-    } else if (myProfile?.birthdate != null && myProfile!.birthdate!.isNotEmpty) {
-      _dob = DateTime.tryParse(myProfile.birthdate!);
     }
   }
 
@@ -110,15 +141,29 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
           email: _emailController.text.trim(),
         );
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const IdentityUploadScreen()),
-    );
+    final req = context.read<VerificationController>().request;
+    if (req.isBusiness) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const BusinessIdentityUploadScreen()),
+      );
+    } else if (req.isGovernment) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const GovernmentIdentityUploadScreen()),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const IdentityUploadScreen()),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final steps = VerificationController.getSteps();
+    final req = context.watch<VerificationController>().request;
+    final steps = VerificationController.getSteps(req.category);
 
     return Scaffold(
       backgroundColor: context.scaffoldBg,
@@ -130,7 +175,10 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.textPrimary, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(AppLocalizations.of(context)!.applyForBlueBadge,
+        title: Text(
+          req.isBusiness
+              ? "Apply for Gold Badge 👑"
+              : (req.isGovernment ? "Apply for Gray Badge 🏛️" : "Apply for Blue Badge 🔵"),
           style: GoogleFonts.inter(
             fontSize: 17,
             fontWeight: FontWeight.w800,
@@ -146,7 +194,7 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
             StepProgressBar(currentStep: 1, labels: steps),
             Expanded(
               child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const ClampingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                 child: Form(
                   key: _formKey,

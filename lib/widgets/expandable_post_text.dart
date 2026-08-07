@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../utils/app_theme.dart';
+import 'formatted_content_text.dart';
 
 class ExpandablePostText extends StatefulWidget {
   final String text;
@@ -58,26 +59,27 @@ class _ExpandablePostTextState extends State<ExpandablePostText> {
     final isLong = text.length > widget.maxChars || hasManyLines;
 
     if (!isLong) {
-      return Text(text, style: defaultStyle);
+      return FormattedContentText(text: text, style: defaultStyle);
     }
 
     if (_isExpanded) {
-      return Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(text: text, style: defaultStyle),
-            const TextSpan(text: '  '),
-            TextSpan(
-              text: 'Show less',
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FormattedContentText(text: text, style: defaultStyle),
+          const SizedBox(height: 4),
+          GestureDetector(
+            onTap: () => setState(() => _isExpanded = false),
+            child: Text(
+              'Show less',
               style: GoogleFonts.inter(
                 fontSize: 14.5,
                 fontWeight: FontWeight.bold,
                 color: const Color(0xFF1D9BF0),
               ),
-              recognizer: _toggleRecognizer,
             ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
@@ -90,23 +92,25 @@ class _ExpandablePostTextState extends State<ExpandablePostText> {
       cutIndex = lineMatches[3].start;
     }
 
-    final truncatedText = text.substring(0, cutIndex).trimRight();
+    final truncatedText = '${text.substring(0, cutIndex).trimRight()}...';
 
-    return Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(text: '$truncatedText... ', style: defaultStyle),
-          TextSpan(
-            text: 'See more',
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        FormattedContentText(text: truncatedText, style: defaultStyle),
+        const SizedBox(height: 4),
+        GestureDetector(
+          onTap: () => setState(() => _isExpanded = true),
+          child: Text(
+            'See more',
             style: GoogleFonts.inter(
               fontSize: 14.5,
               fontWeight: FontWeight.bold,
               color: const Color(0xFF1D9BF0),
             ),
-            recognizer: _toggleRecognizer,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

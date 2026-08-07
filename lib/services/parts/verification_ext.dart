@@ -10,15 +10,35 @@ extension VerificationExtension on DatabaseService {
       final res = await sl<FetchVerificationPlansUseCase>().call();
       _verificationPlans = res.fold((l) => [], (r) => r);
       updateState();
+      
+      // Start Realtime stream listener so price edits in dak-admin-next update live
+      subscribeToVerificationPlansRealtime();
     } catch (e) {
       debugPrint("Fetch verification plans failed: $e. Using fallback values.");
-      _verificationPlans = [
-        {'id': 'weekly', 'name': 'Weekly Plan', 'price': 59.0, 'discount_price': null, 'interval_unit': 'week'},
-        {'id': 'monthly', 'name': 'Monthly Plan', 'price': 199.0, 'discount_price': null, 'interval_unit': 'month'},
-        {'id': 'yearly', 'name': 'Yearly Plan', 'price': 1999.0, 'discount_price': null, 'interval_unit': 'year'},
-        {'id': 'lifetime', 'name': 'Lifetime Plan', 'price': 4999.0, 'discount_price': null, 'interval_unit': 'lifetime'},
-      ];
+      _verificationPlans = VerificationPlanPricing.allPlans.values.map((p) => {
+        'id': p.id,
+        'name': p.name,
+        'price': p.basePrice,
+        'discount_price': p.discountPrice,
+        'interval_unit': p.duration,
+      }).toList();
       updateState();
+    }
+  }
+
+  void subscribeToVerificationPlansRealtime() {
+    try {
+      _supabase
+          .from('verification_plans')
+          .stream(primaryKey: ['id'])
+          .listen((data) {
+            if (data.isNotEmpty) {
+              _verificationPlans = List<Map<String, dynamic>>.from(data);
+              updateState();
+            }
+          });
+    } catch (e) {
+      debugPrint("Realtime verification plans stream error: $e");
     }
   }
 

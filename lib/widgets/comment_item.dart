@@ -8,6 +8,7 @@ import '../services/database_service.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/comment_detail_screen.dart';
 import '../utils/app_theme.dart';
+import 'formatted_content_text.dart';
 import 'share_comment_sheet.dart';
 import 'comments_sheet.dart';
 
@@ -198,8 +199,8 @@ class _CommentItemState extends State<CommentItem> {
                 const SizedBox(height: 4),
 
                 // Content Text
-                Text(
-                  widget.comment['content'] as String,
+                FormattedContentText(
+                  text: widget.comment['content'] as String,
                   style: GoogleFonts.hindSiliguri(
                     fontSize: 15.5,
                     color: context.textPrimary,

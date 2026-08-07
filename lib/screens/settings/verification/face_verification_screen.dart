@@ -1,9 +1,11 @@
+import 'dart:async';
+import 'dart:typed_data';
+import 'package:camera/camera.dart';
 import 'package:dak/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'dart:typed_data';
 
 import '../../../state/verification_controller.dart';
 import '../../../utils/app_theme.dart';
@@ -20,43 +22,41 @@ class FaceVerificationScreen extends StatefulWidget {
 
 class _FaceVerificationScreenState extends State<FaceVerificationScreen>
     with TickerProviderStateMixin {
+  CameraController? _cameraController;
+  List<CameraDescription>? _cameras;
+  bool _isCameraInitialized = false;
+  bool _isCameraError = false;
+
   final _picker = ImagePicker();
   XFile? _faceImage;
 
   late AnimationController _scannerController;
   late AnimationController _pulseController;
-  late AnimationController _instructionController;
   late Animation<double> _pulseAnim;
-  late Animation<double> _instructionFade;
 
   int _currentStep = 0;
-  bool _isCapturing = false;
+  bool _isScanning = false;
+  double _scanProgress = 0.0;
+  Timer? _scanTimer;
 
-  // Crypto-style AI face check steps
   List<_AiStep> get _aiSteps => [
     _AiStep(
       icon: Icons.face_retouching_natural_rounded,
-      label: AppLocalizations.of(context)!.lookStraight,
-      subLabel: 'Face the camera directly. Keep a neutral expression.',
-      color: Color(0xFF6366F1),
+      label: 'Look Straight',
+      subLabel: 'Position your face inside the oval frame.',
+      color: const Color(0xFF6366F1),
     ),
     _AiStep(
-      icon: Icons.rotate_left_rounded,
-      label: AppLocalizations.of(context)!.turnLeftSlightly,
-      subLabel: 'Slowly rotate your head to the left about 15°.',
-      color: Color(0xFF8B5CF6),
-    ),
-    _AiStep(
-      icon: Icons.rotate_right_rounded,
-      label: AppLocalizations.of(context)!.turnRightSlightly,
-      subLabel: 'Slowly rotate your head to the right about 15°.',
-      color: Color(0xFF06B6D4),
+      icon: Icons.center_focus_strong_rounded,
+      label: 'Hold Still',
+      subLabel: 'Keep steady while live biometric scan completes.',
+      color: const Color(0xFF06B6D4),
     ),
     _AiStep(
       icon: Icons.remove_red_eye_outlined,
-      label: AppLocalizations.of(context)!.blinkNaturally,
-      subLabel: 'Blink both eyes once to confirm liveness.',
-      color: Color(0xFF10B981),
+      label: 'Blink & Capture',
+      subLabel: 'Blink naturally for auto-capture.',
+      color: const Color(0xFF10B981),
     ),
   ];
 
@@ -76,76 +76,174 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
 
-    _pulseAnim = Tween<double>(begin: 0.95, end: 1.05).animate(
+    _pulseAnim = Tween<double>(begin: 0.96, end: 1.04).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    _instructionController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 350),
-    );
-    _instructionFade = CurvedAnimation(
-      parent: _instructionController,
-      curve: Curves.easeIn,
-    );
-    _instructionController.forward();
+    _initLiveCamera();
+  }
+
+  Future<void> _initLiveCamera() async {
+    try {
+      _cameras = await availableCameras();
+      if (_cameras != null && _cameras!.isNotEmpty) {
+        final frontCamera = _cameras!.firstWhere(
+          (c) => c.lensDirection == CameraLensDirection.front,
+          orElse: () => _cameras!.first,
+        );
+
+        final controller = CameraController(
+          frontCamera,
+          ResolutionPreset.medium,
+          enableAudio: false,
+        );
+
+        _cameraController = controller;
+        await controller.initialize();
+        
+        if (!mounted) return;
+        setState(() {
+          _isCameraInitialized = true;
+          _isCameraError = false;
+        });
+      } else {
+        if (mounted) setState(() => _isCameraError = true);
+      }
+    } catch (e) {
+      debugPrint("Live camera initialization error: $e");
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = false;
+          _isCameraError = true;
+        });
+      }
+    }
   }
 
   @override
   void dispose() {
+    _scanTimer?.cancel();
+    _cameraController?.dispose();
     _scannerController.dispose();
     _pulseController.dispose();
-    _instructionController.dispose();
     super.dispose();
   }
 
-  void _nextStep() {
-    if (_currentStep < _aiSteps.length - 1) {
-      _instructionController.reverse().then((_) {
-        setState(() => _currentStep++);
-        _instructionController.forward();
-      });
-    } else {
-      _openCamera();
+  Future<void> _retryCameraOrPick() async {
+    setState(() {
+      _isCameraError = false;
+      _isCameraInitialized = false;
+    });
+    await _initLiveCamera();
+    if (!_isCameraInitialized && mounted) {
+      // If camera plugin fails or lacks permission, use ImagePicker which triggers OS permission dialog
+      await _fallbackManualCamera();
     }
   }
 
-  Future<void> _openCamera() async {
-    setState(() => _isCapturing = true);
+  void _startLiveScan() async {
+    if (_isScanning) return;
+
+    if (!_isCameraInitialized) {
+      await _retryCameraOrPick();
+      if (!_isCameraInitialized && _faceImage == null) return;
+    }
+
+    if (_faceImage != null) return;
+
+    setState(() {
+      _isScanning = true;
+      _scanProgress = 0.0;
+      _currentStep = 0;
+    });
+
+    _scanTimer?.cancel();
+    _scanTimer = Timer.periodic(const Duration(milliseconds: 60), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        _scanProgress += 0.02;
+        if (_scanProgress >= 0.35 && _currentStep == 0) {
+          _currentStep = 1;
+        } else if (_scanProgress >= 0.70 && _currentStep == 1) {
+          _currentStep = 2;
+        }
+
+        if (_scanProgress >= 1.0) {
+          _scanProgress = 1.0;
+          timer.cancel();
+          _autoCaptureFace();
+        }
+      });
+    });
+  }
+
+  Future<void> _autoCaptureFace() async {
+    try {
+      XFile? capturedFile;
+      if (_isCameraInitialized && _cameraController != null && _cameraController!.value.isInitialized) {
+        capturedFile = await _cameraController!.takePicture();
+      } else {
+        capturedFile = await _picker.pickImage(
+          source: ImageSource.camera,
+          imageQuality: 90,
+          preferredCameraDevice: CameraDevice.front,
+        );
+      }
+
+      if (capturedFile != null && mounted) {
+        setState(() {
+          _faceImage = capturedFile;
+          _isScanning = false;
+        });
+      } else if (mounted) {
+        setState(() => _isScanning = false);
+      }
+    } catch (e) {
+      debugPrint("Auto capture error: $e");
+      if (mounted) setState(() => _isScanning = false);
+    }
+  }
+
+  Future<void> _fallbackManualCamera() async {
     try {
       final picked = await _picker.pickImage(
         source: ImageSource.camera,
         imageQuality: 90,
         preferredCameraDevice: CameraDevice.front,
       );
-      if (picked != null) {
+      if (picked != null && mounted) {
         setState(() {
           _faceImage = picked;
-          _isCapturing = false;
+          _isScanning = false;
         });
-      } else {
-        setState(() => _isCapturing = false);
       }
     } catch (e) {
-      setState(() => _isCapturing = false);
+      debugPrint("Manual camera picker error: $e");
     }
   }
 
-  void _retake() {
+  void _retakeScan() {
     setState(() {
       _faceImage = null;
+      _isScanning = false;
+      _scanProgress = 0.0;
       _currentStep = 0;
     });
-    _instructionController.reset();
-    _instructionController.forward();
+    if (!_isCameraInitialized && !_isCameraError) {
+      _initLiveCamera();
+    }
   }
 
   void _onContinue() {
     if (_faceImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(AppLocalizations.of(context)!.pleaseCompleteFaceVerificationToContinue,
-            style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+          content: Text(
+            AppLocalizations.of(context)!.pleaseCompleteFaceVerificationToContinue,
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
           ),
           backgroundColor: const Color(0xFF6366F1),
           behavior: SnackBarBehavior.floating,
@@ -163,7 +261,8 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
     final isDark = context.isDarkMode;
     final step = _aiSteps[_currentStep];
     final bool captured = _faceImage != null;
-    final steps = VerificationController.getSteps();
+    final req = context.watch<VerificationController>().request;
+    final steps = VerificationController.getSteps(req.category);
 
     return Scaffold(
       backgroundColor: context.scaffoldBg,
@@ -175,7 +274,10 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.textPrimary, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(AppLocalizations.of(context)!.applyForBlueBadge,
+        title: Text(
+          req.isBusiness
+              ? "Apply for Gold Badge 👑"
+              : (req.isGovernment ? "Apply for Gray Badge 🏛️" : "Apply for Blue Badge 🔵"),
           style: GoogleFonts.inter(
             fontSize: 17,
             fontWeight: FontWeight.w800,
@@ -191,15 +293,16 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
             StepProgressBar(currentStep: 3, labels: steps),
             Expanded(
               child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const ClampingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // ── Header ──────────────────────────────────────────
-                    Text(AppLocalizations.of(context)!.faceVerification,
+                    // Header Title
+                    Text(
+                      AppLocalizations.of(context)!.faceVerification,
                       style: GoogleFonts.inter(
-                        fontSize: 20,
+                        fontSize: 22,
                         fontWeight: FontWeight.w900,
                         color: context.textPrimary,
                         letterSpacing: -0.5,
@@ -208,51 +311,58 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
                     const SizedBox(height: 6),
                     Text(
                       captured
-                          ? 'Your face has been captured successfully.'
-                          : 'Follow the on-screen instructions carefully.',
+                          ? 'Face photo captured successfully. Review and proceed.'
+                          : 'Live In-App Scanner. Align your face inside the frame.',
                       style: GoogleFonts.inter(
                         color: context.textSecondary,
-                        fontSize: 13,
-                        height: 1.45,
+                        fontSize: 13.5,
+                        height: 1.4,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 24),
 
-                    // ── AI STATUS CHIP ───────────────────────────────────
+                    // AI STATUS CHIP
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 400),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                       decoration: BoxDecoration(
                         color: captured
                             ? const Color(0xFF10B981).withValues(alpha: 0.12)
-                            : step.color.withValues(alpha: 0.12),
+                            : (_isScanning ? step.color.withValues(alpha: 0.15) : context.primaryAccent.withValues(alpha: 0.1)),
                         borderRadius: BorderRadius.circular(50),
                         border: Border.all(
                           color: captured
-                              ? const Color(0xFF10B981).withValues(alpha: 0.35)
-                              : step.color.withValues(alpha: 0.35),
+                              ? const Color(0xFF10B981).withValues(alpha: 0.4)
+                              : (_isScanning ? step.color.withValues(alpha: 0.4) : context.primaryAccent.withValues(alpha: 0.3)),
                         ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            width: 7,
-                            height: 7,
+                            width: 8,
+                            height: 8,
                             decoration: BoxDecoration(
-                              color: captured ? const Color(0xFF10B981) : step.color,
+                              color: captured
+                                  ? const Color(0xFF10B981)
+                                  : (_isScanning ? step.color : context.primaryAccent),
                               shape: BoxShape.circle,
                             ),
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            captured ? '✓  Identity Captured' : '  AI Scanner Active',
+                            captured
+                                ? '✓  Face Verified & Captured'
+                                : (_isScanning
+                                    ? 'Scanning (${(_scanProgress * 100).toInt()}%)'
+                                    : 'Live Camera Ready'),
                             style: GoogleFonts.inter(
-                              fontSize: 12,
+                              fontSize: 12.5,
                               fontWeight: FontWeight.w700,
-                              color: captured ? const Color(0xFF10B981) : step.color,
-                              letterSpacing: 0.3,
+                              color: captured
+                                  ? const Color(0xFF10B981)
+                                  : (_isScanning ? step.color : context.primaryAccent),
                             ),
                           ),
                         ],
@@ -260,240 +370,194 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
                     ),
                     const SizedBox(height: 28),
 
-                    // ── BIOMETRIC FACE FRAME ─────────────────────────────
+                    // LIVE BIOMETRIC CAMERA OVAL FRAME
                     ScaleTransition(
                       scale: _pulseAnim,
                       child: GestureDetector(
-                        onTap: captured ? null : (_currentStep == _aiSteps.length - 1 ? _openCamera : null),
+                        onTap: captured ? null : _retryCameraOrPick,
                         child: SizedBox(
-                          width: 240,
-                          height: 240,
+                          width: 250,
+                          height: 250,
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
-                              // Animated biometric brackets
+                              // Animated Biometric Scanner Ring Brackets
                               AnimatedBuilder(
                                 animation: _scannerController,
                                 builder: (ctx, _) => CustomPaint(
-                                  size: const Size(240, 240),
+                                  size: const Size(250, 250),
                                   painter: BiometricScannerPainter(
                                     color: captured
                                         ? const Color(0xFF10B981)
-                                        : step.color,
+                                        : (_isScanning ? step.color : context.primaryAccent),
                                     animationValue: _scannerController.value,
                                   ),
                                 ),
                               ),
-                              // Face oval frame
+
+                              // Oval Clip Frame for Live Camera Preview or Captured Image
                               ClipOval(
                                 child: SizedBox(
-                                  width: 196,
-                                  height: 196,
+                                  width: 204,
+                                  height: 204,
                                   child: captured
                                       ? FutureBuilder<Uint8List>(
                                           future: _faceImage!.readAsBytes(),
                                           builder: (ctx, snap) {
                                             if (!snap.hasData) {
                                               return const Center(
-                                                child: CircularProgressIndicator(strokeWidth: 2),
+                                                child: CircularProgressIndicator(strokeWidth: 2.5),
                                               );
                                             }
                                             return Image.memory(snap.data!, fit: BoxFit.cover);
                                           },
                                         )
-                                      : Container(
-                                          color: isDark
-                                              ? const Color(0xFF0F1123)
-                                              : const Color(0xFFF1F5FF),
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              AnimatedBuilder(
-                                                animation: _instructionFade,
-                                                builder: (ctx, child) => Opacity(
-                                                  opacity: _instructionFade.value,
-                                                  child: child,
-                                                ),
-                                                child: Icon(
-                                                  step.icon,
-                                                  size: 52,
-                                                  color: step.color,
+                                       : (_isCameraInitialized && _cameraController != null && _cameraController!.value.isInitialized)
+                                           ? OverflowBox(
+                                               alignment: Alignment.center,
+                                               child: FittedBox(
+                                                 fit: BoxFit.cover,
+                                                 child: SizedBox(
+                                                   width: 204,
+                                                   height: 204 / (_cameraController!.value.aspectRatio == 0 ? 1 : _cameraController!.value.aspectRatio),
+                                                   child: CameraPreview(_cameraController!),
+                                                 ),
+                                               ),
+                                             )
+                                          : Container(
+                                              color: isDark ? const Color(0xFF0F1123) : const Color(0xFFF1F5FF),
+                                              padding: const EdgeInsets.all(16),
+                                              child: Center(
+                                                child: Column(
+                                                  mainAxisAlignment: MainAxisAlignment.center,
+                                                  children: [
+                                                    Icon(
+                                                      _isCameraError ? Icons.camera_enhance_rounded : Icons.videocam_rounded,
+                                                      size: 42,
+                                                      color: context.primaryAccent,
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                      _isCameraError ? 'Tap to Enable Camera' : 'Initializing Live Cam...',
+                                                      textAlign: TextAlign.center,
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: 12.5,
+                                                        color: context.textPrimary,
+                                                        fontWeight: FontWeight.w700,
+                                                      ),
+                                                    ),
+                                                    if (_isCameraError) ...[
+                                                      const SizedBox(height: 4),
+                                                      Text(
+                                                        'Grant camera permission',
+                                                        style: GoogleFonts.inter(
+                                                          fontSize: 11,
+                                                          color: context.textSecondary,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ],
                                                 ),
                                               ),
-                                              const SizedBox(height: 10),
-                                              Text(
-                                                'Step ${_currentStep + 1} / ${_aiSteps.length}',
-                                                style: GoogleFonts.inter(
-                                                  fontSize: 11,
-                                                  color: context.textSecondary,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
+                                            ),
                                 ),
                               ),
-                              // Scan line (only when not captured)
-                              if (!captured)
-                                AnimatedBuilder(
-                                  animation: _scannerController,
-                                  builder: (ctx, _) {
-                                    final pos = 22 + (_scannerController.value * 196);
-                                    return Positioned(
-                                      top: pos,
-                                      child: Container(
-                                        width: 196,
-                                        height: 2,
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            colors: [
-                                              Colors.transparent,
-                                              step.color.withValues(alpha: 0.9),
-                                              Colors.transparent,
-                                            ],
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: step.color.withValues(alpha: 0.6),
-                                              blurRadius: 10,
-                                              spreadRadius: 1,
-                                            )
+
+                            // Laser Scanner Sweep Animation line (When scanning)
+                            if (_isScanning && !captured)
+                              AnimatedBuilder(
+                                animation: _scannerController,
+                                builder: (ctx, _) {
+                                  final pos = 22 + (_scannerController.value * 204);
+                                  return Positioned(
+                                    top: pos,
+                                    child: Container(
+                                      width: 204,
+                                      height: 3,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Colors.transparent,
+                                            step.color,
+                                            Colors.transparent,
                                           ],
                                         ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: step.color.withValues(alpha: 0.8),
+                                            blurRadius: 10,
+                                            spreadRadius: 2,
+                                          )
+                                        ],
                                       ),
-                                    );
-                                  },
-                                ),
-                              // Success tick
-                              if (captured)
-                                Positioned(
-                                  bottom: 14,
-                                  right: 14,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF10B981),
-                                      shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(Icons.check_rounded, size: 16, color: Colors.white),
+                                  );
+                                },
+                              ),
+
+                            // Checkmark Pill on capture
+                            if (captured)
+                              Positioned(
+                                bottom: 14,
+                                right: 14,
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF10B981),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black26,
+                                        blurRadius: 6,
+                                      )
+                                    ],
                                   ),
+                                  child: const Icon(Icons.check_rounded, size: 20, color: Colors.white),
                                 ),
-                            ],
-                          ),
+                              ),
+                          ],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 28),
+                  ),
+                  const SizedBox(height: 28),
 
-                    // ── INSTRUCTION CARD ─────────────────────────────────
+                    // INSTRUCTION & ACTION SECTION
                     if (!captured) ...[
-                      FadeTransition(
-                        opacity: _instructionFade,
-                        child: _InstructionCard(step: step, isDark: isDark),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // Step dot indicators
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(_aiSteps.length, (i) {
-                          final active = i == _currentStep;
-                          final done = i < _currentStep;
-                          return AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                            width: active ? 22 : 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: done
-                                  ? const Color(0xFF10B981)
-                                  : active
-                                      ? _aiSteps[_currentStep].color
-                                      : (isDark ? Colors.white12 : Colors.black12),
-                              borderRadius: BorderRadius.circular(50),
-                            ),
-                          );
-                        }),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Action button: Next step or Open Camera
-                      SizedBox(
-                        width: double.infinity,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          child: ElevatedButton.icon(
-                            onPressed: _isCapturing ? null : _nextStep,
-                            icon: _isCapturing
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Icon(
-                                    _currentStep == _aiSteps.length - 1
-                                        ? Icons.camera_alt_rounded
-                                        : Icons.arrow_forward_rounded,
-                                    size: 20,
-                                  ),
-                            label: Text(
-                              _currentStep == _aiSteps.length - 1
-                                  ? 'Open Camera & Capture'
-                                  : 'Next Step',
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _aiSteps[_currentStep].color,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              elevation: 0,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ] else ...[
-                      // ── CAPTURED SUCCESS CARD ─────────────────────────
+                      // Dynamic Guidance Card
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                          color: step.color.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.25)),
+                          border: Border.all(color: step.color.withValues(alpha: 0.25)),
                         ),
                         child: Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                color: step.color.withValues(alpha: 0.15),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.verified_rounded, color: Color(0xFF10B981), size: 22),
+                              child: Icon(step.icon, color: step.color, size: 22),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 14),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(AppLocalizations.of(context)!.faceCaptured,
+                                  Text(
+                                    step.label,
                                     style: GoogleFonts.inter(
+                                      fontSize: 15,
                                       fontWeight: FontWeight.w800,
-                                      fontSize: 14,
-                                      color: const Color(0xFF10B981),
+                                      color: context.textPrimary,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
-                                  Text(AppLocalizations.of(context)!.yourSelfieIsReadyForIdentityMatching,
+                                  Text(
+                                    step.subLabel,
                                     style: GoogleFonts.inter(
                                       fontSize: 12.5,
                                       color: context.textSecondary,
@@ -505,45 +569,86 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      TextButton.icon(
-                        onPressed: _retake,
-                        icon: const Icon(Icons.refresh_rounded, size: 18),
-                        label: Text(AppLocalizations.of(context)!.retakePhoto, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-                        style: TextButton.styleFrom(
-                          foregroundColor: context.textSecondary,
+                      const SizedBox(height: 24),
+
+                      // Start In-App Scan Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton.icon(
+                          onPressed: _isScanning ? null : _startLiveScan,
+                          icon: _isScanning
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.camera_front_rounded, size: 20),
+                          label: Text(
+                            _isScanning ? 'Scanning Live Face...' : 'Start Live Verification',
+                            style: GoogleFonts.inter(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: step.color,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 8),
+
+                      if (_isCameraError) ...[
+                        const SizedBox(height: 12),
+                        TextButton.icon(
+                          onPressed: _fallbackManualCamera,
+                          icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                          label: Text(
+                            'Or Take Photo With Camera',
+                            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ] else ...[
+                      // Retake button if captured
+                      OutlinedButton.icon(
+                        onPressed: _retakeScan,
+                        icon: const Icon(Icons.refresh_rounded, size: 18),
+                        label: Text(
+                          'Retake Face Photo',
+                          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
                     ],
 
-                    // ── SECURITY BADGES ──────────────────────────────────
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 8,
-                      alignment: WrapAlignment.center,
-                      children: [
-                        _Badge(icon: Icons.security_rounded, label: AppLocalizations.of(context)!.endtoendEncrypted),
-                        _Badge(icon: Icons.visibility_off_rounded, label: AppLocalizations.of(context)!.notStoredPublicly),
-                        _Badge(icon: Icons.verified_user_rounded, label: AppLocalizations.of(context)!.livenessChecked),
-                      ],
-                    ),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
             ),
 
-            // ── BOTTOM CONTINUE BUTTON ───────────────────────────────
-            if (captured)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                child: PigeonPrimaryButton(
-                  label: AppLocalizations.of(context)!.saveContinue,
-                  icon: Icons.arrow_forward_rounded,
-                  onPressed: _onContinue,
-                ),
+            // Continue Button at bottom
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: PigeonPrimaryButton(
+                label: AppLocalizations.of(context)!.saveContinue,
+                icon: Icons.arrow_forward_rounded,
+                onPressed: _onContinue,
               ),
+            ),
           ],
         ),
       ),
@@ -551,107 +656,12 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
   }
 }
 
-// ── Instruction card widget ───────────────────────────────────────────────────
-class _InstructionCard extends StatelessWidget {
-  final _AiStep step;
-  final bool isDark;
-  const _InstructionCard({required this.step, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      decoration: BoxDecoration(
-        color: step.color.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: step.color.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(9),
-            decoration: BoxDecoration(
-              color: step.color.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(step.icon, color: step.color, size: 20),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  step.label,
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14.5,
-                    color: step.color,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  step.subLabel,
-                  style: GoogleFonts.inter(
-                    fontSize: 12.5,
-                    color: isDark ? Colors.white60 : Colors.black54,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Security badge widget ─────────────────────────────────────────────────────
-class _Badge extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _Badge({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: context.isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(50),
-        border: Border.all(
-          color: context.isDarkMode ? Colors.white12 : Colors.black12,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: context.textSecondary),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: context.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── AI Step model ─────────────────────────────────────────────────────────────
 class _AiStep {
   final IconData icon;
   final String label;
   final String subLabel;
   final Color color;
+
   const _AiStep({
     required this.icon,
     required this.label,
@@ -660,79 +670,46 @@ class _AiStep {
   });
 }
 
-// ── Biometric scanner painter ─────────────────────────────────────────────────
+// Biometric Scanner Ring Painter
 class BiometricScannerPainter extends CustomPainter {
   final Color color;
   final double animationValue;
 
-  BiometricScannerPainter({required this.color, required this.animationValue});
+  BiometricScannerPainter({
+    required this.color,
+    required this.animationValue,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final double pulseScale = 1.0 + (animationValue * 0.025);
-    final double radius = (size.width / 2) * pulseScale;
     final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width / 2) - 6;
 
-    // Outer glow circle
-    final glowPaint = Paint()
-      ..color = color.withValues(alpha: 0.12)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 14
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-    canvas.drawCircle(center, radius - 6, glowPaint);
+    final paintRing = Paint()
+      ..color = color.withValues(alpha: 0.3)
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
 
-    // Outer ring
-    final ringPaint = Paint()
-      ..color = color.withValues(alpha: 0.25)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    canvas.drawCircle(center, radius - 6, ringPaint);
+    canvas.drawCircle(center, radius, paintRing);
 
-    // Corner brackets
-    final bracketPaint = Paint()
+    final paintArc = Paint()
       ..color = color
-      ..style = PaintingStyle.stroke
       ..strokeWidth = 3.5
+      ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
-    const bracketLength = 26.0;
-    const offset = 12.0;
-
-    // Top-left
-    canvas.drawPath(
-      Path()
-        ..moveTo(center.dx - radius + offset, center.dy - radius + offset + bracketLength)
-        ..lineTo(center.dx - radius + offset, center.dy - radius + offset)
-        ..lineTo(center.dx - radius + offset + bracketLength, center.dy - radius + offset),
-      bracketPaint,
-    );
-    // Top-right
-    canvas.drawPath(
-      Path()
-        ..moveTo(center.dx + radius - offset - bracketLength, center.dy - radius + offset)
-        ..lineTo(center.dx + radius - offset, center.dy - radius + offset)
-        ..lineTo(center.dx + radius - offset, center.dy - radius + offset + bracketLength),
-      bracketPaint,
-    );
-    // Bottom-left
-    canvas.drawPath(
-      Path()
-        ..moveTo(center.dx - radius + offset, center.dy + radius - offset - bracketLength)
-        ..lineTo(center.dx - radius + offset, center.dy + radius - offset)
-        ..lineTo(center.dx - radius + offset + bracketLength, center.dy + radius - offset),
-      bracketPaint,
-    );
-    // Bottom-right
-    canvas.drawPath(
-      Path()
-        ..moveTo(center.dx + radius - offset - bracketLength, center.dy + radius - offset)
-        ..lineTo(center.dx + radius - offset, center.dy + radius - offset)
-        ..lineTo(center.dx + radius - offset, center.dy + radius - offset - bracketLength),
-      bracketPaint,
+    final startAngle = animationValue * 2 * 3.14159;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      startAngle,
+      1.2,
+      false,
+      paintArc,
     );
   }
 
   @override
-  bool shouldRepaint(covariant BiometricScannerPainter old) =>
-      old.animationValue != animationValue || old.color != color;
+  bool shouldRepaint(covariant BiometricScannerPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.animationValue != animationValue;
+  }
 }

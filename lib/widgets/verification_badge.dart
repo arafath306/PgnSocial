@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../services/general_settings_provider.dart';
 
 class VerificationBadge extends StatelessWidget {
   final bool isVerified;
@@ -18,22 +16,16 @@ class VerificationBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!isVerified) return const SizedBox.shrink();
     
-    final settings = Provider.of<GeneralSettingsProvider>(context, listen: false);
-    
-    if (!settings.isTieredBadgesEnabled) {
-      return Icon(Icons.verified, color: Colors.blue, size: size);
-    }
-    
-    // Tiered logic
     Color badgeColor;
-    if (badgeType == 'gold') {
-      badgeColor = Colors.amber;
-    } else if (badgeType == 'gray') {
-      badgeColor = Colors.grey;
+    final String type = (badgeType ?? 'blue').toLowerCase();
+    if (type == 'gold' || type == 'business') {
+      badgeColor = const Color(0xFFD97706); // Gold Badge 👑
+    } else if (type == 'gray' || type == 'government' || type == 'media') {
+      badgeColor = const Color(0xFF64748B); // Gray Badge 🏛️
     } else {
-      badgeColor = Colors.blue;
+      badgeColor = const Color(0xFF0095F6); // Blue Badge 🔵
     }
     
-    return Icon(Icons.verified, color: badgeColor, size: size);
+    return Icon(Icons.verified_rounded, color: badgeColor, size: size);
   }
 }

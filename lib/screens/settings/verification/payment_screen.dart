@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../../services/database_service.dart';
 import '../../../state/verification_controller.dart';
+import '../../../models/verification_plan_pricing.dart';
 import '../../../utils/app_theme.dart';
 import '../../../widgets/verification/pigeon_primary_button.dart';
 import '../../../widgets/verification/pigeon_text_field.dart';
@@ -83,46 +84,37 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final steps = VerificationController.getSteps();
-
-    final verificationPlans = context.select<DatabaseService, List<Map<String, dynamic>>>((db) => db.verificationPlans);
-    
     final controller = context.watch<VerificationController>();
+    final req = controller.request;
+    final steps = VerificationController.getSteps(req.category);
+
     final isSubmitting = controller.isSubmitting;
     final selectedPlanId = controller.request.selectedPlanId;
     final isDark = context.isDarkMode;
 
-    final Map<String, Map<String, dynamic>> fallbackCustomPlans = {
-      'general_weekly_basic': {'id': 'general_weekly_basic', 'name': 'General Weekly Basic', 'price': 59.0, 'interval_unit': 'week'},
-      'general_weekly_premium': {'id': 'general_weekly_premium', 'name': 'General Weekly Premium', 'price': 99.0, 'interval_unit': 'week'},
-      'general_monthly_basic': {'id': 'general_monthly_basic', 'name': 'General Monthly Basic', 'price': 199.0, 'interval_unit': 'month'},
-      'general_monthly_premium': {'id': 'general_monthly_premium', 'name': 'General Monthly Premium', 'price': 349.0, 'interval_unit': 'month'},
-      'general_yearly_basic': {'id': 'general_yearly_basic', 'name': 'General Yearly Basic', 'price': 1599.0, 'interval_unit': 'year'},
-      'general_yearly_premium': {'id': 'general_yearly_premium', 'name': 'General Yearly Premium', 'price': 2499.0, 'interval_unit': 'year'},
-    };
+    final pricing = VerificationPlanPricing.getPlan(selectedPlanId);
 
-    final plan = verificationPlans.firstWhere(
+    final verificationPlans = context.select<DatabaseService, List<Map<String, dynamic>>>((db) => db.verificationPlans);
+
+    final dbPlan = verificationPlans.firstWhere(
       (p) => p['id'] == selectedPlanId,
-      orElse: () => fallbackCustomPlans[selectedPlanId] ?? {
-        'id': 'monthly',
-        'name': 'Monthly Plan',
-        'price': 199.0,
-        'interval_unit': 'month',
-      },
+      orElse: () => {},
     );
 
-    final planName = plan['name'] ?? 'Monthly Plan';
-    final price = plan['price'] is num
-        ? (plan['price'] as num).toDouble()
-        : double.tryParse(plan['price'].toString()) ?? 199.0;
-    final discountPrice = plan['discount_price'] != null
-        ? (plan['discount_price'] is num
-              ? (plan['discount_price'] as num).toDouble()
-              : double.tryParse(plan['discount_price'].toString()))
-        : null;
+    final String planName = (dbPlan['name'] != null && dbPlan['name'].toString().isNotEmpty)
+        ? dbPlan['name'].toString()
+        : pricing.name;
 
-    final double payableAmount = discountPrice ?? price;
-    final double savingsAmount = discountPrice != null ? (price - discountPrice) : 0.0;
+    final double basePrice = dbPlan['price'] != null
+        ? (dbPlan['price'] as num).toDouble()
+        : pricing.basePrice;
+
+    final double payableAmount = dbPlan['discount_price'] != null
+        ? (dbPlan['discount_price'] as num).toDouble()
+        : (dbPlan['price'] != null ? (dbPlan['price'] as num).toDouble() : pricing.discountPrice);
+
+    final double discount = basePrice > payableAmount ? (basePrice - payableAmount) : 0.0;
+    final double vatAmount = (payableAmount * 0.05) / 1.05;
 
     return Scaffold(
       backgroundColor: context.scaffoldBg,
@@ -138,7 +130,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(AppLocalizations.of(context)!.verificationPayment,
+        title: Text(
+          req.isBusiness
+              ? "Apply for Gold Badge 👑"
+              : (req.isGovernment ? "Apply for Gray Badge 🏛️" : "Apply for Blue Badge 🔵"),
           style: GoogleFonts.inter(
             fontSize: 17,
             fontWeight: FontWeight.w800,
@@ -154,7 +149,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             StepProgressBar(currentStep: 5, labels: steps),
             Expanded(
               child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const ClampingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                 child: Form(
                   key: _formKey,
@@ -200,21 +195,36 @@ class _PaymentScreenState extends State<PaymentScreen> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(AppLocalizations.of(context)!.membershipInvoice,
-                                    style: GoogleFonts.inter(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 12,
-                                      color: context.primaryAccent,
-                                      letterSpacing: 0.8,
+                                  Flexible(
+                                    child: Text(
+                                      AppLocalizations.of(context)!.membershipInvoice,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.inter(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 12,
+                                        color: context.primaryAccent,
+                                        letterSpacing: 0.8,
+                                      ),
                                     ),
                                   ),
-                                  Text(
-                                    selectedPlanId.toUpperCase(),
-                                    style: GoogleFonts.inter(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 12,
-                                      color: context.primaryAccent,
-                                      letterSpacing: 0.8,
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: context.primaryAccent.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      selectedPlanId.split('_').take(3).join(' ').toUpperCase(),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.inter(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 11,
+                                        color: context.primaryAccent,
+                                        letterSpacing: 0.5,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -222,9 +232,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                             ),
                             // Line Items
                             _buildInvoiceRow('Subscription Plan', planName, false),
-                            _buildInvoiceRow('Base Price', '৳${price.toStringAsFixed(0)}', false),
-                            if (discountPrice != null)
-                              _buildInvoiceRow('Offer Discount', '-৳${savingsAmount.toStringAsFixed(0)}', false, valueColor: const Color(0xFF10B981)),
+                            _buildInvoiceRow('Base Price', '৳${basePrice.toStringAsFixed(0)}', false),
+                            _buildInvoiceRow('Promo Discount', '-৳${discount.toStringAsFixed(0)}', false, valueColor: const Color(0xFF10B981)),
+                            _buildInvoiceRow('Govt. VAT (5% Incl.)', '৳${vatAmount.toStringAsFixed(2)}', false, valueColor: const Color(0xFF64748B)),
                             
                             const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 16),
@@ -403,20 +413,30 @@ class _PaymentScreenState extends State<PaymentScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: isTotal ? 14 : 12.5,
-              fontWeight: isTotal ? FontWeight.w900 : FontWeight.w500,
-              color: isTotal ? context.textPrimary : context.textSecondary,
+          Expanded(
+            flex: 4,
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: isTotal ? 14 : 12.5,
+                fontWeight: isTotal ? FontWeight.w900 : FontWeight.w500,
+                color: isTotal ? context.textPrimary : context.textSecondary,
+              ),
             ),
           ),
-          Text(
-            value,
-            style: GoogleFonts.inter(
-              fontSize: isTotal ? 17 : 13,
-              fontWeight: isTotal ? FontWeight.w900 : FontWeight.bold,
-              color: valueColor ?? context.textPrimary,
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 5,
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                fontSize: isTotal ? 17 : 13,
+                fontWeight: isTotal ? FontWeight.w900 : FontWeight.bold,
+                color: valueColor ?? context.textPrimary,
+              ),
             ),
           ),
         ],

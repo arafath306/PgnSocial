@@ -11,10 +11,12 @@ import '../widgets/create_thread/compose_header.dart';
 import '../widgets/create_thread/create_thread_header.dart';
 import '../widgets/create_thread/create_thread_toolbar.dart';
 import '../widgets/create_thread/media_preview_section.dart';
+import '../widgets/create_thread/mention_autocomplete_overlay.dart';
 import '../widgets/create_thread/poll_creator.dart';
 import '../widgets/create_thread/url_input_section.dart';
 import '../widgets/create_thread/voice_recorder_ui.dart';
 
+import '../models/profile.dart';
 import '../models/thread_post.dart';
 import '../models/draft_post.dart';
 import '../services/draft_service.dart';
@@ -27,6 +29,7 @@ import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
 import '../services/general_settings_provider.dart';
+import 'settings/verification/verification_intro_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 part 'create_thread_drafts_extensions.dart';
 part 'create_thread_media_extensions.dart';
@@ -143,9 +146,74 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
 
 
 
+  List<Profile> _mentionSuggestions = [];
+  bool _isSearchingMentions = false;
+  String? _activeMentionQuery;
+  int _mentionStartIndex = -1;
+
   void _onContentChanged() {
     setState(() {
       _charCount = _contentController.text.length;
+    });
+
+    _checkMentionTrigger();
+  }
+
+  Future<void> _checkMentionTrigger() async {
+    final text = _contentController.text;
+    final selection = _contentController.selection;
+    if (selection.baseOffset <= 0 || selection.baseOffset > text.length) {
+      if (_mentionSuggestions.isNotEmpty) {
+        setState(() => _mentionSuggestions = []);
+      }
+      return;
+    }
+
+    final textBeforeCursor = text.substring(0, selection.baseOffset);
+    final match = RegExp(r'@([a-zA-Z0-9_\.\u0980-\u09FF]*)$').firstMatch(textBeforeCursor);
+
+    if (match != null) {
+      final query = match.group(1) ?? '';
+      _mentionStartIndex = match.start;
+      _activeMentionQuery = query;
+
+      setState(() => _isSearchingMentions = true);
+      final dbService = Provider.of<DatabaseService>(context, listen: false);
+      final results = await dbService.searchProfiles(query);
+
+      if (mounted && _activeMentionQuery == query) {
+        setState(() {
+          _mentionSuggestions = results;
+          _isSearchingMentions = false;
+        });
+      }
+    } else if (_mentionSuggestions.isNotEmpty) {
+      setState(() {
+        _mentionSuggestions = [];
+        _isSearchingMentions = false;
+        _activeMentionQuery = null;
+      });
+    }
+  }
+
+  void _onMentionUserSelected(Profile user) {
+    if (_mentionStartIndex < 0) return;
+    final text = _contentController.text;
+    final cursor = _contentController.selection.baseOffset;
+    if (cursor < _mentionStartIndex || _mentionStartIndex > text.length) return;
+
+    final prefix = text.substring(0, _mentionStartIndex);
+    final suffix = cursor <= text.length ? text.substring(cursor) : '';
+    final inserted = '@${user.username} ';
+    
+    _contentController.text = '$prefix$inserted$suffix';
+    _contentController.selection = TextSelection.collapsed(
+      offset: prefix.length + inserted.length,
+    );
+
+    setState(() {
+      _mentionSuggestions = [];
+      _activeMentionQuery = null;
     });
   }
 
@@ -391,6 +459,14 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
                         showVideoInput: _showVideoInput,
                       ),
 
+                      // Mention (@username) Autocomplete Suggestions Overlay
+                      if (_mentionSuggestions.isNotEmpty || _isSearchingMentions)
+                        MentionAutocompleteOverlay(
+                          users: _mentionSuggestions,
+                          isLoading: _isSearchingMentions,
+                          onUserSelected: _onMentionUserSelected,
+                        ),
+
                       // Poll Creator Interface
                       if (_showPollInput)
                         PollCreator(
@@ -519,47 +595,59 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
             },
             onPollTap: () => setState(() => _showPollInput = !_showPollInput),
             onVoiceTap: () {
-              final settings = context.read<GeneralSettingsProvider>();
-              if (settings.isVoicePostEnabled) {
+              final db = context.read<DatabaseService>();
+              final isPremium = db.myProfile?.isPremium == true;
+              if (isPremium) {
                 setState(() => _showVoiceRecorder = !_showVoiceRecorder);
               } else {
-                _showComingSoonDialog("Voice messaging (Pending Admin Approval)");
+                _showUpgradePremiumDialog(
+                  title: "Voice Posts (Premium Feature)",
+                  description: "Voice posts allow you to record and share high-quality audio notes with your followers. Upgrade to any Premium plan to unlock Voice Posts!",
+                  icon: Icons.mic_rounded,
+                  iconColor: Colors.teal,
+                );
               }
             },
             onAnonymousTap: () {
-              final settings = context.read<GeneralSettingsProvider>();
-              if (!settings.isAnonymousPostingEnabled) {
-                _showComingSoonDialog("Anonymous Posting (Pending Admin Approval)");
-                return;
-              }
-              setState(() {
-                _isAnonymous = !_isAnonymous;
-              });
-              ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      Icon(
-                        _isAnonymous ? Icons.security_rounded : Icons.person_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        _isAnonymous
-                            ? 'Anonymous Mode ON 🕵️ (Name & avatar hidden)'
-                            : 'Anonymous Mode OFF 👤 (Posting as yourself)',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-                      ),
-                    ],
+              final db = context.read<DatabaseService>();
+              final isPremium = db.myProfile?.isPremium == true;
+              if (isPremium) {
+                setState(() {
+                  _isAnonymous = !_isAnonymous;
+                });
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(
+                          _isAnonymous ? Icons.security_rounded : Icons.person_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          _isAnonymous
+                              ? 'Anonymous Mode ON 🕵️ (Name & avatar hidden)'
+                              : 'Anonymous Mode OFF 👤 (Posting as yourself)',
+                          style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
+                    backgroundColor: _isAnonymous ? Colors.indigo : const Color(0xFF1E824C),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    duration: const Duration(seconds: 2),
                   ),
-                  backgroundColor: _isAnonymous ? Colors.indigo : const Color(0xFF1E824C),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  duration: const Duration(seconds: 2),
-                ),
-              );
+                );
+              } else {
+                _showUpgradePremiumDialog(
+                  title: "Anonymous Posting (Premium Feature)",
+                  description: "Publish threads completely anonymously without revealing your identity or profile. Upgrade to any Premium plan to unlock Anonymous Mode!",
+                  icon: Icons.security_rounded,
+                  iconColor: Colors.indigo,
+                );
+              }
             },
             onSubscriberTap: () =>
                 setState(() => _isSubscriberOnly = !_isSubscriberOnly),

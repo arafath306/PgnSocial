@@ -94,37 +94,59 @@ class _PendingScreenState extends State<PendingScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Glowing status indicator icon box
+          physics: const ClampingScrollPhysics(),
+          child: Column(
+            children: [
+              // Header Illustration Banner (Full-Width, Edge-to-Edge)
+              if (!isRejected)
                 Container(
-                  width: 96,
-                  height: 96,
+                  width: double.infinity,
+                  height: 220,
+                  margin: const EdgeInsets.only(bottom: 24),
                   decoration: BoxDecoration(
-                    color: (isRejected ? Colors.red : context.primaryAccent)
-                        .withValues(alpha: 0.08),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: (isRejected ? Colors.red : context.primaryAccent).withValues(alpha: 0.1),
-                        blurRadius: 15,
-                        spreadRadius: 2,
-                      )
-                    ],
+                    color: context.isDarkMode ? const Color(0xFF0F1123) : Colors.white,
+                    border: Border(bottom: BorderSide(color: context.border, width: 0.5)),
                   ),
-                  child: Icon(
-                    isRejected
-                        ? Icons.error_outline_rounded
-                        : Icons.hourglass_empty_rounded,
-                    size: 40,
-                    color: isRejected ? Colors.red : context.primaryAccent,
+                  child: ClipRRect(
+                    child: Image.asset(
+                      'assets/under_review_illustration.png',
+                      width: double.infinity,
+                      height: 220,
+                      fit: BoxFit.fitWidth,
+                      alignment: Alignment.topCenter,
+                    ),
+                  ),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.only(top: 24, bottom: 16),
+                  child: Container(
+                    width: 96,
+                    height: 96,
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.red.withValues(alpha: 0.1),
+                          blurRadius: 15,
+                          spreadRadius: 2,
+                        )
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.error_outline_rounded,
+                      size: 40,
+                      color: Colors.red,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 24),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                 
                 Text(
                   isRejected
@@ -243,10 +265,12 @@ class _PendingScreenState extends State<PendingScreen> {
               ],
             ),
           ),
-        ),
+        ],
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 
   Widget _buildTimelineRow(String title, String status, bool isChecked, bool isActive, {bool isLast = false}) {
     final theme = Theme.of(context);

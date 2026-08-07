@@ -16,6 +16,7 @@ class Profile {
   final String? zip;
   final bool isVerified;
   final String? badgeType;
+  final String? verifiedTier;
   final DateTime? verifiedExpiresAt;
   final String? birthdate;
   final String? gender;
@@ -49,6 +50,7 @@ class Profile {
     this.zip,
     this.isVerified = false,
     this.badgeType,
+    this.verifiedTier,
     this.verifiedExpiresAt,
     this.birthdate,
     this.gender,
@@ -66,6 +68,7 @@ class Profile {
   });
 
   factory Profile.fromJson(Map<String, dynamic> json) {
+    final isVer = json['is_verified'] as bool? ?? false;
     return Profile(
       id: json['id'] as String,
       username: (json['username'] as String?) ?? 'anonymous',
@@ -82,8 +85,9 @@ class Profile {
       city: json['city'] as String?,
       village: json['village'] as String?,
       zip: json['zip'] as String?,
-      isVerified: json['is_verified'] as bool? ?? false,
-      badgeType: json['badge_type'] as String?,
+      isVerified: isVer,
+      badgeType: (json['badge_type'] as String?) ?? (json['verified_badge'] as String?),
+      verifiedTier: json['verified_tier'] as String? ?? (json['plan_id']?.toString().contains('premium') == true ? 'premium' : null),
       verifiedExpiresAt: json['verified_expires_at'] != null 
           ? DateTime.tryParse(json['verified_expires_at'] as String) 
           : null,
@@ -95,7 +99,7 @@ class Profile {
       autoplayVideos: json['autoplay_videos'] as bool? ?? true,
       isShadowbanned: json['is_shadowbanned'] as bool? ?? false,
       verificationRequested: json['verification_requested'] as bool? ?? false,
-      canMonetize: json['can_monetize'] as bool? ?? false,
+      canMonetize: json['can_monetize'] as bool? ?? isVer,
       isActiveStatusEnabled: json['is_active_status_enabled'] as bool? ?? true,
       lastSeen: _parseUtcTime(json['last_seen'] as String?),
       publicKey: json['public_key'] as String?,
@@ -124,6 +128,7 @@ class Profile {
       'zip': zip,
       'is_verified': isVerified,
       'badge_type': badgeType,
+      'verified_tier': verifiedTier,
       'verified_expires_at': verifiedExpiresAt?.toIso8601String(),
       'birthdate': birthdate,
       'gender': gender,
@@ -140,6 +145,21 @@ class Profile {
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
     };
   }
+
+  /// True if user is verified on any Premium plan (General Premium, Business Premium, Government Premium)
+  bool get isPremium => isVerified && (verifiedTier?.toLowerCase() == 'premium' || verifiedTier == 'Premium');
+
+  /// Anonymous Post access (Premium feature)
+  bool get hasAnonymousAccess => isPremium;
+
+  /// Voice Post access (Premium feature)
+  bool get hasVoiceAccess => isPremium;
+
+  /// Algorithm Priority access (Premium feature)
+  bool get hasAlgorithmPriority => isPremium;
+
+  /// Screenshot Protection (Premium feature)
+  bool get hasScreenshotProtection => isPremium;
 
   static DateTime? _parseUtcTime(String? dateStr) {
     if (dateStr == null || dateStr.isEmpty) return null;

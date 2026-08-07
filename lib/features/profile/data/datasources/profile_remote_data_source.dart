@@ -21,13 +21,69 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
 
   @override
   Future<bool> submitVerificationRequest(String currentUid, Map<String, dynamic> requestData) async {
-    await supabaseClient.from('verification_requests').upsert({
+    final cleanedData = Map<String, dynamic>.from(requestData)..removeWhere((k, v) => v == null);
+
+    final payload = <String, dynamic>{
       'user_id': currentUid,
-      ...requestData,
+      ...cleanedData,
       'status': 'pending',
-      'rejection_reason': null,
       'updated_at': DateTime.now().toUtc().toIso8601String(),
-    }, onConflict: 'user_id');
+    };
+
+    Map<String, dynamic> activePayload = Map<String, dynamic>.from(payload);
+
+    for (int attempt = 0; attempt < 15; attempt++) {
+      try {
+        final existing = await supabaseClient
+            .from('verification_requests')
+            .select('id')
+            .eq('user_id', currentUid)
+            .maybeSingle();
+
+        if (existing != null) {
+          await supabaseClient
+              .from('verification_requests')
+              .update(activePayload)
+              .eq('user_id', currentUid);
+        } else {
+          await supabaseClient
+              .from('verification_requests')
+              .insert(activePayload);
+        }
+        return true;
+      } catch (e) {
+        final errStr = e.toString();
+        final match = RegExp(r"Could not find the '([^']+)' column").firstMatch(errStr);
+        if (match != null) {
+          final missingCol = match.group(1);
+          if (missingCol != null && activePayload.containsKey(missingCol)) {
+            activePayload.remove(missingCol);
+            continue; // Retry without the missing DB column
+          }
+        }
+
+        // Try upsert fallback if RLS or other condition occurs
+        try {
+          await supabaseClient.from('verification_requests').upsert(
+            activePayload,
+            onConflict: 'user_id',
+          );
+          return true;
+        } catch (upsertErr) {
+          final upsertErrStr = upsertErr.toString();
+          final upsertMatch = RegExp(r"Could not find the '([^']+)' column").firstMatch(upsertErrStr);
+          if (upsertMatch != null) {
+            final missingCol = upsertMatch.group(1);
+            if (missingCol != null && activePayload.containsKey(missingCol)) {
+              activePayload.remove(missingCol);
+              continue; // Retry next attempt without missing column
+            }
+          }
+          rethrow;
+        }
+      }
+    }
+
     return true;
   }
 

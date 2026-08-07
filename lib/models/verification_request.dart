@@ -22,6 +22,25 @@ class VerificationRequest {
   bool isStudent;
   String idType;
 
+  // Category
+  String category;
+
+  // Business Specific Documents & Details
+  XFile? tradeLicenseImage;
+  XFile? tinCertificateImage;
+  XFile? companyRegCertificateImage;
+  String businessEmail;
+  String websiteUrl;
+  String tinNumber;
+
+  // Government Specific Documents & Details
+  XFile? govIdCardImage;
+  XFile? govAuthorizationLetterImage;
+  String govMinistryName;
+  String govDesignation;
+  String govEmail;
+  String govWebsiteUrl;
+
   // Step 3 — Face Verification
   XFile? faceImage;
   String? faceImageUrl;
@@ -50,6 +69,19 @@ class VerificationRequest {
     this.nidBack,
     this.isStudent = false,
     this.idType = 'nid',
+    this.category = 'general',
+    this.tradeLicenseImage,
+    this.tinCertificateImage,
+    this.companyRegCertificateImage,
+    this.businessEmail = '',
+    this.websiteUrl = '',
+    this.tinNumber = '',
+    this.govIdCardImage,
+    this.govAuthorizationLetterImage,
+    this.govMinistryName = '',
+    this.govDesignation = '',
+    this.govEmail = '',
+    this.govWebsiteUrl = '',
     this.faceImage,
     this.faceImageUrl,
     this.phone = '',
@@ -64,4 +96,7 @@ class VerificationRequest {
 
   bool get hasBothIdImages => nidFront != null && nidBack != null;
   bool get hasFaceImage => faceImage != null;
+  bool get isBusiness => category == 'business' || selectedPlanId.contains('business');
+  bool get isGovernment => category == 'government' || selectedPlanId.contains('government');
+  bool get isPremiumPlan => selectedPlanId.contains('premium');
 }

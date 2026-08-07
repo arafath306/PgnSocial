@@ -7,6 +7,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import '../models/profile.dart';
 import '../models/thread_post.dart';
 import '../models/notification.dart';
+import '../models/verification_plan_pricing.dart';
 
 import '../core/injection.dart';
 import 'general_settings_provider.dart';

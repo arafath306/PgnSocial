@@ -13,11 +13,28 @@ class VerificationController extends ChangeNotifier {
   VerificationRequest request = VerificationRequest();
   bool isSubmitting = false;
 
-  static List<String> getSteps() {
+  static List<String> getSteps([String category = 'general']) {
+    if (category == 'business') {
+      return const [
+        'Personal',
+        'Business Info',
+        'Face Scan',
+        'Review',
+        'Payment',
+      ];
+    } else if (category == 'government') {
+      return const [
+        'Personal',
+        'Gov Credentials',
+        'Face Scan',
+        'Review',
+        'Payment',
+      ];
+    }
     return const [
       'Personal',
-      'Identity',
-      'Face',
+      'NID Upload',
+      'Face Scan',
       'Review',
       'Payment',
     ];
@@ -73,6 +90,18 @@ class VerificationController extends ChangeNotifier {
 
   void selectPlan(String planId) {
     request.selectedPlanId = planId;
+    if (planId.contains('business')) {
+      request.category = 'business';
+    } else if (planId.contains('government') || planId.contains('media')) {
+      request.category = 'government';
+    } else {
+      request.category = 'general';
+    }
+    notifyListeners();
+  }
+
+  void selectCategory(String category) {
+    request.category = category;
     notifyListeners();
   }
 
@@ -122,8 +151,61 @@ class VerificationController extends ChangeNotifier {
         faceUrl = res.fold((l) => throw Exception(l.message), (r) => r);
       }
 
-      if (frontUrl == null || backUrl == null) {
-        throw Exception("Failed to upload document images to storage");
+      // Business Documents Upload
+      String? tradeLicenseUrl;
+      if (request.tradeLicenseImage != null) {
+        final bytes = await request.tradeLicenseImage!.readAsBytes();
+        final ext = request.tradeLicenseImage!.name.split('.').last;
+        final res = await sl<UploadVerificationImageUseCase>().call(
+          bytes,
+          'trade_license_${DateTime.now().millisecondsSinceEpoch}.$ext',
+        );
+        tradeLicenseUrl = res.fold((l) => null, (r) => r);
+      }
+
+      String? tinUrl;
+      if (request.tinCertificateImage != null) {
+        final bytes = await request.tinCertificateImage!.readAsBytes();
+        final ext = request.tinCertificateImage!.name.split('.').last;
+        final res = await sl<UploadVerificationImageUseCase>().call(
+          bytes,
+          'tin_cert_${DateTime.now().millisecondsSinceEpoch}.$ext',
+        );
+        tinUrl = res.fold((l) => null, (r) => r);
+      }
+
+      String? companyRegUrl;
+      if (request.companyRegCertificateImage != null) {
+        final bytes = await request.companyRegCertificateImage!.readAsBytes();
+        final ext = request.companyRegCertificateImage!.name.split('.').last;
+        final res = await sl<UploadVerificationImageUseCase>().call(
+          bytes,
+          'company_reg_${DateTime.now().millisecondsSinceEpoch}.$ext',
+        );
+        companyRegUrl = res.fold((l) => null, (r) => r);
+      }
+
+      // Government Documents Upload
+      String? govIdCardUrl;
+      if (request.govIdCardImage != null) {
+        final bytes = await request.govIdCardImage!.readAsBytes();
+        final ext = request.govIdCardImage!.name.split('.').last;
+        final res = await sl<UploadVerificationImageUseCase>().call(
+          bytes,
+          'gov_id_${DateTime.now().millisecondsSinceEpoch}.$ext',
+        );
+        govIdCardUrl = res.fold((l) => null, (r) => r);
+      }
+
+      String? govAuthLetterUrl;
+      if (request.govAuthorizationLetterImage != null) {
+        final bytes = await request.govAuthorizationLetterImage!.readAsBytes();
+        final ext = request.govAuthorizationLetterImage!.name.split('.').last;
+        final res = await sl<UploadVerificationImageUseCase>().call(
+          bytes,
+          'gov_auth_${DateTime.now().millisecondsSinceEpoch}.$ext',
+        );
+        govAuthLetterUrl = res.fold((l) => null, (r) => r);
       }
 
       // 4. Submit request metadata to database
@@ -136,6 +218,19 @@ class VerificationController extends ChangeNotifier {
         'nid_front_url': frontUrl,
         'nid_back_url': backUrl,
         'face_image_url': faceUrl,
+        'category': request.category,
+        'trade_license_url': tradeLicenseUrl,
+        'tin_certificate_url': tinUrl,
+        'company_reg_url': companyRegUrl,
+        'business_email': request.businessEmail,
+        'website_url': request.websiteUrl,
+        'tin_number': request.tinNumber,
+        'gov_id_card_url': govIdCardUrl,
+        'gov_auth_letter_url': govAuthLetterUrl,
+        'gov_ministry_name': request.govMinistryName,
+        'gov_designation': request.govDesignation,
+        'gov_email': request.govEmail,
+        'gov_website_url': request.govWebsiteUrl,
         'phone': request.phone,
         'email': request.email,
         'bkash_sender_number': request.bkashSenderNumber,

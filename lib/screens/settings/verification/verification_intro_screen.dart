@@ -46,6 +46,7 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
     } else {
       // Step 3 -> Move to Personal Details
       final controller = context.read<VerificationController>();
+      controller.selectCategory(_selectedCategory);
       controller.selectPlan('${_selectedCategory}_${_selectedDuration}_$_selectedTier');
       Navigator.push(
         context,
@@ -269,15 +270,15 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
                 ),
                 const SizedBox(height: 14),
 
-                // Card 3: Government / Media (Gray Badge)
+                // Card 3: Government / Official (Gray Badge)
                 _buildCategoryCard(
                   context,
-                  id: 'media',
+                  id: 'government',
                   badgeColor: const Color(0xFF64748B),
                   badgeLabel: "Gray Badge",
                   badgeBgColor: const Color(0xFFF1F5F9),
-                  title: "Government / Media",
-                  subtitle: "For government agencies, news and public institutions.",
+                  title: "Government / Official",
+                  subtitle: "For government agencies, public officials and state institutions.",
                   titleColor: context.textPrimary,
                 ),
                 const SizedBox(height: 20),
@@ -579,25 +580,50 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
     );
   }
 
+  Color get _categoryColor {
+    if (_selectedCategory == 'business') return const Color(0xFFD97706);
+    if (_selectedCategory == 'government' || _selectedCategory == 'media') return const Color(0xFF64748B);
+    return const Color(0xFF0095F6);
+  }
+
+  Color get _categoryLightColor {
+    if (_selectedCategory == 'business') return const Color(0xFFF59E0B);
+    if (_selectedCategory == 'government' || _selectedCategory == 'media') return const Color(0xFF94A3B8);
+    return const Color(0xFF60A5FA);
+  }
+
+  Color get _categoryBgColor {
+    if (_selectedCategory == 'business') return const Color(0xFFFFFBEB);
+    if (_selectedCategory == 'government' || _selectedCategory == 'media') return const Color(0xFFF1F5F9);
+    return const Color(0xFFEFF6FF);
+  }
+
   Widget _buildBasicPlanCard(BuildContext context) {
     final isSelected = _selectedTier == 'basic';
     final isDark = context.isDarkMode;
 
     String priceStr;
-    switch (_selectedDuration) {
-      case 'weekly':
-        priceStr = "৳59 / week";
-        break;
-      case 'yearly':
-        priceStr = "৳1,599 / year";
-        break;
-      case 'lifetime':
-        priceStr = "৳4,999 / lifetime";
-        break;
-      case 'monthly':
-      default:
-        priceStr = "৳199 / month";
-        break;
+    if (_selectedCategory == 'business') {
+      switch (_selectedDuration) {
+        case 'weekly': priceStr = "৳139 / week"; break;
+        case 'yearly': priceStr = "৳3,499 / year"; break;
+        case 'lifetime': priceStr = "৳8,999 / lifetime"; break;
+        case 'monthly': default: priceStr = "৳450 / month"; break;
+      }
+    } else if (_selectedCategory == 'government' || _selectedCategory == 'media') {
+      switch (_selectedDuration) {
+        case 'weekly': priceStr = "৳110 / week"; break;
+        case 'yearly': priceStr = "৳2,800 / year"; break;
+        case 'lifetime': priceStr = "৳7,999 / lifetime"; break;
+        case 'monthly': default: priceStr = "৳350 / month"; break;
+      }
+    } else {
+      switch (_selectedDuration) {
+        case 'weekly': priceStr = "৳59 / week"; break;
+        case 'yearly': priceStr = "৳1,599 / year"; break;
+        case 'lifetime': priceStr = "৳4,999 / lifetime"; break;
+        case 'monthly': default: priceStr = "৳199 / month"; break;
+      }
     }
 
     return GestureDetector(
@@ -608,9 +634,7 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
           color: isDark ? const Color(0xFF1E293B) : Colors.white,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: isSelected
-                ? const Color(0xFF0095F6)
-                : (isDark ? const Color(0xFF334155) : const Color(0xFFBFDBFE)),
+            color: isSelected ? _categoryColor : (isDark ? const Color(0xFF334155) : _categoryColor.withValues(alpha: 0.3)),
             width: isSelected ? 2.0 : 1.2,
           ),
         ),
@@ -624,7 +648,7 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
                   style: GoogleFonts.inter(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF0095F6),
+                    color: _categoryColor,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -639,20 +663,8 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
                 const SizedBox(height: 14),
 
                 // Perk checklist
-                Row(
-                  children: [
-                    const Icon(Icons.check_rounded, size: 16, color: Color(0xFF0095F6)),
-                    const SizedBox(width: 8),
-                    Text(
-                      "Verified Badge",
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: context.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
+                _buildPerkRow(_selectedCategory == 'business' ? "Gold Verified Badge" : (_selectedCategory == 'government' ? "Gray Verified Badge" : "Blue Verified Badge")),
+                _buildPerkRow("Monetization Access 💰"),
                 const SizedBox(height: 18),
 
                 // Continue Button
@@ -665,12 +677,12 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
                       _nextStep();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFEFF6FF),
-                      foregroundColor: const Color(0xFF1D4ED8),
+                      backgroundColor: _categoryBgColor,
+                      foregroundColor: _categoryColor,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: const BorderSide(color: Color(0xFFBFDBFE)),
+                        side: BorderSide(color: _categoryColor.withValues(alpha: 0.3)),
                       ),
                     ),
                     child: Row(
@@ -689,11 +701,11 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
               ],
             ),
 
-            // Original Badge Illustration on right
-            const Positioned(
+            // Badge Illustration matching Category Color
+            Positioned(
               top: 4,
               right: 4,
-              child: Icon(Icons.verified_rounded, color: Color(0xFF60A5FA), size: 48),
+              child: Icon(Icons.verified_rounded, color: _categoryLightColor, size: 48),
             ),
           ],
         ),
@@ -706,20 +718,27 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
     final isDark = context.isDarkMode;
 
     String priceStr;
-    switch (_selectedDuration) {
-      case 'weekly':
-        priceStr = "৳100 / week";
-        break;
-      case 'yearly':
-        priceStr = "৳2,500 / year";
-        break;
-      case 'lifetime':
-        priceStr = "৳8,999 / lifetime";
-        break;
-      case 'monthly':
-      default:
-        priceStr = "৳350 / month";
-        break;
+    if (_selectedCategory == 'business') {
+      switch (_selectedDuration) {
+        case 'weekly': priceStr = "৳250 / week"; break;
+        case 'yearly': priceStr = "৳5,999 / year"; break;
+        case 'lifetime': priceStr = "৳14,999 / lifetime"; break;
+        case 'monthly': default: priceStr = "৳799 / month"; break;
+      }
+    } else if (_selectedCategory == 'government' || _selectedCategory == 'media') {
+      switch (_selectedDuration) {
+        case 'weekly': priceStr = "৳220 / week"; break;
+        case 'yearly': priceStr = "৳4,999 / year"; break;
+        case 'lifetime': priceStr = "৳12,999 / lifetime"; break;
+        case 'monthly': default: priceStr = "৳699 / month"; break;
+      }
+    } else {
+      switch (_selectedDuration) {
+        case 'weekly': priceStr = "৳100 / week"; break;
+        case 'yearly': priceStr = "৳2,500 / year"; break;
+        case 'lifetime': priceStr = "৳8,999 / lifetime"; break;
+        case 'monthly': default: priceStr = "৳350 / month"; break;
+      }
     }
 
     return GestureDetector(
@@ -730,7 +749,7 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
           color: isDark ? const Color(0xFF1E293B) : Colors.white,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: const Color(0xFFF59E0B),
+            color: isSelected ? _categoryColor : _categoryLightColor,
             width: isSelected ? 2.2 : 1.4,
           ),
         ),
@@ -747,7 +766,7 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
                       style: GoogleFonts.inter(
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFFD97706),
+                        color: _categoryColor,
                       ),
                     ),
                   ],
@@ -764,11 +783,12 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
                 const SizedBox(height: 14),
 
                 // Perk checklist
-                _buildPerkRow("Verified Badge"),
-                _buildPerkRow("Anonymous Posts"),
-                _buildPerkRow("Voice Posts"),
-                _buildPerkRow("Screenshot Protection"),
-                _buildPerkRow("Algorithm Priority"),
+                _buildPerkRow(_selectedCategory == 'business' ? "Gold Verified Badge" : (_selectedCategory == 'government' ? "Gray Verified Badge" : "Blue Verified Badge")),
+                _buildPerkRow("Monetization Access 💰"),
+                _buildPerkRow("Anonymous Posts 🕵️"),
+                _buildPerkRow("Voice Posts 🎙️"),
+                _buildPerkRow("Algorithm Priority ⚡"),
+                _buildPerkRow("Screenshot Protection 🔒"),
                 const SizedBox(height: 18),
 
                 // Continue Button
@@ -781,7 +801,7 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
                       _nextStep();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD97706),
+                      backgroundColor: _categoryColor,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:video_player/video_player.dart';
 import '../../services/auth_service.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -11,15 +12,53 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  late VideoPlayerController _videoController;
+  bool _isVideoInitialized = false;
+  bool _hasNavigated = false;
+
   @override
   void initState() {
     super.initState();
-    _startSplashTimer();
+    _initializeAndPlayVideo();
   }
 
-  void _startSplashTimer() async {
-    await Future.delayed(const Duration(milliseconds: 1500));
-    if (!mounted) return;
+  Future<void> _initializeAndPlayVideo() async {
+    _videoController = VideoPlayerController.asset('assets/splash_video.mp4');
+    try {
+      await _videoController.initialize();
+      await _videoController.setVolume(0.0); // Completely muted, no sound
+      if (!mounted) return;
+
+      setState(() {
+        _isVideoInitialized = true;
+      });
+
+      await _videoController.play();
+
+      _videoController.addListener(() {
+        if (_videoController.value.isInitialized &&
+            _videoController.value.position >= _videoController.value.duration &&
+            !_hasNavigated) {
+          _navigateToNextScreen();
+        }
+      });
+
+      // Safety timer in case listener misses end or video duration is long
+      final videoDuration = _videoController.value.duration;
+      Future.delayed(videoDuration + const Duration(milliseconds: 300), () {
+        if (!_hasNavigated) {
+          _navigateToNextScreen();
+        }
+      });
+    } catch (e) {
+      debugPrint('Error playing splash video: $e');
+      _navigateToNextScreen();
+    }
+  }
+
+  void _navigateToNextScreen() {
+    if (_hasNavigated || !mounted) return;
+    _hasNavigated = true;
 
     final authService = Provider.of<AuthService>(context, listen: false);
     final isSignedIn = authService.isUserSignedIn;
@@ -37,31 +76,34 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   @override
+  void dispose() {
+    _videoController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0C1840),
       body: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            'assets/splash.png',
-            fit: BoxFit.cover,
-          ),
-          
-          // Loading indicator at bottom
-          const Align(
-            alignment: Alignment.bottomCenter,
-            child: Padding(
-              padding: EdgeInsets.only(bottom: 48.0),
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+          Container(color: const Color(0xFF0C1840)),
+          if (_isVideoInitialized)
+            SizedBox.expand(
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _videoController.value.size.width > 0
+                      ? _videoController.value.size.width
+                      : 1080,
+                  height: _videoController.value.size.height > 0
+                      ? _videoController.value.size.height
+                      : 1920,
+                  child: VideoPlayer(_videoController),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
