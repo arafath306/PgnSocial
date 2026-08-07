@@ -79,11 +79,17 @@ class FeedRemoteDataSourceImpl implements FeedRemoteDataSource {
 
   @override
   Future<List<dynamic>> fetchUserThreadsRaw(String userId) async {
-    final response = await supabaseClient
+    final currentUid = supabaseClient.auth.currentUser?.id;
+    var query = supabaseClient
         .from('threads')
         .select('*, profiles!user_id(*), communities(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*)')
-        .eq('user_id', userId)
-        .order('created_at', ascending: false);
+        .eq('user_id', userId);
+
+    if (currentUid == null || currentUid != userId) {
+      query = query.neq('is_anonymous', true);
+    }
+
+    final response = await query.order('created_at', ascending: false);
     return response as List<dynamic>;
   }
 

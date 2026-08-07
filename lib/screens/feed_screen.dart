@@ -10,9 +10,12 @@ import '../widgets/thread_shimmer.dart';
 import '../utils/app_theme.dart';
 import '../widgets/dak_logo.dart';
 import '../widgets/custom_menu_button.dart';
+import '../widgets/suggested_accounts_carousel.dart';
 import 'communities/community_home_screen.dart';
 import '../models/profile.dart';
 import '../models/thread_post.dart';
+import '../state/music_playback_controller.dart';
+import '../utils/routes.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class FeedScreen extends StatefulWidget {
@@ -29,11 +32,13 @@ class FeedScreen extends StatefulWidget {
   State<FeedScreen> createState() => _FeedScreenState();
 }
 
-class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
+class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin, RouteAware {
   late final TabController _tabController;
   final ScrollController _scrollController = ScrollController();
   bool _isFetchingMore = false;
   static const double _kAppBarContentHeight = 56.0;
+  List<Profile> _suggestedProfiles = [];
+  bool _dismissedSuggested = false;
 
   @override
   void initState() {
@@ -56,7 +61,17 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
       if (db.personalizedFeed.isEmpty && !db.isLoading) db.fetchAIFeed();
       if (db.feed.isEmpty && !db.isLoading) db.fetchFeed(silent: true);
       if (db.myProfile == null) db.fetchMyProfile();
+      _loadSuggestedProfiles(db);
     });
+  }
+
+  Future<void> _loadSuggestedProfiles(DatabaseService db) async {
+    final list = await db.fetchSuggestedProfiles(limit: 10);
+    if (mounted) {
+      setState(() {
+        _suggestedProfiles = list;
+      });
+    }
   }
 
   void _triggerLoadMore() {
@@ -92,7 +107,29 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final modalRoute = ModalRoute.of(context);
+    if (modalRoute is PageRoute) {
+      routeObserver.subscribe(this, modalRoute);
+    }
+  }
+
+  @override
+  void didPushNext() {
+    // Pause post music playback as soon as another screen/route is pushed on top
+    if (mounted) {
+      context.read<MusicPlaybackController>().pause();
+    }
+    super.didPushNext();
+  }
+
+  @override
   void dispose() {
+    routeObserver.unsubscribe(this);
+    if (mounted) {
+      context.read<MusicPlaybackController>().pause();
+    }
     _tabController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -249,21 +286,48 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin {
       );
     }
 
+    final showSuggested = !_dismissedSuggested && _suggestedProfiles.isNotEmpty;
+    final suggestedPosition = posts.length >= 7 ? 8 : (posts.isNotEmpty ? posts.length + 1 : -1);
+    final totalCount = posts.length + 2 + (showSuggested && suggestedPosition > 0 ? 1 : 0);
+
     return ListView.builder(
       padding: EdgeInsets.zero,
-      itemCount: posts.length + 2,
+      itemCount: totalCount,
       itemBuilder: (context, index) {
         if (index == 0) return _buildCreatePostRow(context, prof);
-        final postIndex = index - 1;
-        if (postIndex < posts.length) {
-          // Removed KeepAliveWrapper for RAM optimization.
-          return RepaintBoundary(
-            child: CustomThreadCard(
-              key: ValueKey(posts[postIndex].id),
-              post: posts[postIndex],
-            ),
-          );
+
+        if (showSuggested && suggestedPosition > 0) {
+          if (index == suggestedPosition) {
+            return SuggestedAccountsCarousel(
+              suggestedProfiles: _suggestedProfiles,
+              onDismiss: () {
+                setState(() {
+                  _dismissedSuggested = true;
+                });
+              },
+            );
+          }
+          final postIndex = index > suggestedPosition ? index - 2 : index - 1;
+          if (postIndex < posts.length) {
+            return RepaintBoundary(
+              child: CustomThreadCard(
+                key: ValueKey(posts[postIndex].id),
+                post: posts[postIndex],
+              ),
+            );
+          }
+        } else {
+          final postIndex = index - 1;
+          if (postIndex < posts.length) {
+            return RepaintBoundary(
+              child: CustomThreadCard(
+                key: ValueKey(posts[postIndex].id),
+                post: posts[postIndex],
+              ),
+            );
+          }
         }
+
         return const Padding(
           padding: EdgeInsets.symmetric(vertical: 20),
           child: Center(

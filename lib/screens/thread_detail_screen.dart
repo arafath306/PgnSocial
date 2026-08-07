@@ -16,6 +16,7 @@ import '../widgets/share_post_sheet.dart';
 import '../widgets/comment_attachment_picker_panel.dart';
 import '../widgets/reply_input_composer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../services/screenshot_protection_service.dart';
 
 class ThreadDetailScreen extends StatefulWidget {
   final ThreadPost post;
@@ -46,6 +47,9 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
     super.initState();
     _loadComments();
     _scrollController.addListener(_onScroll);
+    if (widget.post.author.isPremium) {
+      ScreenshotProtectionService.enableProtection();
+    }
     Future.microtask(() {
       if (!mounted) return;
       final dbService = Provider.of<DatabaseService>(context, listen: false);
@@ -58,6 +62,10 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
     _commentController.dispose();
     _scrollController.dispose();
     _commentFocusNode.dispose();
+    if (mounted) {
+      final db = context.read<DatabaseService>();
+      ScreenshotProtectionService.syncProtection(db.myProfile?.hasScreenshotProtection == true);
+    }
     super.dispose();
   }
 

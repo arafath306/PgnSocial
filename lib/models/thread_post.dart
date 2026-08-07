@@ -86,6 +86,8 @@ class ThreadPost {
     return DateTime.now().isAfter(pollExpiresAt!);
   }
 
+  bool get isAnonymous => (author.id == 'anonymous' || author.username == 'anonymous');
+
   static String formatRelativeTime(String? isoString) {
     if (isoString == null || isoString.isEmpty) return 'now';
     try {

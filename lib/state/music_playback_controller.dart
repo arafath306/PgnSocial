@@ -7,7 +7,7 @@ import '../models/music_track.dart';
 /// Visibility-based autoplay: whichever visible post has the highest
 /// visibility fraction gets priority. When a post scrolls off screen
 /// it is paused automatically.
-class MusicPlaybackController with ChangeNotifier {
+class MusicPlaybackController with ChangeNotifier, WidgetsBindingObserver {
   final AudioPlayer _audioPlayer = AudioPlayer();
   String? _currentTrackId;
   bool _isPlaying = false;
@@ -21,6 +21,7 @@ class MusicPlaybackController with ChangeNotifier {
   final Map<String, _VisiblePost> _visiblePosts = {};
 
   MusicPlaybackController() {
+    WidgetsBinding.instance.addObserver(this);
     _loadAutoplaySetting();
     _audioPlayer.onPlayerStateChanged.listen((state) {
       _isPlaying = state == PlayerState.playing;
@@ -39,6 +40,13 @@ class MusicPlaybackController with ChangeNotifier {
       _position = Duration.zero;
       notifyListeners();
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      pause();
+    }
   }
 
   Future<void> _loadAutoplaySetting() async {
@@ -165,8 +173,19 @@ class MusicPlaybackController with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> pause() async {
+    _visiblePosts.clear();
+    _userManuallyPaused = true;
+    if (_isPlaying) {
+      await _audioPlayer.pause();
+      _isPlaying = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> stop() async {
     await _audioPlayer.stop();
+    _visiblePosts.clear();
     _currentTrackId = null;
     _isPlaying = false;
     _position = Duration.zero;
@@ -175,6 +194,7 @@ class MusicPlaybackController with ChangeNotifier {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _audioPlayer.dispose();
     super.dispose();
   }

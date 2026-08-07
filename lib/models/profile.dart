@@ -87,7 +87,11 @@ class Profile {
       zip: json['zip'] as String?,
       isVerified: isVer,
       badgeType: (json['badge_type'] as String?) ?? (json['verified_badge'] as String?),
-      verifiedTier: json['verified_tier'] as String? ?? (json['plan_id']?.toString().contains('premium') == true ? 'premium' : null),
+      verifiedTier: json['verified_tier'] as String? ??
+          ((json['verified_plan_id']?.toString().contains('premium') == true ||
+                  json['plan_id']?.toString().contains('premium') == true)
+              ? 'premium'
+              : null),
       verifiedExpiresAt: json['verified_expires_at'] != null 
           ? DateTime.tryParse(json['verified_expires_at'] as String) 
           : null,

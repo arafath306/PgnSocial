@@ -300,18 +300,36 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
   }
 
   Widget _buildLeftColumn(BuildContext context, DatabaseService dbService, ThreadPost post) {
+    final avatarWidget = CircleAvatar(
+      radius: 20,
+      backgroundColor: Colors.grey[900],
+      backgroundImage: post.isAnonymous
+          ? const AssetImage('assets/anonymous_avatar.png') as ImageProvider
+          : ((post.author.avatarUrl != null && post.author.avatarUrl!.isNotEmpty)
+              ? CachedNetworkImageProvider(post.author.avatarUrl!, maxHeight: 150)
+              : null),
+      child: (!post.isAnonymous && (post.author.avatarUrl == null || post.author.avatarUrl!.isEmpty))
+          ? const Icon(Icons.person, size: 20, color: Colors.white54)
+          : null,
+    );
+
     return Column(
       children: [
-        CircleAvatar(
-          radius: 20,
-          backgroundColor: Colors.grey[800],
-          backgroundImage: (post.author.avatarUrl != null && post.author.avatarUrl!.isNotEmpty)
-              ? CachedNetworkImageProvider(post.author.avatarUrl!, maxHeight: 150)
-              : null,
-          child: (post.author.avatarUrl == null || post.author.avatarUrl!.isEmpty)
-              ? const Icon(Icons.person, size: 20, color: Colors.white54)
-              : null,
-        ),
+        if (post.isAnonymous)
+          avatarWidget
+        else
+          GestureDetector(
+            onTap: () {
+              final isOwn = post.userId == dbService.currentUid;
+              Navigator.push(
+                context,
+                NoTransitionPageRoute(
+                  child: ProfileScreen(userId: isOwn ? null : post.userId),
+                ),
+              );
+            },
+            child: avatarWidget,
+          ),
         const SizedBox(height: 8),
         Expanded(
           child: Container(
@@ -331,6 +349,8 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
   ) {
     final monetization = Provider.of<MonetizationController>(context);
     final bool isLocked = post.isSubscriberOnly && post.userId != dbService.currentUid && !monetization.isSubscribedTo(post.userId);
+    final bool isOwn = post.userId == dbService.currentUid;
+    final bool showVerified = !post.isAnonymous && isVerified;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,15 +360,16 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
           children: [
             Expanded(
               child: GestureDetector(
-                onTap: () {
-                  final isOwn = post.userId == dbService.currentUid;
-                  Navigator.push(
-                    context,
-                    NoTransitionPageRoute(
-                      child: ProfileScreen(userId: isOwn ? null : post.userId),
-                    ),
-                  );
-                },
+                onTap: post.isAnonymous
+                    ? null
+                    : () {
+                        Navigator.push(
+                          context,
+                          NoTransitionPageRoute(
+                            child: ProfileScreen(userId: isOwn ? null : post.userId),
+                          ),
+                        );
+                      },
                 child: Text.rich(
                   TextSpan(
                     children: [
@@ -360,7 +381,7 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
                           color: context.textPrimary,
                         ),
                       ),
-                      if (isVerified)
+                      if (showVerified)
                         WidgetSpan(
                           child: Padding(
                             padding: const EdgeInsets.only(bottom: 2, right: 4),
@@ -371,8 +392,23 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
                             ),
                           ),
                         ),
+                      if (post.isAnonymous && isOwn)
+                        WidgetSpan(
+                          child: Container(
+                            margin: const EdgeInsets.only(left: 2, right: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: Colors.indigo.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              "Anonymous 🕵️",
+                              style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.indigo),
+                            ),
+                          ),
+                        ),
                       TextSpan(
-                        text: '@${post.author.username}',
+                        text: post.isAnonymous ? '@anonymous' : '@${post.author.username}',
                         style: GoogleFonts.inter(
                           fontSize: 13.5,
                           color: context.textMuted,

@@ -10,6 +10,8 @@ import '../screens/auth/email_verification_pending_screen.dart';
 import '../screens/auth/terms_acceptance_screen.dart';
 import '../screens/main_screen.dart';
 
+import 'routes.dart';
+
 class AppRouter {
   static bool _showOnboarding = true;
 
@@ -20,6 +22,7 @@ class AppRouter {
     return GoRouter(
       initialLocation: '/splash',
       refreshListenable: authService,
+      observers: [routeObserver],
       redirect: (context, state) {
         final isLoggingIn = state.matchedLocation == '/auth';
         final isOnboarding = state.matchedLocation == '/onboarding';

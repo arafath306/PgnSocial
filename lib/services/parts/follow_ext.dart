@@ -165,4 +165,30 @@ extension FollowExtension on DatabaseService {
     }
   }
 
+  /// Fetch suggested profiles for the user to follow
+  Future<List<Profile>> fetchSuggestedProfiles({int limit = 10}) async {
+    try {
+      final excludeId = _currentUid.isNotEmpty ? _currentUid : '00000000-0000-0000-0000-000000000000';
+      final response = await _supabase
+          .from('profiles')
+          .select()
+          .neq('id', excludeId)
+          .order('is_verified', ascending: false)
+          .order('followers_count', ascending: false)
+          .limit(25);
+
+      final List<dynamic> data = response as List<dynamic>;
+
+      final candidates = data
+          .map((json) => Profile.fromJson(json as Map<String, dynamic>))
+          .where((p) => !_followingIds.contains(p.id) && !_blockedUserIds.contains(p.id))
+          .take(limit)
+          .toList();
+
+      return candidates;
+    } catch (e) {
+      debugPrint("Fetch suggested profiles error: $e");
+      return [];
+    }
+  }
 }

@@ -62,6 +62,7 @@ class _CommentItemState extends State<CommentItem> {
   @override
   Widget build(BuildContext context) {
     final Profile author = widget.comment['author'] as Profile;
+    final bool isAnon = (widget.comment['is_anonymous'] as bool?) == true || author.id == 'anonymous' || author.username == 'anonymous';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
@@ -72,22 +73,26 @@ class _CommentItemState extends State<CommentItem> {
           Container(
             margin: const EdgeInsets.only(top: 4.5),
             child: GestureDetector(
-              onTap: () {
-                final isOwn = author.id == (widget.dbService.myProfile?.id ?? widget.dbService.currentUid);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ProfileScreen(userId: isOwn ? null : author.id),
-                  ),
-                );
-              },
+              onTap: isAnon
+                  ? null
+                  : () {
+                      final isOwn = author.id == (widget.dbService.myProfile?.id ?? widget.dbService.currentUid);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ProfileScreen(userId: isOwn ? null : author.id),
+                        ),
+                      );
+                    },
               child: CircleAvatar(
                 radius: 18,
-                backgroundColor: Colors.grey[800],
-                backgroundImage: (author.avatarUrl != null && author.avatarUrl!.isNotEmpty)
-                    ? CachedNetworkImageProvider(author.avatarUrl!)
-                    : null,
-                child: (author.avatarUrl == null || author.avatarUrl!.isEmpty)
+                backgroundColor: Colors.grey[900],
+                backgroundImage: isAnon
+                    ? const AssetImage('assets/anonymous_avatar.png') as ImageProvider
+                    : ((author.avatarUrl != null && author.avatarUrl!.isNotEmpty)
+                        ? CachedNetworkImageProvider(author.avatarUrl!)
+                        : null),
+                child: (!isAnon && (author.avatarUrl == null || author.avatarUrl!.isEmpty))
                     ? const Icon(Icons.person, size: 18, color: Colors.white54)
                     : null,
               ),
@@ -105,15 +110,17 @@ class _CommentItemState extends State<CommentItem> {
                   children: [
                     Expanded(
                       child: GestureDetector(
-                        onTap: () {
-                          final isOwn = author.id == (widget.dbService.myProfile?.id ?? widget.dbService.currentUid);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ProfileScreen(userId: isOwn ? null : author.id),
-                            ),
-                          );
-                        },
+                        onTap: isAnon
+                            ? null
+                            : () {
+                                final isOwn = author.id == (widget.dbService.myProfile?.id ?? widget.dbService.currentUid);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ProfileScreen(userId: isOwn ? null : author.id),
+                                  ),
+                                );
+                              },
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -129,7 +136,7 @@ class _CommentItemState extends State<CommentItem> {
                                         color: context.textPrimary,
                                       ),
                                     ),
-                                    if (author.isVerified)
+                                    if (!isAnon && author.isVerified)
                                       const WidgetSpan(
                                         alignment: PlaceholderAlignment.middle,
                                         child: Padding(
@@ -142,7 +149,7 @@ class _CommentItemState extends State<CommentItem> {
                                         ),
                                       ),
                                     TextSpan(
-                                      text: '@${author.username}',
+                                      text: isAnon ? '@anonymous' : '@${author.username}',
                                       style: GoogleFonts.inter(
                                         fontSize: 13.5,
                                         color: context.textSecondary,

@@ -31,13 +31,13 @@ class ThreadDetailHeader extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 24,
-            backgroundColor: Colors.grey[800],
-            backgroundImage: (activePost.author.avatarUrl != null &&
-                    activePost.author.avatarUrl!.isNotEmpty)
-                ? CachedNetworkImageProvider(activePost.author.avatarUrl!)
-                : null,
-            child: (activePost.author.avatarUrl == null ||
-                    activePost.author.avatarUrl!.isEmpty)
+            backgroundColor: Colors.grey[900],
+            backgroundImage: activePost.isAnonymous
+                ? const AssetImage('assets/anonymous_avatar.png') as ImageProvider
+                : ((activePost.author.avatarUrl != null && activePost.author.avatarUrl!.isNotEmpty)
+                    ? CachedNetworkImageProvider(activePost.author.avatarUrl!)
+                    : null),
+            child: (!activePost.isAnonymous && (activePost.author.avatarUrl == null || activePost.author.avatarUrl!.isEmpty))
                 ? const Icon(Icons.person, size: 24, color: Colors.white54)
                 : null,
           ),
@@ -51,14 +51,16 @@ class ThreadDetailHeader extends StatelessWidget {
                   children: [
                     Flexible(
                       child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            NoTransitionPageRoute(
-                              child: ProfileScreen(userId: activePost.userId),
-                            ),
-                          );
-                        },
+                        onTap: activePost.isAnonymous
+                            ? null
+                            : () {
+                                Navigator.push(
+                                  context,
+                                  NoTransitionPageRoute(
+                                    child: ProfileScreen(userId: activePost.userId),
+                                  ),
+                                );
+                              },
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -74,7 +76,7 @@ class ThreadDetailHeader extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            if (activePost.author.isVerified) ...[
+                            if (!activePost.isAnonymous && activePost.author.isVerified) ...[
                               const SizedBox(width: 4),
                               const Icon(
                                 Icons.verified,
@@ -86,7 +88,7 @@ class ThreadDetailHeader extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (activePost.userId != dbService.currentUid) ...[
+                    if (!activePost.isAnonymous && activePost.userId != dbService.currentUid) ...[
                       const SizedBox(width: 8),
                       _buildFollowButton(context),
                     ],

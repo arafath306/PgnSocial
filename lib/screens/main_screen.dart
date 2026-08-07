@@ -16,6 +16,7 @@ import '../services/auth_service.dart';
 import '../state/monetization_controller.dart';
 import '../services/presence_service.dart';
 import '../services/general_settings_provider.dart';
+import '../state/music_playback_controller.dart';
 import 'messenger/messenger_home_screen.dart';
 import '../utils/app_theme.dart';
 import '../widgets/main/main_drawer.dart';
@@ -305,6 +306,7 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
 
   void setTab(int index) {
     if (index == _currentIndex) return;
+    context.read<MusicPlaybackController>().pause();
     setState(() {
       _currentIndex = index;
     });

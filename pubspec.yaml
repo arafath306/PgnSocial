@@ -2,7 +2,7 @@ name: dak
 description: "Pigeon - A modern social media platform."
 publish_to: 'none'
 
-version: 5.3.2+55
+version: 5.5.0+57
 
 environment:
   sdk: ^3.12.1
@@ -80,4 +80,5 @@ flutter:
     - assets/under_review_illustration.png
     - assets/15911180.gif
     - assets/splash_video.mp4
+    - assets/anonymous_avatar.png
 

@@ -49,6 +49,7 @@ extension ProfileExtension on DatabaseService {
         if (userId == _currentUid) {
           _myProfile = profile;
           _saveProfileToCache(profile);
+          ScreenshotProtectionService.syncProtection(profile.hasScreenshotProtection);
           updateState();
         }
         return profile;
@@ -83,6 +84,7 @@ extension ProfileExtension on DatabaseService {
       if (cachedJson != null) {
         final decodedMap = jsonDecode(cachedJson) as Map<String, dynamic>;
         _myProfile = Profile.fromJson(decodedMap);
+        ScreenshotProtectionService.syncProtection(_myProfile?.hasScreenshotProtection == true);
         updateState();
       }
     } catch (e) {

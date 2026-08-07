@@ -25,6 +25,7 @@ import '../../widgets/custom_thread_card.dart';
 import '../create_thread_screen.dart';
 import '../messenger/chat_screen.dart';
 import '../../state/monetization_controller.dart';
+import '../../services/screenshot_protection_service.dart';
 
 
 class ProfileScreen extends StatefulWidget {
@@ -81,6 +82,10 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    if (mounted) {
+      final db = context.read<DatabaseService>();
+      ScreenshotProtectionService.syncProtection(db.myProfile?.hasScreenshotProtection == true);
+    }
     super.dispose();
   }
 
@@ -100,6 +105,11 @@ class _ProfileScreenState extends State<ProfileScreen>
       _viewedProfile = await dbService.fetchProfile(targetId);
       _viewedThreads = await dbService.fetchUserThreads(targetId);
       _doesFollowMe = await dbService.doesUserFollowMe(targetId);
+    }
+
+    final currentProfile = _isOwnProfile ? dbService.myProfile : _viewedProfile;
+    if (currentProfile?.hasScreenshotProtection == true) {
+      ScreenshotProtectionService.enableProtection();
     }
 
     _replies = await dbService.fetchUserRepliedThreads(targetId);
