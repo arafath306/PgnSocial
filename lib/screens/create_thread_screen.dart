@@ -313,11 +313,14 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
                       backgroundColor: context.isDarkMode
                           ? const Color(0xFF1E2030)
                           : const Color(0xFFF3F4F6),
-                      backgroundImage: CachedNetworkImageProvider(
-                        _isAnonymous
-                            ? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150" // anonymous avatar placeholder
-                            : (prof?.avatarUrl ?? ""),
-                      ),
+                      backgroundImage: _isAnonymous
+                          ? const AssetImage('assets/anonymous_avatar.png') as ImageProvider
+                          : ((prof?.avatarUrl != null && prof!.avatarUrl!.isNotEmpty)
+                              ? CachedNetworkImageProvider(prof.avatarUrl!)
+                              : null),
+                      child: (!_isAnonymous && (prof?.avatarUrl == null || prof!.avatarUrl!.isEmpty))
+                          ? const Icon(Icons.person, size: 23, color: Colors.white54)
+                          : null,
                     ),
                     const SizedBox(height: 8),
                     Container(

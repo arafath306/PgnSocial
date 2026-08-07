@@ -110,7 +110,7 @@ class ThreadPost {
             id: 'anonymous',
             username: 'anonymous',
             fullName: 'Anonymous User',
-            avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150',
+            avatarUrl: null,
           )
         : (authorMap != null 
             ? Profile.fromJson(authorMap) 
