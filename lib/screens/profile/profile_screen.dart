@@ -82,10 +82,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   void dispose() {
     _tabController.dispose();
-    if (mounted) {
-      final db = context.read<DatabaseService>();
-      ScreenshotProtectionService.syncProtection(db.myProfile?.hasScreenshotProtection == true);
-    }
+    ScreenshotProtectionService.disableProtection();
     super.dispose();
   }
 
@@ -108,8 +105,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
 
     final currentProfile = _isOwnProfile ? dbService.myProfile : _viewedProfile;
-    if (currentProfile?.hasScreenshotProtection == true) {
+    if (currentProfile?.hasScreenshotProtection == true || currentProfile?.isPremium == true) {
       ScreenshotProtectionService.enableProtection();
+    } else {
+      ScreenshotProtectionService.disableProtection();
     }
 
     _replies = await dbService.fetchUserRepliedThreads(targetId);

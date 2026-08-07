@@ -47,8 +47,10 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
     super.initState();
     _loadComments();
     _scrollController.addListener(_onScroll);
-    if (widget.post.author.isPremium) {
+    if (widget.post.author.hasScreenshotProtection || widget.post.author.isPremium) {
       ScreenshotProtectionService.enableProtection();
+    } else {
+      ScreenshotProtectionService.disableProtection();
     }
     Future.microtask(() {
       if (!mounted) return;
@@ -62,10 +64,7 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
     _commentController.dispose();
     _scrollController.dispose();
     _commentFocusNode.dispose();
-    if (mounted) {
-      final db = context.read<DatabaseService>();
-      ScreenshotProtectionService.syncProtection(db.myProfile?.hasScreenshotProtection == true);
-    }
+    ScreenshotProtectionService.disableProtection();
     super.dispose();
   }
 
