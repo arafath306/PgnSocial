@@ -86,11 +86,11 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin, 
 
   Future<void> _onRefresh(int tabIndex) async {
     final db = Provider.of<DatabaseService>(context, listen: false);
-    if (tabIndex == 0) {
-      await db.fetchAIFeed();
-    } else {
-      await db.fetchFeed();
-    }
+    await Future.wait([
+      db.fetchAIFeed(),
+      db.fetchFeed(silent: true),
+      _loadSuggestedProfiles(db),
+    ]);
   }
 
   void _onTabTapped(int index) {
