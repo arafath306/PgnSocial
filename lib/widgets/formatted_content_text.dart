@@ -73,10 +73,14 @@ class FormattedContentText extends StatelessWidget {
   }
 
   void _handleHashtagTap(BuildContext context, String tag) {
+    final cleanTag = tag.startsWith('#') ? tag : '#$tag';
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const SearchExploreScreen(),
+        builder: (_) => SearchExploreScreen(
+          initialQuery: cleanTag,
+          initialTabIndex: 1, // Switch to Posts tab for hashtag results
+        ),
       ),
     );
   }

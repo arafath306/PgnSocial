@@ -13,7 +13,14 @@ import '../widgets/search_shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class SearchExploreScreen extends StatefulWidget {
-  const SearchExploreScreen({super.key});
+  final String? initialQuery;
+  final int initialTabIndex;
+
+  const SearchExploreScreen({
+    super.key,
+    this.initialQuery,
+    this.initialTabIndex = 0,
+  });
 
   @override
   State<SearchExploreScreen> createState() => _SearchExploreScreenState();
@@ -39,6 +46,11 @@ class _SearchExploreScreenState extends State<SearchExploreScreen> with Automati
   @override
   void initState() {
     super.initState();
+    if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
+      _searchController.text = widget.initialQuery!;
+      _searchTabIndex = widget.initialTabIndex;
+      _onSearchChanged(widget.initialQuery!);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadRecommendations();
       _loadTopics();
