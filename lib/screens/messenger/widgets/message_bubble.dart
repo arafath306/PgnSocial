@@ -14,6 +14,7 @@ class MessageBubble extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onReply;
   final void Function(String) onOpenMedia;
+  final double marginBottom;
 
   const MessageBubble({
     super.key,
@@ -22,6 +23,7 @@ class MessageBubble extends StatelessWidget {
     required this.onTap,
     required this.onReply,
     required this.onOpenMedia,
+    this.marginBottom = 10.0,
   });  @override
   Widget build(BuildContext context) {
     final bool isMe = msg['isMe'] as bool;
@@ -260,9 +262,9 @@ class MessageBubble extends StatelessWidget {
                 ? const EdgeInsets.fromLTRB(12, 6, 12, 4)
                 : EdgeInsets.zero,
             child: Wrap(
-              alignment: WrapAlignment.end,
+              alignment: WrapAlignment.start,
               crossAxisAlignment: WrapCrossAlignment.end,
-              spacing: 8,
+              spacing: 6,
               runSpacing: 2,
               children: [
                 Text(
@@ -303,9 +305,9 @@ class MessageBubble extends StatelessWidget {
       child: Align(
         alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
         child: Container(
-          margin: const EdgeInsets.only(bottom: 10),
+          margin: EdgeInsets.only(bottom: marginBottom),
           constraints: BoxConstraints(
-              maxWidth: (MediaQuery.of(context).size.width * 0.75).clamp(200.0, 450.0)),
+              maxWidth: (MediaQuery.of(context).size.width * 0.75).clamp(80.0, 450.0)),
           child: GestureDetector(
             onTap: onTap,
             onLongPress: onTap,

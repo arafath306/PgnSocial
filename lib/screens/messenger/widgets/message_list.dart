@@ -123,6 +123,20 @@ class MessageListState extends State<MessageList> {
 
             final dateBadgeText = ChatDateFormatter.formatWhatsAppDateBadge(msgDate);
 
+            // Compute tight margin for consecutive same-sender messages
+            double marginBottom = 10.0;
+            if (index > 0) {
+              final newerMsg = reversedDisplay[index - 1];
+              final isSameSender = (msg['isMe'] == newerMsg['isMe']);
+              if (isSameSender) {
+                final newerDate = ChatDateFormatter.parseMessageDateTime(newerMsg);
+                if (ChatDateFormatter.isSameDay(msgDate, newerDate) &&
+                    newerDate.difference(msgDate).abs().inMinutes <= 3) {
+                  marginBottom = 3.0;
+                }
+              }
+            }
+
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -135,6 +149,7 @@ class MessageListState extends State<MessageList> {
                     onTap: () => widget.onMessageAction(msg),
                     onReply: () => widget.onReply(msg),
                     onOpenMedia: widget.onOpenMedia,
+                    marginBottom: marginBottom,
                   ),
                 ),
               ],

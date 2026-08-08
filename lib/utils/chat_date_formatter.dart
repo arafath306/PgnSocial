@@ -49,6 +49,15 @@ class ChatDateFormatter {
         return DateTime.parse(createdAt.toString()).toLocal();
       } catch (_) {}
     }
+    final timeStr = msg['time'];
+    if (timeStr != null && timeStr is String) {
+      try {
+        final now = DateTime.now();
+        final format = DateFormat('h:mm a');
+        final timeDt = format.parse(timeStr);
+        return DateTime(now.year, now.month, now.day, timeDt.hour, timeDt.minute);
+      } catch (_) {}
+    }
     return DateTime.now();
   }
 }
