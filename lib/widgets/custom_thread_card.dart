@@ -282,7 +282,31 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
             },
             onLongPress: () => _showQuickActions(context, dbService, post),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (post.isPinned)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 48.0, top: 8.0, bottom: 0.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          CupertinoIcons.pin_fill,
+                          size: 12,
+                          color: context.textMuted,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Pinned post',
+                          style: GoogleFonts.hindSiliguri(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: context.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 Padding(
                   padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 8.0, bottom: 6.0),
                   child: IntrinsicHeight(

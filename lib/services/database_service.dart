@@ -11,7 +11,6 @@ import '../models/verification_plan_pricing.dart';
 
 import '../core/injection.dart';
 import 'general_settings_provider.dart';
-import 'screenshot_protection_service.dart';
 import '../features/feed/domain/usecases/get_feed_use_case.dart';
 import '../features/feed/domain/usecases/create_thread_use_case.dart';
 import '../features/feed/domain/usecases/toggle_like_use_case.dart';
