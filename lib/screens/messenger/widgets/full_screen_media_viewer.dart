@@ -1,24 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:google_fonts/google_fonts.dart';
-
+import '../../../utils/media_saver_utility.dart';
 
 class FullScreenMediaViewer extends StatelessWidget {
   final String mediaUrl;
-  const FullScreenMediaViewer({super.key, required this.mediaUrl});
+  final bool isVideo;
 
-  Future<void> _downloadImage(BuildContext context) async {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('Downloading image...', style: GoogleFonts.inter()),
-      backgroundColor: Theme.of(context).colorScheme.primary,
-    ));
-    // TODO: Implement actual download logic (e.g. using gallery_saver or image_gallery_saver)
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Image downloaded to gallery successfully!'),
-        backgroundColor: Colors.green,
-      ));
-    }
+  const FullScreenMediaViewer({
+    super.key,
+    required this.mediaUrl,
+    this.isVideo = false,
+  });
+
+  Future<void> _downloadMedia(BuildContext context) async {
+    await MediaSaverUtility.saveToGallery(context, mediaUrl, isVideo: isVideo);
   }
 
   @override
@@ -36,7 +31,7 @@ class FullScreenMediaViewer extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.download_rounded, color: Colors.white),
-            onPressed: () => _downloadImage(context),
+            onPressed: () => _downloadMedia(context),
           ),
           const SizedBox(width: 8),
         ],

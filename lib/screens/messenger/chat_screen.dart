@@ -13,6 +13,7 @@ import '../../services/database_service.dart';
 import '../../services/general_settings_provider.dart';
 import '../../utils/app_theme.dart';
 import '../../utils/chat_themes.dart';
+import '../../utils/media_saver_utility.dart';
 
 import 'widgets/message_list.dart';
 import 'widgets/chat_composer.dart';
@@ -277,17 +278,7 @@ class _ChatScreenState extends State<ChatScreen> {
   // â”€â”€â”€ Message action menu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   Future<void> _downloadMedia(String url) async {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('Downloading image...', style: GoogleFonts.inter()),
-      backgroundColor: context.primaryAccent,
-    ));
-    // TODO: Implement actual download logic (e.g. using gallery_saver or image_gallery_saver)
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Image downloaded to gallery successfully!'),
-        backgroundColor: Colors.green,
-      ));
-    }
+    await MediaSaverUtility.saveToGallery(context, url);
   }
 
   void _openFullScreenMedia(String mediaUrl) {
