@@ -253,32 +253,40 @@ class MessageBubble extends StatelessWidget {
           buildImageWidget(mediaUrl),
           if (text != null && text.isNotEmpty) const SizedBox(height: 8),
         ],
-        // Text
+        // Text & Timestamp
         if (text != null && text.isNotEmpty)
           Padding(
             padding: hasMedia
                 ? const EdgeInsets.fromLTRB(12, 6, 12, 4)
                 : EdgeInsets.zero,
-            child: Text(
-              text,
-              style: GoogleFonts.inter(
-                fontSize: 14.5,
-                color:
-                    isMe 
-                      ? (activeTheme.isDark ? Colors.white : Colors.black87)
-                      : context.textPrimary,
-                height: 1.4,
-              ),
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.end,
+              spacing: 8,
+              runSpacing: 2,
+              children: [
+                Text(
+                  text,
+                  style: GoogleFonts.inter(
+                    fontSize: 14.5,
+                    color: isMe 
+                        ? (activeTheme.isDark ? Colors.white : Colors.black87)
+                        : context.textPrimary,
+                    height: 1.4,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: buildTimeRow(overlayMode: false),
+                ),
+              ],
             ),
-          ),
-        // Time + read receipt (only if NOT overlayed on media)
-        if (!hasMedia || (text != null && text.isNotEmpty))
+          )
+        else if (!hasMedia)
           Align(
             alignment: Alignment.centerRight,
             child: Padding(
-              padding: hasMedia
-                  ? const EdgeInsets.only(right: 4, bottom: 2, top: 1, left: 12)
-                  : const EdgeInsets.only(top: 2, left: 16),
+              padding: const EdgeInsets.only(top: 2, left: 16),
               child: buildTimeRow(overlayMode: false),
             ),
           ),

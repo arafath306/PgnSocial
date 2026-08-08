@@ -15,6 +15,7 @@ import '../widgets/create_thread/mention_autocomplete_overlay.dart';
 import '../widgets/create_thread/poll_creator.dart';
 import '../widgets/create_thread/url_input_section.dart';
 import '../widgets/create_thread/voice_recorder_ui.dart';
+import '../widgets/audio_waveform_widget.dart';
 
 import '../models/profile.dart';
 import '../models/thread_post.dart';
@@ -428,20 +429,26 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
                               ),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: Text(
-                                  _recordedAudioPath != null
-                                      ? "Voice message recorded"
-                                      : (_isRecording
-                                          ? "Recording... ${_recordingSeconds}s"
-                                          : "Tap microphone to record"),
-                                  style: GoogleFonts.inter(
-                                    color: context.textPrimary,
-                                    fontWeight:
-                                        _isRecording || _recordedAudioPath != null
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                  ),
-                                ),
+                                child: _recordedAudioPath != null
+                                    ? AudioWaveformWidget(
+                                        progress: _isPlayingAudio ? 0.6 : 0.0,
+                                        seedKey: _recordedAudioPath,
+                                        activeColor: const Color(0xFF1E824C),
+                                        inactiveColor: context.isDarkMode
+                                            ? const Color(0xFF334155)
+                                            : const Color(0xFFCBD5E1),
+                                        height: 24,
+                                      )
+                                    : Text(
+                                        _isRecording
+                                            ? "Recording... ${_recordingSeconds}s"
+                                            : "Tap microphone to record voice post",
+                                        style: GoogleFonts.inter(
+                                          color: _isRecording ? Colors.redAccent : context.textPrimary,
+                                          fontWeight:
+                                              _isRecording ? FontWeight.bold : FontWeight.normal,
+                                        ),
+                                      ),
                               ),
                               if (_recordedAudioPath != null)
                                 IconButton(

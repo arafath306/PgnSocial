@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../utils/app_theme.dart';
 import '../../../utils/chat_themes.dart';
+import '../../../utils/chat_date_formatter.dart';
 import 'message_bubble.dart';
 
 
@@ -103,26 +104,80 @@ class MessageListState extends State<MessageList> {
         return ListView.builder(
           reverse: true,
           controller: widget.scrollController,
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           itemCount: reversedDisplay.length,
-          // RepaintBoundary prevents individual message rebuilds from
-          // propagating up to the ListView.
           itemBuilder: (context, index) {
             final msg = reversedDisplay[index];
-            return RepaintBoundary(
-              child: MessageBubble(
-                key: ValueKey(msg['id']),
-                msg: msg,
-                activeTheme: widget.activeTheme,
-                onTap: () => widget.onMessageAction(msg),
-                onReply: () => widget.onReply(msg),
-                onOpenMedia: widget.onOpenMedia,
-              ),
+            final msgDate = ChatDateFormatter.parseMessageDateTime(msg);
+
+            // Check if we should show date header above this message
+            bool showDateHeader = false;
+            if (index == reversedDisplay.length - 1) {
+              // First (oldest) message in chat
+              showDateHeader = true;
+            } else {
+              final olderMsg = reversedDisplay[index + 1];
+              final olderMsgDate = ChatDateFormatter.parseMessageDateTime(olderMsg);
+              showDateHeader = !ChatDateFormatter.isSameDay(msgDate, olderMsgDate);
+            }
+
+            final dateBadgeText = ChatDateFormatter.formatWhatsAppDateBadge(msgDate);
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (showDateHeader) _buildDateBadgeWidget(context, dateBadgeText),
+                RepaintBoundary(
+                  child: MessageBubble(
+                    key: ValueKey(msg['id']),
+                    msg: msg,
+                    activeTheme: widget.activeTheme,
+                    onTap: () => widget.onMessageAction(msg),
+                    onReply: () => widget.onReply(msg),
+                    onOpenMedia: widget.onOpenMedia,
+                  ),
+                ),
+              ],
             );
           },
         );
       },
+    );
+  }
+
+  Widget _buildDateBadgeWidget(BuildContext context, String text) {
+    final isDark = context.isDarkMode;
+    return Container(
+      margin: const EdgeInsets.only(top: 14, bottom: 10),
+      alignment: Alignment.center,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          color: isDark
+              ? const Color(0xFF1E293B).withValues(alpha: 0.9)
+              : const Color(0xFFE2E8F0).withValues(alpha: 0.95),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: context.border.withValues(alpha: 0.4),
+            width: 0.6,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Text(
+          text,
+          style: GoogleFonts.inter(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w600,
+            color: context.textSecondary,
+          ),
+        ),
+      ),
     );
   }
 }

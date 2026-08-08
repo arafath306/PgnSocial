@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../widgets/audio_waveform_widget.dart';
 
 class ChatVoicePlayer extends StatefulWidget {
   final String audioUrl;
@@ -23,6 +24,8 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
   bool _isBuffering = false;
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
+  double _playbackSpeed = 1.0;
+
   StreamSubscription? _durationSub;
   StreamSubscription? _positionSub;
   StreamSubscription? _stateSub;
@@ -70,12 +73,25 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
     super.dispose();
   }
 
+  void _togglePlaybackSpeed() {
+    setState(() {
+      if (_playbackSpeed == 1.0) {
+        _playbackSpeed = 1.5;
+      } else if (_playbackSpeed == 1.5) {
+        _playbackSpeed = 2.0;
+      } else {
+        _playbackSpeed = 1.0;
+      }
+    });
+    _player.setPlaybackRate(_playbackSpeed);
+  }
+
   Future<void> _togglePlay() async {
     try {
       if (_isPlaying) {
         await _player.pause();
       } else {
-        if (_position == _duration && _duration > Duration.zero) {
+        if (_position >= _duration && _duration > Duration.zero) {
           await _player.seek(Duration.zero);
         }
         await _player.play(UrlSource(widget.audioUrl));
@@ -95,9 +111,13 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
   @override
   Widget build(BuildContext context) {
     final fgColor = widget.isMe ? Colors.white : Colors.black87;
-    final iconColor = widget.isMe ? Colors.teal : Colors.blue;
-    final sliderActive = widget.isMe ? Colors.white : Colors.blue;
-    final sliderInactive = widget.isMe ? Colors.white38 : Colors.black12;
+    final iconColor = widget.isMe ? const Color(0xFF1E824C) : Colors.blue;
+    final activeColor = widget.isMe ? Colors.white : const Color(0xFF1E824C);
+    final inactiveColor = widget.isMe ? Colors.white38 : Colors.black12;
+
+    final double progress = (_duration.inMilliseconds > 0)
+        ? (_position.inMilliseconds / _duration.inMilliseconds).clamp(0.0, 1.0)
+        : 0.0;
 
     return Container(
       width: 220,
@@ -105,6 +125,7 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Play / Pause Circle Button
           GestureDetector(
             onTap: _togglePlay,
             child: CircleAvatar(
@@ -122,53 +143,65 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
                   : Icon(
                       _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                       color: iconColor,
-                      size: 20,
+                      size: 22,
                     ),
             ),
           ),
           const SizedBox(width: 8),
+
+          // Waveform & Time
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                SizedBox(
-                  height: 20,
-                  child: SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
-                      trackHeight: 2,
-                    ),
-                    child: Slider(
-                      value: _position.inMilliseconds.toDouble().clamp(
-                          0.0,
-                          _duration.inMilliseconds.toDouble() > 0
-                              ? _duration.inMilliseconds.toDouble()
-                              : 1.0),
-                      min: 0.0,
-                      max: _duration.inMilliseconds.toDouble() > 0
-                          ? _duration.inMilliseconds.toDouble()
-                          : 1.0,
-                      activeColor: sliderActive,
-                      inactiveColor: sliderInactive,
-                      onChanged: (val) {
-                        final newPosition = Duration(milliseconds: val.toInt());
-                        _player.seek(newPosition);
-                      },
-                    ),
-                  ),
+                AudioWaveformWidget(
+                  progress: progress,
+                  seedKey: widget.audioUrl,
+                  activeColor: activeColor,
+                  inactiveColor: inactiveColor,
+                  barCount: 22,
+                  height: 24,
+                  onSeek: (fraction) {
+                    if (_duration.inMilliseconds > 0) {
+                      final targetMs = (fraction * _duration.inMilliseconds).toInt();
+                      _player.seek(Duration(milliseconds: targetMs));
+                    }
+                  },
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: Text(
-                    _formatDuration(_position.inMilliseconds > 0 ? _position : _duration),
-                    style: GoogleFonts.inter(
-                      color: fgColor,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Text(
+                      _formatDuration(_position.inMilliseconds > 0 ? _position : _duration),
+                      style: GoogleFonts.inter(
+                        color: fgColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: _togglePlaybackSpeed,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: widget.isMe
+                              ? Colors.white.withValues(alpha: 0.25)
+                              : const Color(0xFF1E824C).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '${_playbackSpeed.toStringAsFixed(_playbackSpeed == 1.0 || _playbackSpeed == 2.0 ? 0 : 1)}x',
+                          style: GoogleFonts.inter(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: fgColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
