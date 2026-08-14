@@ -2,10 +2,10 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:image_cropper/image_cropper.dart';
 
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import '../../utils/app_theme.dart';
+import '../../utils/shared_photo_editor.dart';
 
 class MediaPreviewScreen extends StatefulWidget {
   final List<XFile> initialImages;
@@ -32,29 +32,22 @@ class _MediaPreviewScreenState extends State<MediaPreviewScreen> {
 
   Future<void> _cropImage(int index) async {
     final originalFile = _images[index];
-    final croppedFile = await ImageCropper().cropImage(
-      sourcePath: originalFile.path,
-      compressFormat: ImageCompressFormat.jpg,
-      compressQuality: 100, // We will compress later
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: 'Edit Image',
-          toolbarColor: context.cardBg,
-          toolbarWidgetColor: context.textPrimary,
-          initAspectRatio: CropAspectRatioPreset.original,
-          lockAspectRatio: false,
-          backgroundColor: context.scaffoldBg,
+    
+    final editedFile = await Navigator.push<XFile?>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SharedPhotoEditorScreen(
+          imageFile: File(originalFile.path),
         ),
-        IOSUiSettings(
-          title: 'Edit Image',
-        ),
-      ],
+      ),
     );
 
-    if (croppedFile != null) {
-      setState(() {
-        _images[index] = XFile(croppedFile.path);
-      });
+    if (editedFile != null) {
+      if (mounted) {
+        setState(() {
+          _images[index] = editedFile;
+        });
+      }
     }
   }
 

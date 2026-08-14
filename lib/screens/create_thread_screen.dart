@@ -23,7 +23,7 @@ import '../models/draft_post.dart';
 import '../services/draft_service.dart';
 import '../utils/routes.dart';
 import 'drafts_screen.dart';
-import 'photo_editor_screen.dart';
+import '../utils/shared_photo_editor.dart';
 import '../models/music_track.dart';
 import '../widgets/music_search_sheet.dart';
 import 'package:record/record.dart';

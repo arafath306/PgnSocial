@@ -94,16 +94,27 @@ extension CreateThreadMediaExtensions on _CreateThreadScreenState {
   Future<void> _openPhotoEditorAtIndex(int index) async {
     if (index < 0 || index >= _originalImagesBytesList.length) return;
     final originalBytes = _originalImagesBytesList[index];
-    final croppedBytes = await Navigator.push<Uint8List>(
+    
+    // Write bytes to temp file to pass to the shared editor
+    final dir = await getTemporaryDirectory();
+    final tempOriginal = File('${dir.path}/temp_original_${DateTime.now().millisecondsSinceEpoch}.jpg');
+    await tempOriginal.writeAsBytes(originalBytes);
+
+    if (!mounted) return;
+    final editedFile = await Navigator.push<XFile?>(
       context,
       MaterialPageRoute(
-        builder: (context) => PhotoEditorScreen(imageBytes: originalBytes),
+        builder: (context) => SharedPhotoEditorScreen(imageFile: tempOriginal),
       ),
     );
-    if (croppedBytes != null) {
-      setState(() {
-        _selectedImagesBytesList[index] = croppedBytes;
-      });
+
+    if (editedFile != null) {
+      final editedBytes = await editedFile.readAsBytes();
+      if (mounted) {
+        setState(() {
+          _selectedImagesBytesList[index] = editedBytes;
+        });
+      }
     }
   }
 
