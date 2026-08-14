@@ -24,7 +24,7 @@ class SharedPhotoEditorScreen extends StatelessWidget {
     return ProImageEditor.file(
       imageFile,
       callbacks: ProImageEditorCallbacks(
-        onImageEditingComplete: (Uint8List bytes) {
+        onImageEditingComplete: (Uint8List bytes) async {
           getTemporaryDirectory().then((dir) {
             final timestamp = DateTime.now().millisecondsSinceEpoch;
             final tempFile = File('${dir.path}/edited_image_$timestamp.jpg');
