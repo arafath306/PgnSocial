@@ -24,22 +24,21 @@ class SharedPhotoEditorScreen extends StatelessWidget {
     return ProImageEditor.file(
       imageFile,
       callbacks: ProImageEditorCallbacks(
-        onImageEditingComplete: (Uint8List bytes) async {
-          try {
-            final dir = await getTemporaryDirectory();
+        onImageEditingComplete: (Uint8List bytes) {
+          getTemporaryDirectory().then((dir) {
             final timestamp = DateTime.now().millisecondsSinceEpoch;
             final tempFile = File('${dir.path}/edited_image_$timestamp.jpg');
-            await tempFile.writeAsBytes(bytes);
-
-            if (context.mounted) {
-              Navigator.pop(context, XFile(tempFile.path));
-            }
-          } catch (e) {
-            debugPrint('Error saving edited image: $e');
-            if (context.mounted) {
-              Navigator.pop(context, null);
-            }
-          }
+            tempFile.writeAsBytes(bytes).then((_) {
+              if (context.mounted) {
+                Navigator.pop(context, XFile(tempFile.path));
+              }
+            }).catchError((e) {
+              debugPrint('Error saving edited image: $e');
+              if (context.mounted) {
+                Navigator.pop(context, null);
+              }
+            });
+          });
         },
         onCloseEditor: (EditorMode mode) {
           Navigator.pop(context, null);
