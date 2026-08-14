@@ -79,6 +79,7 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
     final isDark = context.isDarkMode;
     final isOnline = _isUserOnline();
     final statusText = _getStatusText();
+    final primaryColor = context.textPrimary; // Corporate vibe: dark/light text color instead of brand green where possible
 
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
@@ -88,30 +89,30 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
       builder: (_, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0C101D) : const Color(0xFFF8FAFC),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            color: isDark ? const Color(0xFF111827) : const Color(0xFFFFFFFF),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.2),
-                blurRadius: 25,
-                spreadRadius: 4,
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 10,
+                spreadRadius: 0,
               )
             ],
           ),
           child: Column(
             children: [
-              // Top Drag Handle & Close Bar
+              // Top Drag Handle
               Padding(
-                padding: const EdgeInsets.only(top: 12, bottom: 4),
+                padding: const EdgeInsets.only(top: 12, bottom: 8),
                 child: Center(
                   child: Container(
-                    width: 44,
-                    height: 4.5,
+                    width: 40,
+                    height: 4,
                     decoration: BoxDecoration(
                       color: isDark
                           ? Colors.white.withValues(alpha: 0.2)
-                          : Colors.black.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(3),
+                          : Colors.black.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
@@ -122,36 +123,17 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
                 child: SingleChildScrollView(
                   controller: scrollController,
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 36),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // ── 1. Hero Avatar with Glowing Ring & Online Indicator ──
+                      // ── 1. Hero Avatar (Professional, no gradients) ──
                       Stack(
                         alignment: Alignment.center,
                         children: [
-                          // Outer Ambient Glow
-                          Container(
-                            width: 104,
-                            height: 104,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                colors: [
-                                  context.primaryAccent.withValues(alpha: 0.6),
-                                  const Color(0xFF38BDF8).withValues(alpha: 0.6),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                            ),
-                          ),
-                          // Inner Avatar
                           CircleAvatar(
-                            radius: 49,
-                            backgroundColor: isDark
-                                ? const Color(0xFF1E293B)
-                                : const Color(0xFFE2E8F0),
+                            radius: 48,
+                            backgroundColor: context.border,
                             backgroundImage: widget.otherUser.avatarUrl != null &&
                                     widget.otherUser.avatarUrl!.isNotEmpty
                                 ? CachedNetworkImageProvider(
@@ -160,28 +142,26 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
                             child: (widget.otherUser.avatarUrl == null ||
                                     widget.otherUser.avatarUrl!.isEmpty)
                                 ? Icon(
-                                    Icons.person_rounded,
-                                    size: 52,
+                                    Icons.person,
+                                    size: 48,
                                     color: context.textMuted,
                                   )
                                 : null,
                           ),
-                          // Live Online Indicator Dot
+                          // Online Indicator Dot
                           if (isOnline)
                             Positioned(
-                              right: 4,
-                              bottom: 4,
+                              right: 2,
+                              bottom: 2,
                               child: Container(
-                                width: 20,
-                                height: 20,
+                                width: 18,
+                                height: 18,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF10B981),
+                                  color: const Color(0xFF10B981), // Solid green for online
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: isDark
-                                        ? const Color(0xFF0C101D)
-                                        : Colors.white,
-                                    width: 3.5,
+                                    color: isDark ? const Color(0xFF111827) : Colors.white,
+                                    width: 3,
                                   ),
                                 ),
                               ),
@@ -199,10 +179,10 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
                             child: Text(
                               widget.otherUser.fullName,
                               style: GoogleFonts.inter(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
                                 color: context.textPrimary,
-                                letterSpacing: -0.4,
+                                letterSpacing: -0.5,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -212,8 +192,8 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
                             const SizedBox(width: 6),
                             const Icon(
                               Icons.verified,
-                              color: Color(0xFF3B82F6),
-                              size: 19,
+                              color: Color(0xFF2563EB), // Corporate blue
+                              size: 18,
                             ),
                           ],
                         ],
@@ -224,84 +204,94 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
                       Text(
                         '@${widget.otherUser.username}',
                         style: GoogleFonts.inter(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w500,
-                          color: context.textMuted,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: context.textSecondary,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
 
-                      // Status Pill
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: isOnline
-                              ? const Color(0xFF10B981).withValues(alpha: 0.12)
-                              : (isDark
-                                  ? Colors.white.withValues(alpha: 0.05)
-                                  : Colors.black.withValues(alpha: 0.04)),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
+                      // Status Text
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isOnline)
                             Container(
-                              width: 7,
-                              height: 7,
-                              decoration: BoxDecoration(
-                                color: isOnline
-                                    ? const Color(0xFF10B981)
-                                    : context.textMuted,
+                              width: 6,
+                              height: 6,
+                              margin: const EdgeInsets.only(right: 6),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF10B981),
                                 shape: BoxShape.circle,
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            Text(
-                              statusText,
-                              style: GoogleFonts.inter(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: isOnline
-                                    ? const Color(0xFF10B981)
-                                    : context.textMuted,
-                              ),
+                          Text(
+                            statusText,
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: isOnline
+                                  ? const Color(0xFF10B981)
+                                  : context.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // ── 3. Bio & Followers (Corporate minimal style) ──
+                      if (widget.otherUser.bio != null &&
+                          widget.otherUser.bio!.isNotEmpty) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            widget.otherUser.bio!,
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: context.textPrimary,
+                              height: 1.5,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      if (widget.otherUser.followersCount > 0 ||
+                          widget.otherUser.followingCount > 0) ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _buildStatItem(
+                              context,
+                              _formatCount(widget.otherUser.followersCount),
+                              'Followers',
+                            ),
+                            Container(
+                              height: 14,
+                              width: 1,
+                              margin: const EdgeInsets.symmetric(horizontal: 16),
+                              color: context.border,
+                            ),
+                            _buildStatItem(
+                              context,
+                              _formatCount(widget.otherUser.followingCount),
+                              'Following',
                             ),
                           ],
                         ),
-                      ),
-                      const SizedBox(height: 22),
+                        const SizedBox(height: 24),
+                      ],
 
-                      // ── 3. Quick Action Bar (2026 4-Pill Hub) ──
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 14, horizontal: 8),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF151C2C)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: context.border.withValues(alpha: 0.6),
-                            width: 1,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
-                            )
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            // 👤 Profile Action
-                            _buildQuickActionButton(
+                      // ── 4. Action Buttons (Profile, Mute, Theme, Media) ──
+                      // Professional solid/outlined buttons
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: _buildCorporateActionButton(
                               context: context,
-                              icon: Icons.person_rounded,
+                              icon: Icons.person_outline,
                               label: 'Profile',
-                              color: const Color(0xFF3B82F6),
                               onTap: () {
                                 Navigator.pop(context);
                                 Navigator.push(
@@ -313,289 +303,122 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
                                 );
                               },
                             ),
-                            // 🔔 Mute Action
-                            _buildQuickActionButton(
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildCorporateActionButton(
                               context: context,
                               icon: _muted
-                                  ? Icons.notifications_off_rounded
-                                  : Icons.notifications_rounded,
+                                  ? Icons.notifications_off_outlined
+                                  : Icons.notifications_outlined,
                               label: _muted ? 'Unmute' : 'Mute',
-                              color: _muted
-                                  ? const Color(0xFFF59E0B)
-                                  : context.primaryAccent,
+                              isOutlined: false,
                               onTap: () {
                                 final newState = !_muted;
                                 setState(() => _muted = newState);
                                 widget.onToggleMute(newState);
                               },
                             ),
-                            // 🎨 Theme Action
-                            _buildQuickActionButton(
-                              context: context,
-                              icon: Icons.palette_rounded,
-                              label: 'Theme',
-                              color: const Color(0xFF8B5CF6),
-                              onTap: () {
-                                Navigator.pop(context);
-                                widget.onChangeTheme();
-                              },
-                            ),
-                            // 🖼️ Media Action
-                            _buildQuickActionButton(
-                              context: context,
-                              icon: Icons.photo_library_rounded,
-                              label: 'Media',
-                              color: const Color(0xFFEC4899),
-                              badgeCount: widget.sharedMedia.length,
-                              onTap: () {
-                                if (widget.sharedMedia.isNotEmpty) {
-                                  widget.onMediaTapped(
-                                      widget.sharedMedia.first['media_url']
-                                          as String);
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'No photos or videos shared yet.',
-                                        style: GoogleFonts.inter(),
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 32),
 
-                      // ── 4. Bio & Social Followers Pill (if present) ──
-                      if ((widget.otherUser.bio != null &&
-                              widget.otherUser.bio!.isNotEmpty) ||
-                          widget.otherUser.followersCount > 0 ||
-                          widget.otherUser.followingCount > 0) ...[
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF151C2C)
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: context.border.withValues(alpha: 0.6),
-                              width: 1,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Bio text
-                              if (widget.otherUser.bio != null &&
-                                  widget.otherUser.bio!.isNotEmpty) ...[
-                                Text(
-                                  widget.otherUser.bio!,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 13.5,
-                                    color: context.textSecondary,
-                                    height: 1.45,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Divider(
-                                  height: 1,
-                                  color: context.border.withValues(alpha: 0.4),
-                                ),
-                                const SizedBox(height: 12),
-                              ],
-                              // Followers / Following row
-                              Row(
-                                children: [
-                                  _buildStatItem(
-                                    context,
-                                    _formatCount(
-                                        widget.otherUser.followersCount),
-                                    'Followers',
-                                  ),
-                                  Container(
-                                    height: 16,
-                                    width: 1,
-                                    margin: const EdgeInsets.symmetric(
-                                        horizontal: 16),
-                                    color:
-                                        context.border.withValues(alpha: 0.6),
-                                  ),
-                                  _buildStatItem(
-                                    context,
-                                    _formatCount(
-                                        widget.otherUser.followingCount),
-                                    'Following',
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                      ],
-
-                      // ── 5. Grouped Settings Section ──
-                      _buildSectionHeader(context, 'Chat Settings & Theme'),
-                      const SizedBox(height: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF151C2C)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: context.border.withValues(alpha: 0.6),
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            _buildSettingsTile(
-                              context: context,
-                              icon: Icons.color_lens_rounded,
-                              iconColor: const Color(0xFF8B5CF6),
-                              title: 'Chat Theme & Wallpaper',
-                              subtitle: 'Change colors, gradients & wallpaper',
-                              onTap: () {
-                                Navigator.pop(context);
-                                widget.onChangeTheme();
-                              },
-                            ),
-                            Divider(
-                              height: 1,
-                              indent: 56,
-                              color: context.border.withValues(alpha: 0.4),
-                            ),
-                            _buildSettingsTile(
-                              context: context,
-                              icon: Icons.notifications_active_rounded,
-                              iconColor: const Color(0xFFF59E0B),
-                              title: 'Mute Notifications',
-                              subtitle: 'Silence alerts for this conversation',
-                              trailing: Switch.adaptive(
-                                value: _muted,
-                                activeTrackColor: context.primaryAccent,
-                                onChanged: (value) {
-                                  setState(() => _muted = value);
-                                  widget.onToggleMute(value);
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
+                      // ── 5. Options (List style, very professional) ──
+                      _buildSectionHeader(context, 'Chat Options'),
+                      _buildCorporateListTile(
+                        context: context,
+                        icon: Icons.palette_outlined,
+                        title: 'Theme & Wallpaper',
+                        onTap: () {
+                          Navigator.pop(context);
+                          widget.onChangeTheme();
+                        },
                       ),
-                      const SizedBox(height: 20),
-
-                      // ── 6. Privacy & Safety Group ──
-                      _buildSectionHeader(context, 'Privacy & Actions'),
-                      const SizedBox(height: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF151C2C)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: context.border.withValues(alpha: 0.6),
-                            width: 1,
-                          ),
+                      Divider(height: 1, color: context.border),
+                      _buildCorporateListTile(
+                        context: context,
+                        icon: Icons.notifications_none_outlined,
+                        title: 'Mute Notifications',
+                        trailing: Switch.adaptive(
+                          value: _muted,
+                          activeTrackColor: primaryColor,
+                          onChanged: (value) {
+                            setState(() => _muted = value);
+                            widget.onToggleMute(value);
+                          },
                         ),
-                        child: Column(
-                          children: [
-                            _buildSettingsTile(
-                              context: context,
-                              icon: Icons.block_rounded,
-                              iconColor: const Color(0xFFEF4444),
-                              title: 'Block @${widget.otherUser.username}',
-                              subtitle: 'Prevent them from sending you messages',
-                              isDestructive: true,
-                              onTap: () {
-                                Navigator.pop(context);
-                                widget.onBlockUser();
-                              },
-                            ),
-                            Divider(
-                              height: 1,
-                              indent: 56,
-                              color: context.border.withValues(alpha: 0.4),
-                            ),
-                            _buildSettingsTile(
-                              context: context,
-                              icon: Icons.delete_outline_rounded,
-                              iconColor: const Color(0xFFEF4444),
-                              title: 'Delete Conversation',
-                              subtitle: 'Permanently remove chat history',
-                              isDestructive: true,
-                              onTap: () {
-                                Navigator.pop(context);
-                                widget.onDeleteConversation();
-                              },
-                            ),
-                          ],
-                        ),
+                        onTap: () {
+                          final newState = !_muted;
+                          setState(() => _muted = newState);
+                          widget.onToggleMute(newState);
+                        },
                       ),
+
                       const SizedBox(height: 24),
+                      _buildSectionHeader(context, 'Privacy'),
+                      _buildCorporateListTile(
+                        context: context,
+                        icon: Icons.block_outlined,
+                        title: 'Block User',
+                        isDestructive: true,
+                        onTap: () {
+                          Navigator.pop(context);
+                          widget.onBlockUser();
+                        },
+                      ),
+                      Divider(height: 1, color: context.border),
+                      _buildCorporateListTile(
+                        context: context,
+                        icon: Icons.delete_outline,
+                        title: 'Delete Conversation',
+                        isDestructive: true,
+                        onTap: () {
+                          Navigator.pop(context);
+                          widget.onDeleteConversation();
+                        },
+                      ),
 
-                      // ── 7. Shared Media Section ──
+                      // ── 6. Shared Media Section ──
+                      const SizedBox(height: 24),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           _buildSectionHeader(context, 'Shared Media'),
                           if (widget.sharedMedia.isNotEmpty)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: context.primaryAccent
-                                    .withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                '${widget.sharedMedia.length} files',
-                                style: GoogleFonts.inter(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.bold,
-                                  color: context.primaryAccent,
-                                ),
+                            Text(
+                              '${widget.sharedMedia.length}',
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: context.textSecondary,
                               ),
                             ),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
 
                       if (widget.sharedMedia.isEmpty)
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          padding: const EdgeInsets.symmetric(vertical: 32),
                           decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF151C2C)
-                                : Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: context.border.withValues(alpha: 0.5),
-                              width: 1,
-                            ),
+                            border: Border.all(color: context.border),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: Column(
                             children: [
                               Icon(
-                                Icons.photo_library_outlined,
-                                size: 32,
+                                Icons.image_outlined,
+                                size: 24,
                                 color: context.textMuted,
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'No media shared yet',
+                                'No media shared',
                                 style: GoogleFonts.inter(
-                                  fontSize: 12.5,
+                                  fontSize: 13,
                                   color: context.textMuted,
-                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ],
@@ -607,9 +430,9 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
+                            crossAxisCount: 4,
+                            crossAxisSpacing: 4,
+                            mainAxisSpacing: 4,
                             childAspectRatio: 1.0,
                           ),
                           itemCount: widget.sharedMedia.length,
@@ -618,31 +441,17 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
                                 ['media_url'] as String;
                             return GestureDetector(
                               onTap: () => widget.onMediaTapped(mediaUrl),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  color: isDark
-                                      ? const Color(0xFF1E293B)
-                                      : const Color(0xFFE2E8F0),
-                                  child: CachedNetworkImage(
-                                    imageUrl: mediaUrl,
-                                    fit: BoxFit.cover,
-                                    placeholder: (ctx, url) => Center(
-                                      child: SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: context.primaryAccent,
-                                        ),
-                                      ),
-                                    ),
-                                    errorWidget: (ctx, url, err) => Center(
-                                      child: Icon(
-                                        Icons.broken_image_rounded,
-                                        size: 24,
-                                        color: context.textMuted,
-                                      ),
+                              child: Container(
+                                color: context.border,
+                                child: CachedNetworkImage(
+                                  imageUrl: mediaUrl,
+                                  fit: BoxFit.cover,
+                                  placeholder: (ctx, url) => const SizedBox(),
+                                  errorWidget: (ctx, url, err) => Center(
+                                    child: Icon(
+                                      Icons.broken_image_outlined,
+                                      size: 16,
+                                      color: context.textMuted,
                                     ),
                                   ),
                                 ),
@@ -663,84 +472,6 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
 
   // ── Helper Widgets ──
 
-  Widget _buildQuickActionButton({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-    int? badgeCount,
-  }) {
-    final isDark = context.isDarkMode;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: isDark ? 0.15 : 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Icon(
-                      icon,
-                      color: color,
-                      size: 22,
-                    ),
-                  ),
-                ),
-                if (badgeCount != null && badgeCount > 0)
-                  Positioned(
-                    top: -2,
-                    right: -4,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 16,
-                        minHeight: 16,
-                      ),
-                      child: Text(
-                        badgeCount > 99 ? '99+' : badgeCount.toString(),
-                        style: GoogleFonts.inter(
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w600,
-                color: context.textPrimary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildStatItem(BuildContext context, String count, String label) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -748,8 +479,8 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
         Text(
           count,
           style: GoogleFonts.inter(
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
             color: context.textPrimary,
           ),
         ),
@@ -757,9 +488,9 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
         Text(
           label,
           style: GoogleFonts.inter(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: context.textMuted,
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: context.textSecondary,
           ),
         ),
       ],
@@ -767,71 +498,110 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
   }
 
   Widget _buildSectionHeader(BuildContext context, String title) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        title,
-        style: GoogleFonts.inter(
-          fontSize: 12.5,
-          fontWeight: FontWeight.w700,
-          color: context.textMuted,
-          letterSpacing: 0.3,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          title.toUpperCase(),
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: context.textSecondary,
+            letterSpacing: 0.5,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildSettingsTile({
+  Widget _buildCorporateActionButton({
     required BuildContext context,
     required IconData icon,
-    required Color iconColor,
+    required String label,
+    required VoidCallback onTap,
+    bool isOutlined = true,
+  }) {
+    final isDark = context.isDarkMode;
+    final primaryTextColor = isDark ? Colors.white : Colors.black;
+    final bgColor = isDark ? const Color(0xFF1F2937) : const Color(0xFFF3F4F6); // subtle gray
+
+    if (isOutlined) {
+      return OutlinedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 18, color: primaryTextColor),
+        label: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: primaryTextColor,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          side: BorderSide(color: context.border),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+    } else {
+      return ElevatedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon, size: 18, color: primaryTextColor),
+        label: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: primaryTextColor,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          backgroundColor: bgColor,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildCorporateListTile({
+    required BuildContext context,
+    required IconData icon,
     required String title,
-    required String subtitle,
     Widget? trailing,
     bool isDestructive = false,
     VoidCallback? onTap,
   }) {
-    final isDark = context.isDarkMode;
-
-    return ListTile(
+    final color = isDestructive ? const Color(0xFFDC2626) : context.textPrimary;
+    
+    return InkWell(
       onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      leading: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: iconColor.withValues(alpha: isDark ? 0.15 : 0.1),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Center(
-          child: Icon(
-            icon,
-            color: iconColor,
-            size: 19,
-          ),
-        ),
-      ),
-      title: Text(
-        title,
-        style: GoogleFonts.inter(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: isDestructive ? const Color(0xFFEF4444) : context.textPrimary,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: color),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: color,
+                ),
+              ),
+            ),
+            ?trailing,
+          ],
         ),
       ),
-      subtitle: Text(
-        subtitle,
-        style: GoogleFonts.inter(
-          fontSize: 11.5,
-          color: context.textMuted,
-        ),
-      ),
-      trailing: trailing ??
-          Icon(
-            Icons.chevron_right_rounded,
-            color: context.textMuted.withValues(alpha: 0.6),
-            size: 20,
-          ),
     );
   }
 }
