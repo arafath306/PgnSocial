@@ -261,27 +261,101 @@ class MessageBubble extends StatelessWidget {
             padding: hasMedia
                 ? const EdgeInsets.fromLTRB(12, 6, 12, 4)
                 : EdgeInsets.zero,
-            child: Wrap(
-              alignment: WrapAlignment.start,
-              crossAxisAlignment: WrapCrossAlignment.end,
-              spacing: 6,
-              runSpacing: 2,
-              children: [
-                Text(
-                  text,
-                  style: GoogleFonts.inter(
-                    fontSize: 14.5,
-                    color: isMe 
-                        ? (activeTheme.isDark ? Colors.white : Colors.black87)
-                        : context.textPrimary,
-                    height: 1.4,
-                  ),
-                ),
-                Padding(
+            child: Builder(
+              builder: (context) {
+                // 1. Calculate bubble constraints based on screen width
+                final double screenWidth = MediaQuery.of(context).size.width;
+                final double bubbleMaxWidth = (screenWidth * 0.75).clamp(80.0, 450.0);
+                final double horizontalPadding = hasMedia ? 24.0 : 20.0;
+                final double textMaxWidth = bubbleMaxWidth - horizontalPadding;
+
+                // 2. Setup text style
+                final TextStyle textStyle = GoogleFonts.inter(
+                  fontSize: 14.5,
+                  color: isMe 
+                      ? (activeTheme.isDark ? Colors.white : Colors.black87)
+                      : context.textPrimary,
+                  height: 1.4,
+                );
+
+                // 3. Setup time widget
+                final Widget timeWidget = Padding(
                   padding: const EdgeInsets.only(bottom: 2),
                   child: buildTimeRow(overlayMode: false),
-                ),
-              ],
+                );
+
+                // 4. Measure text layout dynamically
+                final textPainter = TextPainter(
+                  text: TextSpan(text: text, style: textStyle),
+                  textDirection: TextDirection.ltr,
+                );
+                textPainter.layout(maxWidth: textMaxWidth);
+
+                // 5. Estimate time row width safely (text + spacing + checkmark icon)
+                const double timeWidth = 72.0;
+
+                final List<LineMetrics> lines = textPainter.computeLineMetrics();
+                if (lines.isEmpty) {
+                  return Text(text, style: textStyle);
+                }
+
+                final lastLine = lines.last;
+                final lastLineLength = lastLine.width;
+
+                if (lines.length == 1) {
+                  // Single line check: if text + time fits within max width, keep inline
+                  final bool fitsInline = (lastLineLength + 8 + timeWidth) <= textMaxWidth;
+                  if (fitsInline) {
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Flexible(
+                          child: Text(text, style: textStyle),
+                        ),
+                        const SizedBox(width: 8),
+                        timeWidget,
+                      ],
+                    );
+                  } else {
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(text, style: textStyle),
+                        const SizedBox(height: 4),
+                        timeWidget,
+                      ],
+                    );
+                  }
+                } else {
+                  // Multi-line check: if last line has enough empty space for time
+                  final double longestLine = textPainter.width;
+                  final bool fitsOnSameLine = (longestLine - lastLineLength) >= timeWidth;
+                  if (fitsOnSameLine) {
+                    return Stack(
+                      children: [
+                        Text(text, style: textStyle),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: timeWidget,
+                        ),
+                      ],
+                    );
+                  } else {
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(text, style: textStyle),
+                        const SizedBox(height: 4),
+                        timeWidget,
+                      ],
+                    );
+                  }
+                }
+              },
             ),
           )
         else if (!hasMedia)
