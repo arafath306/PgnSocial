@@ -25,7 +25,7 @@ class MentionAutocompleteOverlay extends StatelessWidget {
 
     return Container(
       constraints: const BoxConstraints(maxHeight: 220),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(16),

@@ -42,20 +42,63 @@ extension SearchExtension on DatabaseService {
     }
   }
 
-  Future<List<ThreadPost>> searchThreads(String query, {String? communityId}) async {
-    if (query.trim().isEmpty) return [];
+  Future<List<ThreadPost>> searchThreads(
+    String query, {
+    String? communityId,
+    List<String>? categories,
+    String? timeframe,
+    String? sortBy,
+  }) async {
+    final hasQuery = query.trim().isNotEmpty;
+    final hasCategories = categories != null && categories.isNotEmpty;
+    final hasTimeframe = timeframe != null && timeframe.isNotEmpty;
+    
+    if (!hasQuery && !hasCategories && !hasTimeframe) return [];
+    
     try {
-      var dbQuery = _supabase
+      dynamic dbQuery = _supabase
           .from('threads')
-          .select('*, profiles!user_id(*), likes(user_id), thread_hides(user_id)')
-          .ilike('content', '%$query%');
+          .select('*, profiles!user_id(*), likes(user_id), thread_hides(user_id)');
           
+      if (hasQuery) {
+        dbQuery = dbQuery.ilike('content', '%$query%');
+      }
+      
+      if (hasCategories) {
+        // Match posts containing any of the selected category hashtags (case-insensitive)
+        final orFilters = categories.map((c) => 'content.ilike.%#${c.trim()}%').join(',');
+        dbQuery = dbQuery.or(orFilters);
+      }
+      
+      if (hasTimeframe) {
+        final now = DateTime.now().toUtc();
+        DateTime? startDate;
+        if (timeframe == 'Today') {
+          startDate = now.subtract(const Duration(days: 1));
+        } else if (timeframe == 'This Week') {
+          startDate = now.subtract(const Duration(days: 7));
+        } else if (timeframe == 'This Month') {
+          startDate = now.subtract(const Duration(days: 30));
+        }
+        if (startDate != null) {
+          dbQuery = dbQuery.gte('created_at', startDate.toIso8601String());
+        }
+      }
+      
       if (communityId != null) {
         dbQuery = dbQuery.eq('community_id', communityId);
       }
       
+      if (sortBy == 'Recent') {
+        dbQuery = dbQuery.order('created_at', ascending: false);
+      } else if (sortBy == 'Popular') {
+        dbQuery = dbQuery.order('likes_count', ascending: false);
+      } else {
+        dbQuery = dbQuery.order('created_at', ascending: false);
+      }
+      
       final response = await dbQuery.limit(20);
-
+ 
       final List<dynamic> data = response as List<dynamic>;
       final List<ThreadPost> results = [];
       for (final json in data) {

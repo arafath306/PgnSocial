@@ -35,8 +35,17 @@ extension TopicExtension on DatabaseService {
 
   Future<List<ThreadPost>> fetchTopicThreads(String topicName) async {
     try {
-      final response = await _supabase.rpc('get_topic_threads', params: {'topic_name': topicName.replaceAll('#', '')});
-      final List<dynamic> data = response as List<dynamic>;
+      final name = topicName.trim().toLowerCase();
+      final nameWithHash = name.startsWith('#') ? name : '#$name';
+      final nameWithoutHash = name.startsWith('#') ? name.substring(1) : name;
+
+      var response = await _supabase.rpc('get_topic_threads', params: {'topic_name': nameWithHash});
+      var data = response as List<dynamic>;
+
+      if (data.isEmpty) {
+        response = await _supabase.rpc('get_topic_threads', params: {'topic_name': nameWithoutHash});
+        data = response;
+      }
       
       final List<String> threadIds = data.map((json) => json['id'] as String).toList();
       if (threadIds.isEmpty) return [];
@@ -304,6 +313,31 @@ extension TopicExtension on DatabaseService {
     }
   }
 
-
+  Future<List<Map<String, dynamic>>> searchHashtags(String query) async {
+    try {
+      final res = await _supabase
+          .from('topics')
+          .select('topic_name, post_count')
+          .ilike('topic_name', '%$query%')
+          .order('post_count', ascending: false)
+          .limit(10);
+      return List<Map<String, dynamic>>.from(res as List);
+    } catch (e) {
+      debugPrint("Search hashtags error: $e");
+      try {
+        final response = await _supabase.rpc('get_trending_topics', params: {'limit_val': 100});
+        final allTrending = List<Map<String, dynamic>>.from(response as List);
+        final filtered = allTrending.where((t) {
+          final name = (t['topic_name'] as String).toLowerCase();
+          return name.contains(query.toLowerCase());
+        }).toList();
+        filtered.sort((a, b) => (b['post_count'] as int).compareTo(a['post_count'] as int));
+        return filtered.take(10).toList();
+      } catch (e2) {
+        debugPrint("Hashtag search fallback error: $e2");
+        return [];
+      }
+    }
+  }
 
 }

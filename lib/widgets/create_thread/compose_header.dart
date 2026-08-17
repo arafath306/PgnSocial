@@ -22,6 +22,7 @@ class ComposeHeader extends StatelessWidget {
   final VoidCallback onPrivacyToggle;
   final void Function(String label) onPrivacyChanged;
   final VoidCallback onLocationRemove;
+  final Widget? suggestionOverlay;
 
   const ComposeHeader({
     super.key,
@@ -35,6 +36,7 @@ class ComposeHeader extends StatelessWidget {
     required this.onPrivacyToggle,
     required this.onPrivacyChanged,
     required this.onLocationRemove,
+    this.suggestionOverlay,
   });
 
   @override
@@ -249,6 +251,11 @@ class ComposeHeader extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
           ),
         ),
+
+        if (suggestionOverlay != null) ...[
+          const SizedBox(height: 8),
+          suggestionOverlay!,
+        ],
 
         // ── Quote post preview ─────────────────────────────────────
         if (quotePost != null) ...[

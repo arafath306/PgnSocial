@@ -322,7 +322,7 @@ class _SystemLogScreenState extends State<SystemLogScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
                                   decoration: BoxDecoration(
-                                    color: color.withOpacity(isDark ? 0.15 : 0.08),
+                                    color: color.withValues(alpha: isDark ? 0.15 : 0.08),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(

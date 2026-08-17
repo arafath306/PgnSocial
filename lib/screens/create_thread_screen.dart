@@ -12,6 +12,7 @@ import '../widgets/create_thread/create_thread_header.dart';
 import '../widgets/create_thread/create_thread_toolbar.dart';
 import '../widgets/create_thread/media_preview_section.dart';
 import '../widgets/create_thread/mention_autocomplete_overlay.dart';
+import '../widgets/create_thread/hashtag_autocomplete_overlay.dart';
 import '../widgets/create_thread/poll_creator.dart';
 import '../widgets/create_thread/url_input_section.dart';
 import '../widgets/create_thread/voice_recorder_ui.dart';
@@ -152,12 +153,76 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
   String? _activeMentionQuery;
   int _mentionStartIndex = -1;
 
+  List<Map<String, dynamic>> _hashtagSuggestions = [];
+  bool _isSearchingHashtags = false;
+  String? _activeHashtagQuery;
+  int _hashtagStartIndex = -1;
+
   void _onContentChanged() {
     setState(() {
       _charCount = _contentController.text.length;
     });
 
     _checkMentionTrigger();
+    _checkHashtagTrigger();
+  }
+
+  Future<void> _checkHashtagTrigger() async {
+    final text = _contentController.text;
+    final selection = _contentController.selection;
+    if (selection.baseOffset <= 0 || selection.baseOffset > text.length) {
+      if (_hashtagSuggestions.isNotEmpty) {
+        setState(() => _hashtagSuggestions = []);
+      }
+      return;
+    }
+
+    final textBeforeCursor = text.substring(0, selection.baseOffset);
+    final match = RegExp(r'#([a-zA-Z0-9_\u0980-\u09FF]*)$').firstMatch(textBeforeCursor);
+
+    if (match != null) {
+      final query = match.group(1) ?? '';
+      _hashtagStartIndex = match.start;
+      _activeHashtagQuery = query;
+
+      setState(() => _isSearchingHashtags = true);
+      final dbService = Provider.of<DatabaseService>(context, listen: false);
+      final results = await dbService.searchHashtags(query);
+
+      if (mounted && _activeHashtagQuery == query) {
+        setState(() {
+          _hashtagSuggestions = results;
+          _isSearchingHashtags = false;
+        });
+      }
+    } else if (_hashtagSuggestions.isNotEmpty) {
+      setState(() {
+        _hashtagSuggestions = [];
+        _isSearchingHashtags = false;
+        _activeHashtagQuery = null;
+      });
+    }
+  }
+
+  void _onHashtagSelected(String tag) {
+    if (_hashtagStartIndex < 0) return;
+    final text = _contentController.text;
+    final cursor = _contentController.selection.baseOffset;
+    if (cursor < _hashtagStartIndex || _hashtagStartIndex > text.length) return;
+
+    final prefix = text.substring(0, _hashtagStartIndex);
+    final suffix = cursor <= text.length ? text.substring(cursor) : '';
+    final inserted = '#$tag ';
+    
+    _contentController.text = '$prefix$inserted$suffix';
+    _contentController.selection = TextSelection.collapsed(
+      offset: prefix.length + inserted.length,
+    );
+
+    setState(() {
+      _hashtagSuggestions = [];
+      _activeHashtagQuery = null;
+    });
   }
 
   Future<void> _checkMentionTrigger() async {
@@ -367,6 +432,19 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
                         }),
                         onLocationRemove: () =>
                             setState(() => _selectedLocation = null),
+                        suggestionOverlay: (_mentionSuggestions.isNotEmpty || _isSearchingMentions)
+                            ? MentionAutocompleteOverlay(
+                                users: _mentionSuggestions,
+                                isLoading: _isSearchingMentions,
+                                onUserSelected: _onMentionUserSelected,
+                              )
+                            : (_hashtagSuggestions.isNotEmpty || _isSearchingHashtags)
+                                ? HashtagAutocompleteOverlay(
+                                    hashtags: _hashtagSuggestions,
+                                    isLoading: _isSearchingHashtags,
+                                    onHashtagSelected: _onHashtagSelected,
+                                  )
+                                : null,
                       ),
 
                       // Image/media preview strip
@@ -469,13 +547,7 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
                         showVideoInput: _showVideoInput,
                       ),
 
-                      // Mention (@username) Autocomplete Suggestions Overlay
-                      if (_mentionSuggestions.isNotEmpty || _isSearchingMentions)
-                        MentionAutocompleteOverlay(
-                          users: _mentionSuggestions,
-                          isLoading: _isSearchingMentions,
-                          onUserSelected: _onMentionUserSelected,
-                        ),
+
 
                       // Poll Creator Interface
                       if (_showPollInput)
@@ -754,7 +826,7 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
                 "Cancel",
                 style: GoogleFonts.inter(
                   fontWeight: FontWeight.w600,
-                  color: textColor.withOpacity(0.8),
+                  color: textColor.withValues(alpha: 0.8),
                 ),
               ),
             ),
