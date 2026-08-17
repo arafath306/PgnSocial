@@ -622,38 +622,18 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
               final db = context.read<DatabaseService>();
               final isPremium = db.myProfile?.isPremium == true;
               if (isPremium) {
-                setState(() {
-                  _isAnonymous = !_isAnonymous;
-                });
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        Icon(
-                          _isAnonymous ? Icons.security_rounded : Icons.person_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          _isAnonymous
-                              ? 'Anonymous Mode ON 🕵️ (Name & avatar hidden)'
-                              : 'Anonymous Mode OFF 👤 (Posting as yourself)',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                    backgroundColor: _isAnonymous ? Colors.indigo : const Color(0xFF1E824C),
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
+                if (_isAnonymous) {
+                  setState(() {
+                    _isAnonymous = false;
+                  });
+                  _showAliasSnackBar(false);
+                } else {
+                  _showPigeonAliasDialog();
+                }
               } else {
                 _showUpgradePremiumDialog(
-                  title: "Anonymous Posting (Premium Feature)",
-                  description: "Publish threads completely anonymously without revealing your identity or profile. Upgrade to any Premium plan to unlock Anonymous Mode!",
+                  title: "Pigeon Alias Mode (Premium Feature)",
+                  description: "Publish threads under a Pigeon Alias without revealing your real identity or profile. Upgrade to any Premium plan to unlock Pigeon Alias Mode!",
                   icon: Icons.security_rounded,
                   iconColor: Colors.indigo,
                 );
@@ -699,6 +679,109 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
     return Scaffold(
       backgroundColor: isWide ? context.scaffoldBg : context.cardBg,
       body: bodyContent,
+    );
+  }
+
+  void _showAliasSnackBar(bool enabled) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              enabled ? Icons.security_rounded : Icons.person_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              enabled
+                  ? 'Alias Mode ON 🕵️ your identity is hidden'
+                  : 'Alias Mode OFF 👤 your identity is visible',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        backgroundColor: enabled ? const Color(0xFF1E824C) : const Color(0xFF374151),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showPigeonAliasDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final dialogBg = isDark ? const Color(0xFF1F2937) : Colors.white;
+        final titleColor = isDark ? Colors.white : const Color(0xFF111827);
+        final textColor = isDark ? const Color(0xFFD1D5DB) : const Color(0xFF4B5563);
+        final btnColor = const Color(0xFF1E824C);
+
+        return AlertDialog(
+          backgroundColor: dialogBg,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(Icons.security_rounded, color: btnColor, size: 24),
+              const SizedBox(width: 10),
+              Text(
+                "Pigeon Alias Mode",
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.bold,
+                  color: titleColor,
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            "Publishing this post in Pigeon Alias Mode hides your profile details, avatar, and username from other users. \n\n"
+            "Your content will be posted under the identity of 'Pigeon Alias'. System administrators can still view the real author to ensure compliance with our community guidelines.",
+            style: GoogleFonts.inter(
+              color: textColor,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Cancel",
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                  color: textColor.withOpacity(0.8),
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                setState(() {
+                  _isAnonymous = true;
+                });
+                _showAliasSnackBar(true);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: btnColor,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: Text(
+                "Enable Alias",
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

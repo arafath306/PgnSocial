@@ -285,14 +285,22 @@ class FeedRepositoryImpl implements IFeedRepository {
 
       final List<Map<String, dynamic>> results = [];
       for (final json in commentsRaw) {
+        final bool isAnon = json['is_anonymous'] as bool? ?? false;
         final authorMap = json['profiles'] as Map<String, dynamic>?;
-        final authorProfile = authorMap != null
-            ? Profile.fromJson(authorMap)
-            : Profile(
-                id: json['user_id'] ?? '',
-                username: 'unknown',
-                fullName: 'Unknown User',
-              );
+        final authorProfile = isAnon
+            ? Profile(
+                id: 'anonymous',
+                username: 'pigeon_alias',
+                fullName: 'Pigeon Alias',
+                avatarUrl: null,
+              )
+            : (authorMap != null
+                ? Profile.fromJson(authorMap)
+                : Profile(
+                    id: json['user_id'] ?? '',
+                    username: 'unknown',
+                    fullName: 'Unknown User',
+                  ));
 
         results.add({
           'id': json['id'],
@@ -341,14 +349,22 @@ class FeedRepositoryImpl implements IFeedRepository {
 
       final List<Map<String, dynamic>> results = [];
       for (final json in repliesRaw) {
+        final bool isAnon = json['is_anonymous'] as bool? ?? false;
         final authorMap = json['profiles'] as Map<String, dynamic>?;
-        final authorProfile = authorMap != null
-            ? Profile.fromJson(authorMap)
-            : Profile(
-                id: json['user_id'] ?? '',
-                username: 'unknown',
-                fullName: 'Unknown User',
-              );
+        final authorProfile = isAnon
+            ? Profile(
+                id: 'anonymous',
+                username: 'pigeon_alias',
+                fullName: 'Pigeon Alias',
+                avatarUrl: null,
+              )
+            : (authorMap != null
+                ? Profile.fromJson(authorMap)
+                : Profile(
+                    id: json['user_id'] ?? '',
+                    username: 'unknown',
+                    fullName: 'Unknown User',
+                  ));
 
         results.add({
           'id': json['id'],
@@ -491,14 +507,27 @@ class FeedRepositoryImpl implements IFeedRepository {
   }
 
   ThreadPostEntity _mapToEntity(Map<String, dynamic> json) {
+    final bool isAnon = json['is_anonymous'] as bool? ?? false;
+    final String actualUserId = json['user_id'] as String? ?? '';
+    final String maskedUserId = isAnon
+        ? (actualUserId == _currentUid ? actualUserId : 'anonymous')
+        : actualUserId;
+
     final authorMap = json['profiles'] as Map<String, dynamic>?;
-    final authorProfile = authorMap != null
-        ? Profile.fromJson(authorMap)
-        : Profile(
-            id: json['user_id'] ?? '',
-            username: 'unknown',
-            fullName: 'Unknown User',
-          );
+    final authorProfile = isAnon
+        ? Profile(
+            id: 'anonymous',
+            username: 'pigeon_alias',
+            fullName: 'Pigeon Alias',
+            avatarUrl: null,
+          )
+        : (authorMap != null
+            ? Profile.fromJson(authorMap)
+            : Profile(
+                id: actualUserId,
+                username: 'unknown',
+                fullName: 'Unknown User',
+              ));
 
     final likesList = json['likes'] as List<dynamic>?;
     final isLiked =
@@ -584,7 +613,7 @@ class FeedRepositoryImpl implements IFeedRepository {
 
     return ThreadPostEntity(
       id: json['id'] as String,
-      userId: json['user_id'] as String,
+      userId: maskedUserId,
       author: authorProfile,
       content: cleanContent,
       imageUrls: parsedImages,

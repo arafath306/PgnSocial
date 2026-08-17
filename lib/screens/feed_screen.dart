@@ -166,7 +166,7 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin, 
                         Expanded(child: Center(child: DakLogo(size: 42))),
                         IconButton(
                           tooltip: 'Communities',
-                          icon: Icon(CupertinoIcons.person_3_fill, color: context.textPrimary, size: 24),
+                          icon: Icon(Icons.groups_rounded, color: context.textPrimary, size: 24),
                           onPressed: () => Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const CommunityHomeScreen()),

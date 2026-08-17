@@ -17,6 +17,7 @@ import 'blocked_accounts_screen.dart';
 import 'muted_accounts_screen.dart';
 import 'help_center_screen.dart';
 import 'about_settings_screen.dart';
+import 'system_log_screen.dart';
 import 'verification/verification_intro_screen.dart';
 import 'verification/pending_screen.dart';
 import '../../state/verification_controller.dart';
@@ -488,6 +489,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const HelpCenterScreen()),
+                );
+              },
+            ),
+            _SettingsTileItem(
+              icon: Icons.terminal_rounded,
+              title: "System Log",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SystemLogScreen()),
                 );
               },
             ),

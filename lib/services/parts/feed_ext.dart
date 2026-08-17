@@ -8,6 +8,7 @@ extension FeedExtension on DatabaseService {
       _isLoading = true;
       updateState();
     }
+    LogService.database("Fetching home feed threads (silent: $silent)...");
 
     final result = await sl<GetFeedUseCase>()(silent: silent);
     result.fold(
@@ -16,12 +17,13 @@ extension FeedExtension on DatabaseService {
           _isLoading = false;
         }
         updateState();
-        debugPrint("Fetch feed error: ${failure.message}");
+        LogService.error("Fetching home feed failed: ${failure.message}", tag: "DATABASE");
       },
       (entities) {
         _feed = entities.map((e) => _entityToModel(e)).toList();
         _feed.removeWhere((p) => p.author.isShadowbanned && p.author.id != _currentUid);
         _updateCache(_feed);
+        LogService.database("Home feed loaded: ${_feed.length} threads fetched.");
         if (!silent) {
           _isLoading = false;
         }
@@ -56,6 +58,7 @@ extension FeedExtension on DatabaseService {
     bool isSubscriberOnly = false,
     bool isAnonymous = false,
   }) async {
+    LogService.info("Attempting to create thread. Anonymous: $isAnonymous, Subscriber Only: $isSubscriberOnly, Images: ${imageUrls?.length ?? 0}");
     final now = DateTime.now();
     if (_lastPostTime != null) {
       final difference = now.difference(_lastPostTime!);
@@ -82,10 +85,11 @@ extension FeedExtension on DatabaseService {
     );
     return result.fold(
       (failure) {
-        debugPrint("Create thread error: ${failure.message}");
+        LogService.error("Thread creation failed: ${failure.message}");
         return false;
       },
       (success) async {
+        LogService.info("Thread created successfully! Refreshing feed.");
         try {
           FirebaseAnalytics.instance.logEvent(
             name: 'post_create',

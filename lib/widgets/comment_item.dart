@@ -62,7 +62,7 @@ class _CommentItemState extends State<CommentItem> {
   @override
   Widget build(BuildContext context) {
     final Profile author = widget.comment['author'] as Profile;
-    final bool isAnon = (widget.comment['is_anonymous'] as bool?) == true || author.id == 'anonymous' || author.username == 'anonymous';
+    final bool isAnon = (widget.comment['is_anonymous'] as bool?) == true || author.id == 'anonymous' || author.username == 'anonymous' || author.username == 'pigeon_alias';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
@@ -149,7 +149,7 @@ class _CommentItemState extends State<CommentItem> {
                                         ),
                                       ),
                                     TextSpan(
-                                      text: isAnon ? '@anonymous' : '@${author.username}',
+                                      text: isAnon ? '@pigeon_alias' : '@${author.username}',
                                       style: GoogleFonts.inter(
                                         fontSize: 13.5,
                                         color: context.textSecondary,

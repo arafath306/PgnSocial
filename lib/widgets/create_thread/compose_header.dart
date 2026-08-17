@@ -46,7 +46,7 @@ class ComposeHeader extends StatelessWidget {
         Row(
           children: [
             Text(
-              isAnonymous ? "Anonymous User" : (profile?.fullName ?? "User"),
+              isAnonymous ? "Pigeon Alias" : (profile?.fullName ?? "User"),
               style: GoogleFonts.inter(
                 fontWeight: FontWeight.bold,
                 fontSize: 15,

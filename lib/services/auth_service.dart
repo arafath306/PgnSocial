@@ -8,6 +8,7 @@ import '../core/security/e2ee_service.dart';
 import '../features/auth/domain/usecases/login_use_case.dart';
 import '../features/auth/domain/usecases/signup_use_case.dart';
 import '../features/auth/domain/usecases/sign_out_use_case.dart';
+import 'log_service.dart';
 
 enum LoginResult { success, requires2FA, failure }
 
@@ -38,6 +39,7 @@ class AuthService with ChangeNotifier {
   AuthService() {
     // Set initial user
     _currentUser = _supabaseClient.auth.currentUser;
+    LogService.auth("AuthService initialized. Current user: ${_currentUser?.email ?? 'Guest'}");
     if (_currentUser != null) {
       sl<E2EEService>().initializeKeys();
       checkTermsAccepted();
@@ -92,6 +94,7 @@ class AuthService with ChangeNotifier {
     _errorMessage = null;
     _requires2FA = false;
     notifyListeners();
+    LogService.auth("Attempting login for: $emailOrUsername");
 
     String emailToUse = emailOrUsername.trim();
     if (!emailToUse.contains('@')) {
@@ -147,6 +150,7 @@ class AuthService with ChangeNotifier {
         }
         
         _currentUser = _supabaseClient.auth.currentUser;
+        LogService.auth("Login successful for user: ${_currentUser?.email} (ID: ${_currentUser?.id})");
         await markTermsAccepted();
         _isLoading = false;
         notifyListeners();
@@ -353,6 +357,7 @@ class AuthService with ChangeNotifier {
   Future<void> handleSignout() async {
     _isSigningOut = true;
     notifyListeners();
+    LogService.auth("Signing out current user: ${_currentUser?.email}");
 
     try {
       final result = await _signOutUseCase();
@@ -363,6 +368,7 @@ class AuthService with ChangeNotifier {
           notifyListeners();
         },
         (_) {
+          LogService.auth("Sign out successful. Cleared session keys.");
           sl<E2EEService>().clearKeys();
           _currentUser = null;
           _isSigningOut = false;
@@ -370,6 +376,7 @@ class AuthService with ChangeNotifier {
         },
       );
     } catch (e) {
+      LogService.error("Sign out failed: $e", tag: "AUTH");
       _isSigningOut = false;
       _currentUser = null;
       notifyListeners();

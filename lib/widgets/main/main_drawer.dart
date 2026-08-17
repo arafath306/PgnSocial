@@ -447,7 +447,7 @@ class MainDrawer extends StatelessWidget {
                   ),
                   _buildDrawerItem(
                     context,
-                    icon: CupertinoIcons.person_3_fill,
+                    icon: Icons.groups_rounded,
                     title: "Community",
                     isActive: false,
                     onTap: () {

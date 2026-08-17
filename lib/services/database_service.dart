@@ -8,6 +8,7 @@ import '../models/profile.dart';
 import '../models/thread_post.dart';
 import '../models/notification.dart';
 import '../models/verification_plan_pricing.dart';
+import 'log_service.dart';
 
 import '../core/injection.dart';
 import 'general_settings_provider.dart';
@@ -421,10 +422,11 @@ class DatabaseService with ChangeNotifier {
   DatabaseService() {
     // Initialize _cachedUid from existing session (app restart after login)
     _cachedUid = _supabase.auth.currentUser?.id ?? '';
+    LogService.database("DatabaseService initialized. Cached UID: $_cachedUid");
 
     // Listen to Supabase auth state — auto-reload when session established
     _supabaseAuthSub = _supabase.auth.onAuthStateChange.listen((data) {
-      debugPrint('[DB] Supabase auth event: ${data.event}');
+      LogService.database("Supabase Auth event received: ${data.event}");
       if (data.event == AuthChangeEvent.signedIn ||
           data.event == AuthChangeEvent.tokenRefreshed ||
           data.event == AuthChangeEvent.initialSession) {
@@ -432,10 +434,11 @@ class DatabaseService with ChangeNotifier {
         final uid = data.session?.user.id ?? _supabase.auth.currentUser?.id ?? '';
         if (uid.isNotEmpty) {
           _cachedUid = uid;
-          debugPrint('[DB] Supabase UID cached: $_cachedUid');
+          LogService.database("Supabase UID cached: $_cachedUid. Loading user settings and feeds.");
           _onUserReady();
         }
       } else if (data.event == AuthChangeEvent.signedOut) {
+        LogService.database("Supabase signed out event. Clearing cached data.");
         _cachedUid = '';
         _clearAllData();
       }

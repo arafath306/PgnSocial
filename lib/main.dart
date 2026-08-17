@@ -19,6 +19,7 @@ import 'services/local_notification_service.dart';
 import 'services/push_notification_service.dart';
 import 'utils/app_theme.dart';
 import 'utils/app_router.dart';
+import 'services/log_service.dart';
 import 'package:go_router/go_router.dart';
 import 'core/injection.dart';
 import 'core/config/app_config.dart';
@@ -35,6 +36,7 @@ void main() {
       debugPrint = (String? message, {int? wrapWidth}) {};
     }
     WidgetsFlutterBinding.ensureInitialized();
+    LogService.info("Pigeon App starting initialization...", tag: "MAIN");
 
     // Set custom error widget builder for UI rendering crashes
     ErrorWidget.builder = (FlutterErrorDetails details) {
@@ -62,22 +64,29 @@ void main() {
     }
 
     // Initialize Supabase
+    LogService.info("Initializing Supabase Client...", tag: "SUPABASE");
     await Supabase.initialize(
       url: AppConfig.supabaseUrl,
       publishableKey: AppConfig.supabaseAnonKey,
       httpClient: kIsWeb ? null : PinnedHttpClient(),
     );
+    LogService.info("Supabase Client initialized successfully", tag: "SUPABASE");
 
     // Initialize dependency injection
+    LogService.info("Initializing Dependency Injection Container...", tag: "DI");
     await initInjection();
+    LogService.info("Dependency Injection Container initialized successfully", tag: "DI");
 
     // Initialize notifications
     try {
+      LogService.info("Initializing Notification Services...", tag: "NOTIFICATION");
       await LocalNotificationService.initialize();
       await PushNotificationService().initialize();
+      LogService.info("Notification Services initialized successfully", tag: "NOTIFICATION");
     } catch (e) {
-      debugPrint("Notification initialization failed: $e");
+      LogService.error("Notification initialization failed: $e", tag: "NOTIFICATION");
     }
+    LogService.info("All services initialized. Launching app widget tree.", tag: "MAIN");
 
     runApp(
       MultiProvider(

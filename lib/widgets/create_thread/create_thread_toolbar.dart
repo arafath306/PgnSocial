@@ -154,7 +154,7 @@ class CreateThreadToolbar extends StatelessWidget {
                   _buildToolbarIcon(
                     context,
                     icon: Icons.security_outlined,
-                    tooltip: "Anonymous Post",
+                    tooltip: "Pigeon Alias Mode",
                     color: Colors.indigo,
                     isActive: isActiveAnonymous,
                     onTap: onAnonymousTap,

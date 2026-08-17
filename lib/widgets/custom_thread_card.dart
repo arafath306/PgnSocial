@@ -435,13 +435,13 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              "Anonymous 🕵️",
+                              "Pigeon Alias 🕵️",
                               style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.indigo),
                             ),
                           ),
                         ),
                       TextSpan(
-                        text: post.isAnonymous ? '@anonymous' : '@${post.author.username}',
+                        text: post.isAnonymous ? '@pigeon_alias' : '@${post.author.username}',
                         style: GoogleFonts.inter(
                           fontSize: 13.5,
                           color: context.textMuted,

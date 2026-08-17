@@ -86,7 +86,7 @@ class ThreadPost {
     return DateTime.now().isAfter(pollExpiresAt!);
   }
 
-  bool get isAnonymous => (author.id == 'anonymous' || author.username == 'anonymous');
+  bool get isAnonymous => (author.id == 'anonymous' || author.username == 'anonymous' || author.username == 'pigeon_alias');
 
   static String formatRelativeTime(String? isoString) {
     if (isoString == null || isoString.isEmpty) return 'now';
@@ -108,8 +108,8 @@ class ThreadPost {
     final Profile authorProfile = isAnon
         ? Profile(
             id: 'anonymous',
-            username: 'anonymous',
-            fullName: 'Anonymous User',
+            username: 'pigeon_alias',
+            fullName: 'Pigeon Alias',
             avatarUrl: null,
           )
         : (authorMap != null 
@@ -186,7 +186,9 @@ class ThreadPost {
 
     return ThreadPost(
       id: json['id'] as String,
-      userId: json['user_id'] as String,
+      userId: isAnon
+          ? (json['user_id'] == currentUid ? (json['user_id'] as String? ?? '') : 'anonymous')
+          : (json['user_id'] as String? ?? ''),
       author: authorProfile,
       content: cleanContent,
       imageUrls: parsedImages,

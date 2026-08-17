@@ -7,7 +7,7 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:dak/utils/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class SharedPhotoEditorScreen extends StatelessWidget {
+class SharedPhotoEditorScreen extends StatefulWidget {
   final File imageFile;
 
   const SharedPhotoEditorScreen({
@@ -16,36 +16,54 @@ class SharedPhotoEditorScreen extends StatelessWidget {
   });
 
   @override
+  State<SharedPhotoEditorScreen> createState() => _SharedPhotoEditorScreenState();
+}
+
+class _SharedPhotoEditorScreenState extends State<SharedPhotoEditorScreen> {
+  // Store the edited result here. If null when onCloseEditor fires, the user cancelled.
+  XFile? _editedResult;
+
+  @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
     final bgColor = isDark ? const Color(0xFF111827) : const Color(0xFFFFFFFF);
     final fgColor = isDark ? Colors.white : const Color(0xFF0F172A);
 
     return ProImageEditor.file(
-      imageFile,
+      widget.imageFile,
       callbacks: ProImageEditorCallbacks(
+        // STEP 1: Save the result only. Do NOT call Navigator.pop here.
+        // The library is still busy (its loading dialog is open). If we pop here,
+        // we will pop the wrong thing and crash.
         onImageEditingComplete: (Uint8List bytes) async {
-          getTemporaryDirectory().then((dir) {
+          try {
+            final dir = await getTemporaryDirectory();
             final timestamp = DateTime.now().millisecondsSinceEpoch;
             final tempFile = File('${dir.path}/edited_image_$timestamp.jpg');
-            tempFile.writeAsBytes(bytes).then((_) {
-              if (context.mounted) {
-                Navigator.pop(context, XFile(tempFile.path));
-              }
-            }).catchError((e) {
-              debugPrint('Error saving edited image: $e');
-              if (context.mounted) {
-                Navigator.pop(context, null);
-              }
-            });
-          });
+            await tempFile.writeAsBytes(bytes);
+            _editedResult = XFile(tempFile.path);
+          } catch (e) {
+            debugPrint('Error saving edited image: $e');
+            _editedResult = null;
+          }
         },
+
+        // STEP 2: The library calls this AFTER it has fully cleaned up its dialogs.
+        // This is the ONLY place we pop the editor screen. It's called for both
+        // save (result != null) and cancel (result == null).
         onCloseEditor: (EditorMode mode) {
-          Navigator.pop(context, null);
+          if (context.mounted) {
+            Navigator.of(context).pop(_editedResult);
+          }
         },
       ),
       configs: ProImageEditorConfigs(
         designMode: ImageEditorDesignMode.material,
+        imageGeneration: const ImageGenerationConfigs(
+          processorConfigs: ProcessorConfigs(
+            processorMode: ProcessorMode.minimum,
+          ),
+        ),
         theme: ThemeData(
           brightness: isDark ? Brightness.dark : Brightness.light,
           scaffoldBackgroundColor: bgColor,
