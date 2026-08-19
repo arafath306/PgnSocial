@@ -77,7 +77,7 @@ extension TopicExtension on DatabaseService {
 
   // ── Beta Center & Admin Control Panel State & Methods ──
 
-  bool get isAdmin => myProfile != null && ['admin', 'test', 'pigeon', 'system'].contains(myProfile!.username.toLowerCase());
+  bool get isAdmin => myProfile != null && (myProfile!.role == 'Admin' || myProfile!.role == 'Moderator');
 
   Future<bool> submitBetaBug({
     required String title,

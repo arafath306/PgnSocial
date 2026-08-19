@@ -66,9 +66,9 @@ class AuthService with ChangeNotifier {
     }
     try {
       final prefs = await SharedPreferences.getInstance();
-      _hasAcceptedTerms = prefs.getBool('terms_accepted_${_currentUser!.id}') ?? true;
+      _hasAcceptedTerms = prefs.getBool('terms_accepted_${_currentUser!.id}') ?? false;
     } catch (_) {
-      _hasAcceptedTerms = true;
+      _hasAcceptedTerms = false;
     }
     notifyListeners();
   }

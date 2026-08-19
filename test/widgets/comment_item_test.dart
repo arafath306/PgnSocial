@@ -106,7 +106,12 @@ void main() {
     );
 
     // Verify comment text content is displayed
-    expect(find.text('This is a test comment!'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate((widget) =>
+          widget is RichText &&
+          widget.text.toPlainText().contains('This is a test comment!')),
+      findsOneWidget,
+    );
 
     // Verify commenter full name is displayed
     expect(find.textContaining('Commenter Name'), findsOneWidget);

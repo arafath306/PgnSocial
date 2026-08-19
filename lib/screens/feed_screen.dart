@@ -39,6 +39,8 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin, 
   static const double _kAppBarContentHeight = 56.0;
   List<Profile> _suggestedProfiles = [];
   bool _dismissedSuggested = false;
+  // Cached reference to avoid unsafe context.read in dispose()
+  MusicPlaybackController? _musicController;
 
   @override
   void initState() {
@@ -109,6 +111,8 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin, 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Cache reference so dispose() can use it safely without context
+    _musicController = Provider.of<MusicPlaybackController>(context, listen: false);
     final modalRoute = ModalRoute.of(context);
     if (modalRoute is PageRoute) {
       routeObserver.subscribe(this, modalRoute);
@@ -118,18 +122,15 @@ class _FeedScreenState extends State<FeedScreen> with TickerProviderStateMixin, 
   @override
   void didPushNext() {
     // Pause post music playback as soon as another screen/route is pushed on top
-    if (mounted) {
-      context.read<MusicPlaybackController>().pause();
-    }
+    _musicController?.pause();
     super.didPushNext();
   }
 
   @override
   void dispose() {
     routeObserver.unsubscribe(this);
-    if (mounted) {
-      context.read<MusicPlaybackController>().pause();
-    }
+    // Use cached reference — safe to call in dispose without context
+    _musicController?.pause();
     _tabController.dispose();
     _scrollController.dispose();
     super.dispose();

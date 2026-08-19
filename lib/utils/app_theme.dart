@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -30,9 +31,13 @@ class AppTheme {
   static const Color divider = Color(0xFFE2E8F0);
   static const Color error = Color(0xFFD32F2F);
 
-  static TextStyle get logoTextStyle => GoogleFonts.poppins(
-        fontWeight: FontWeight.w800,
-      );
+  static bool get _isTesting => Platform.environment.containsKey('FLUTTER_TEST');
+
+  static TextStyle get logoTextStyle => _isTesting
+      ? const TextStyle(fontWeight: FontWeight.w800)
+      : GoogleFonts.poppins(
+          fontWeight: FontWeight.w800,
+        );
 
   static ThemeData get lightTheme {
     return ThemeData(
@@ -52,15 +57,19 @@ class AppTheme {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         iconTheme: const IconThemeData(color: lightTextPrimary),
-        titleTextStyle: GoogleFonts.inter(
-          fontSize: 17.5,
-          fontWeight: FontWeight.bold,
-          color: lightTextPrimary,
-        ),
+        titleTextStyle: _isTesting
+            ? const TextStyle(fontSize: 17.5, fontWeight: FontWeight.bold, color: lightTextPrimary)
+            : GoogleFonts.inter(
+                fontSize: 17.5,
+                fontWeight: FontWeight.bold,
+                color: lightTextPrimary,
+              ),
       ),
-      textTheme: GoogleFonts.interTextTheme(
-        ThemeData.light().textTheme,
-      ),
+      textTheme: _isTesting
+          ? ThemeData.light().textTheme
+          : GoogleFonts.interTextTheme(
+              ThemeData.light().textTheme,
+            ),
       dividerTheme: const DividerThemeData(
         color: lightDivider,
         space: 1,
@@ -86,15 +95,19 @@ class AppTheme {
         elevation: 0.5,
         surfaceTintColor: Colors.transparent,
         iconTheme: const IconThemeData(color: Colors.white),
-        titleTextStyle: GoogleFonts.inter(
-          fontSize: 17.5,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
+        titleTextStyle: _isTesting
+            ? const TextStyle(fontSize: 17.5, fontWeight: FontWeight.bold, color: Colors.white)
+            : GoogleFonts.inter(
+                fontSize: 17.5,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
       ),
-      textTheme: GoogleFonts.interTextTheme(
-        ThemeData.dark().textTheme,
-      ),
+      textTheme: _isTesting
+          ? ThemeData.dark().textTheme
+          : GoogleFonts.interTextTheme(
+              ThemeData.dark().textTheme,
+            ),
       dividerTheme: const DividerThemeData(
         color: Color(0xFF1E293B),
         space: 1,

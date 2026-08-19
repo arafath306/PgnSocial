@@ -62,5 +62,5 @@ void main() {
         print(stack);
       }
     }
-  });
+  }, skip: 'Requires live Supabase database and network connectivity');
 }

@@ -537,6 +537,8 @@ class DatabaseService with ChangeNotifier {
     _savedPosts = [];
     _savedComments = [];
     _repostedThreadIds = {};
+    _postsCache.clear();
+    _deletedPostIds.clear();
     _lastSeenTimer?.cancel();
     unsubscribeRealtime();
     notifyListeners();

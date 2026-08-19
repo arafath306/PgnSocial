@@ -34,7 +34,7 @@ ON public.verification_requests FOR SELECT
 USING (
   EXISTS (
     SELECT 1 FROM public.profiles
-    WHERE id = auth.uid() AND (role = 'Admin' OR username IN ('admin', 'test', 'pigeon', 'system'))
+    WHERE id = auth.uid() AND (role = 'Admin' OR role = 'Moderator')
   )
 );
 
@@ -44,13 +44,13 @@ ON public.verification_requests FOR UPDATE
 USING (
   EXISTS (
     SELECT 1 FROM public.profiles
-    WHERE id = auth.uid() AND (role = 'Admin' OR username IN ('admin', 'test', 'pigeon', 'system'))
+    WHERE id = auth.uid() AND (role = 'Admin' OR role = 'Moderator')
   )
 )
 WITH CHECK (
   EXISTS (
     SELECT 1 FROM public.profiles
-    WHERE id = auth.uid() AND (role = 'Admin' OR username IN ('admin', 'test', 'pigeon', 'system'))
+    WHERE id = auth.uid() AND (role = 'Admin' OR role = 'Moderator')
   )
 );
 

@@ -31,6 +31,7 @@ class Profile {
   final DateTime? lastSeen;
   final String? publicKey;
   final DateTime? createdAt;
+  final String? role;
 
   Profile({
     required this.id,
@@ -65,6 +66,7 @@ class Profile {
     this.lastSeen,
     this.publicKey,
     this.createdAt,
+    this.role,
   });
 
   factory Profile.fromJson(Map<String, dynamic> json) {
@@ -110,6 +112,7 @@ class Profile {
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'] as String)
           : null,
+      role: json['role'] as String?,
     );
   }
 
@@ -147,6 +150,7 @@ class Profile {
       'last_seen': lastSeen?.toIso8601String(),
       if (publicKey != null) 'public_key': publicKey,
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
+      if (role != null) 'role': role,
     };
   }
 

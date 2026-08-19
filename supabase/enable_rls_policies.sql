@@ -143,9 +143,10 @@ CREATE POLICY "Allow users to update their own notifications"
 ON public.notifications FOR UPDATE 
 USING (auth.uid() = user_id);
 
-CREATE POLICY "Allow anyone to insert notifications" 
+CREATE POLICY "Allow authenticated users to insert notifications" 
 ON public.notifications FOR INSERT 
-WITH CHECK (true);
+TO authenticated
+WITH CHECK (auth.uid() = actor_id);
 
 
 -- 9. REPORTS
@@ -167,10 +168,15 @@ CREATE POLICY "Allow public read on system_settings"
 ON public.system_settings FOR SELECT 
 USING (true);
 
-CREATE POLICY "Allow authenticated users to modify system_settings" 
+CREATE POLICY "Admins can modify system_settings" 
 ON public.system_settings FOR ALL 
 TO authenticated 
-USING (true);
+USING (
+  EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND (role = 'Admin' OR role = 'Moderator')
+  )
+);
 
 
 -- 11. AUDIT LOGS

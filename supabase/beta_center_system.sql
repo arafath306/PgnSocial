@@ -83,13 +83,13 @@ WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can select their own bugs" 
 ON public.beta_bugs FOR SELECT 
 USING (auth.uid() = user_id OR EXISTS (
-    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND username IN ('admin', 'test', 'pigeon', 'system')
+    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (role = 'Admin' OR role = 'Moderator')
 ));
 
 CREATE POLICY "Admins can update bugs" 
 ON public.beta_bugs FOR UPDATE 
 USING (EXISTS (
-    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND username IN ('admin', 'test', 'pigeon', 'system')
+    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (role = 'Admin' OR role = 'Moderator')
 ));
 
 -- Policies for public.beta_features
@@ -100,13 +100,13 @@ WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can select their own features" 
 ON public.beta_features FOR SELECT 
 USING (auth.uid() = user_id OR EXISTS (
-    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND username IN ('admin', 'test', 'pigeon', 'system')
+    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (role = 'Admin' OR role = 'Moderator')
 ));
 
 CREATE POLICY "Admins can update features" 
 ON public.beta_features FOR UPDATE 
 USING (EXISTS (
-    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND username IN ('admin', 'test', 'pigeon', 'system')
+    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (role = 'Admin' OR role = 'Moderator')
 ));
 
 -- Policies for public.beta_feedback
@@ -117,7 +117,7 @@ WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Admins can select feedback" 
 ON public.beta_feedback FOR SELECT 
 USING (EXISTS (
-    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND username IN ('admin', 'test', 'pigeon', 'system')
+    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (role = 'Admin' OR role = 'Moderator')
 ));
 
 -- Policies for public.beta_known_issues
@@ -128,7 +128,7 @@ USING (true);
 CREATE POLICY "Admins can manage known issues" 
 ON public.beta_known_issues FOR ALL 
 USING (EXISTS (
-    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND username IN ('admin', 'test', 'pigeon', 'system')
+    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (role = 'Admin' OR role = 'Moderator')
 ));
 
 -- Policies for public.beta_changelogs
@@ -139,5 +139,5 @@ USING (true);
 CREATE POLICY "Admins can manage changelogs" 
 ON public.beta_changelogs FOR ALL 
 USING (EXISTS (
-    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND username IN ('admin', 'test', 'pigeon', 'system')
+    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND (role = 'Admin' OR role = 'Moderator')
 ));

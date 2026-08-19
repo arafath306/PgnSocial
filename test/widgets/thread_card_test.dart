@@ -8,8 +8,10 @@ import 'package:dak/services/database_service.dart';
 import 'package:dak/services/general_settings_provider.dart';
 import 'package:dak/state/music_playback_controller.dart';
 import 'package:dak/state/monetization_controller.dart';
+import 'package:dak/services/view_tracking_service.dart';
 import 'package:get_it/get_it.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
+import 'package:visibility_detector/visibility_detector.dart';
 
 class MockDatabaseService extends ChangeNotifier implements DatabaseService {
   @override
@@ -60,12 +62,24 @@ class MockMonetizationController extends ChangeNotifier implements MonetizationC
   bool isSubscribedTo(String creatorId) => false;
 }
 
+class MockViewTrackingService extends ChangeNotifier implements ViewTrackingService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  
+  @override
+  void trackView(String postId) {}
+}
+
 class MockSupabaseClient implements sb.SupabaseClient {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 void main() {
+  setUpAll(() {
+    VisibilityDetectorController.instance.updateInterval = Duration.zero;
+  });
+
   final getIt = GetIt.instance;
 
   setUp(() {
@@ -101,6 +115,7 @@ void main() {
           ChangeNotifierProvider<GeneralSettingsProvider>.value(value: MockGeneralSettingsProvider()),
           ChangeNotifierProvider<MusicPlaybackController>.value(value: MockMusicPlaybackController()),
           ChangeNotifierProvider<MonetizationController>.value(value: MockMonetizationController()),
+          ChangeNotifierProvider<ViewTrackingService>.value(value: MockViewTrackingService()),
         ],
         child: MaterialApp(
           home: Scaffold(
@@ -116,7 +131,12 @@ void main() {
     );
 
     // Verify content text is displayed
-    expect(find.text('This is a test thread post'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate((widget) =>
+          widget is RichText &&
+          widget.text.toPlainText().contains('This is a test thread post')),
+      findsOneWidget,
+    );
     
     // Verify author's full name is displayed (use textContaining due to trailing space in RichText/TextSpan rendering)
     expect(find.textContaining('John Doe'), findsOneWidget);
