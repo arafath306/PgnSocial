@@ -70,7 +70,6 @@ flutter:
     - assets/onboarding_bg.png
     - assets/onboarding_bg_3.png
     - assets/dak_icon.png
-    - assets/splash.png
     - assets/google_logo.png
     - assets/sounds/pop.mp3
     - assets/sounds/chime.wav
