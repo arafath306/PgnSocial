@@ -176,6 +176,27 @@ extension ProfileExtension on DatabaseService {
     }
   }
 
+  Future<bool> deactivateAccount(Duration duration) async {
+    if (_currentUid.isEmpty) return false;
+    _isLoading = true;
+    updateState();
 
+    try {
+      final deactivatedUntil = DateTime.now().add(duration);
+      
+      await _supabase.from('profiles').update({
+        'deactivated_until': deactivatedUntil.toUtc().toIso8601String(),
+      }).eq('id', _currentUid);
+
+      _isLoading = false;
+      updateState();
+      return true;
+    } catch (e) {
+      debugPrint("Deactivate account error: $e");
+      _isLoading = false;
+      updateState();
+      return false;
+    }
+  }
 
 }

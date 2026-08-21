@@ -26,6 +26,7 @@ import '../../state/monetization_controller.dart';
 import '../profile/subscription_dashboard_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dak/l10n/generated/app_localizations.dart';
+import 'account_status_screen.dart';
 class SettingsScreen extends StatefulWidget {
   final VoidCallback? onSwitchToProfile;
   const SettingsScreen({super.key, this.onSwitchToProfile});
@@ -163,18 +164,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
         backgroundColor: context.scaffoldBg,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: context.textPrimary, size: 22),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          AppLocalizations.of(context)!.settingsTabTitle,
-          style: GoogleFonts.inter(
-            color: context.textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
+        leading: _isSearching
+            ? IconButton(
+                icon: Icon(Icons.arrow_back, color: context.textPrimary, size: 22),
+                onPressed: _stopSearch,
+              )
+            : IconButton(
+                icon: Icon(Icons.arrow_back, color: context.textPrimary, size: 22),
+                onPressed: () => Navigator.pop(context),
+              ),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                focusNode: _searchFocus,
+                onChanged: (val) => setState(() => _searchQuery = val),
+                decoration: InputDecoration(
+                  hintText: 'Search...',
+                  border: InputBorder.none,
+                  hintStyle: GoogleFonts.inter(color: context.textMuted),
+                ),
+                style: GoogleFonts.inter(color: context.textPrimary, fontSize: 16),
+                cursorColor: context.primaryAccent,
+              )
+            : Text(
+                AppLocalizations.of(context)!.settingsTabTitle,
+                style: GoogleFonts.inter(
+                  color: context.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+        actions: [
+          if (!_isSearching)
+            IconButton(
+              icon: Icon(Icons.search_rounded, color: context.textPrimary),
+              onPressed: _startSearch,
+            ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(color: context.border, height: 1.0),
@@ -182,7 +208,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       body: ScrollConfiguration(
         behavior: const ScrollBehavior().copyWith(overscroll: false),
-        child: ListView(
+        child: _isSearching ? _buildSearchResults(context, myProfile, monetization, dbService) : ListView(
           physics: const ClampingScrollPhysics(),
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         children: [
@@ -347,6 +373,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const SecuritySettingsScreen()),
+                );
+              },
+            ),
+            _SettingsTileItem(
+              icon: Icons.person_off_outlined,
+              title: 'Account Status',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AccountStatusScreen()),
                 );
               },
             ),
@@ -619,6 +655,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  bool _isSearching = false;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocus.dispose();
+    super.dispose();
+  }
+
+  void _startSearch() {
+    setState(() {
+      _isSearching = true;
+      _searchQuery = '';
+      _searchController.clear();
+    });
+    _searchFocus.requestFocus();
+  }
+
+  void _stopSearch() {
+    setState(() {
+      _isSearching = false;
+      _searchQuery = '';
+      _searchController.clear();
+    });
+    _searchFocus.unfocus();
+  }
+
   void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -664,6 +730,151 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSearchResults(BuildContext context, dynamic myProfile, dynamic monetization, dynamic dbService) {
+    final query = _searchQuery.toLowerCase().trim();
+    
+    // Build all searchable items
+    List<_SettingsTileItem> allItems = [
+      _SettingsTileItem(
+        icon: Icons.person_outline_rounded,
+        title: AppLocalizations.of(context)!.editProfile,
+        onTap: () {
+          final profileMap = myProfile?.toJson() ?? {'full_name': '', 'username': '', 'bio': ''};
+          Navigator.push(context, MaterialPageRoute(builder: (_) => EditProfileScreen(profile: profileMap)));
+        },
+      ),
+      _SettingsTileItem(
+        icon: Icons.verified_user_outlined,
+        title: AppLocalizations.of(context)!.profileVerification,
+        onTap: () {
+          final controller = Provider.of<VerificationController>(context, listen: false);
+          controller.checkStatus(dbService).then((status) {
+            if (!context.mounted) return;
+            if (myProfile?.isVerified == true) {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const VerificationDashboardScreen()));
+            } else if (myProfile?.verificationRequested == true || status == VerificationStatus.pendingReview || status == VerificationStatus.rejected) {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const PendingScreen()));
+            } else {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const VerificationIntroScreen()));
+            }
+          });
+        },
+      ),
+      if (monetization.isEnabledGlobally || myProfile?.canMonetize == true)
+        _SettingsTileItem(
+          icon: Icons.monetization_on_outlined,
+          title: AppLocalizations.of(context)!.creatorMonetization,
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionDashboardScreen()));
+          },
+        ),
+      _SettingsTileItem(
+        icon: Icons.lock_outline_rounded,
+        title: AppLocalizations.of(context)!.privacyMenu,
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacySettingsScreen()));
+        },
+      ),
+      _SettingsTileItem(
+        icon: Icons.notifications_outlined,
+        title: AppLocalizations.of(context)!.notifications,
+        onTap: () {
+          Navigator.push(context, NoTransitionPageRoute(child: const NotificationSettingsScreen()));
+        },
+      ),
+      _SettingsTileItem(
+        icon: Icons.security_rounded,
+        title: AppLocalizations.of(context)!.security,
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const SecuritySettingsScreen()));
+        },
+      ),
+      _SettingsTileItem(
+        icon: Icons.person_off_outlined,
+        title: 'Account Status',
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountStatusScreen()));
+        },
+      ),
+      _SettingsTileItem(
+        icon: Icons.bookmark_border_rounded,
+        title: AppLocalizations.of(context)!.savedPosts,
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const SavedPostsScreen()));
+        },
+      ),
+      _SettingsTileItem(
+        icon: Icons.block_rounded,
+        title: AppLocalizations.of(context)!.blockedAccounts,
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const BlockedAccountsScreen()));
+        },
+      ),
+      _SettingsTileItem(
+        icon: Icons.volume_off_rounded,
+        title: AppLocalizations.of(context)!.mutedAccounts,
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const MutedAccountsScreen()));
+        },
+      ),
+      _SettingsTileItem(
+        icon: Icons.help_outline_rounded,
+        title: AppLocalizations.of(context)!.helpCenter,
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpCenterScreen()));
+        },
+      ),
+      _SettingsTileItem(
+        icon: Icons.terminal_rounded,
+        title: "System Log",
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const SystemLogScreen()));
+        },
+      ),
+      _SettingsTileItem(
+        icon: Icons.info_outline_rounded,
+        title: AppLocalizations.of(context)!.about,
+        onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutSettingsScreen()));
+        },
+      ),
+    ];
+
+    final filtered = allItems.where((item) => item.title.toLowerCase().contains(query)).toList();
+
+    if (filtered.isEmpty) {
+      return Center(
+        child: Text(
+          'No settings found',
+          style: GoogleFonts.inter(color: context.textSecondary),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      physics: const ClampingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      itemCount: filtered.length,
+      separatorBuilder: (context, index) => Divider(height: 1, color: context.border),
+      itemBuilder: (context, index) {
+        final tile = filtered[index];
+        return ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+          leading: Icon(tile.icon, color: context.textPrimary, size: 22),
+          title: Text(
+            tile.title,
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w500,
+              color: context.textPrimary,
+              fontSize: 14.5,
+            ),
+          ),
+          onTap: tile.onTap,
+        );
+      },
     );
   }
 }

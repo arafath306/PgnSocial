@@ -150,6 +150,16 @@ class AuthService with ChangeNotifier {
         }
         
         _currentUser = _supabaseClient.auth.currentUser;
+        if (_currentUser != null) {
+          try {
+            await _supabaseClient.from('profiles').update({
+              'deactivated_until': null,
+            }).eq('id', _currentUser!.id);
+          } catch (e) {
+            debugPrint('Failed to clear deactivated_until: $e');
+          }
+        }
+        
         LogService.auth("Login successful for user: ${_currentUser?.email} (ID: ${_currentUser?.id})");
         await markTermsAccepted();
         _isLoading = false;
@@ -398,6 +408,39 @@ class AuthService with ChangeNotifier {
         email: email.trim(),
         emailRedirectTo: 'io.supabase.dak://login-callback',
       );
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceAll(RegExp(r'\[.*?\]'), '').trim();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteAccountPermanently(String password) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final email = _currentUser?.email;
+      if (email == null) {
+        throw Exception("No email associated with this account.");
+      }
+
+      // Re-authenticate to confirm password
+      await _supabaseClient.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+
+      // Call RPC to permanently delete the user
+      await _supabaseClient.rpc('delete_user');
+
+      await handleSignout();
+      
       _isLoading = false;
       notifyListeners();
       return true;
