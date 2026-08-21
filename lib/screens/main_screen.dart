@@ -418,7 +418,7 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
         },
         child: PageView(
           controller: _pageController,
-          physics: const BouncingScrollPhysics(),
+          physics: const ClampingScrollPhysics(),
           onPageChanged: (index) {
             if (index != _currentIndex) {
               setState(() {

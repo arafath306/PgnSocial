@@ -366,7 +366,7 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
         // ── Scrollable composer area ───────────────────────────────
         Expanded(
           child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const ClampingScrollPhysics(),
             padding: const EdgeInsets.all(16.0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,

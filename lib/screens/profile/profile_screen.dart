@@ -781,7 +781,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 72),
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       itemCount: visibleThreads.length,
       itemBuilder: (context, i) => CustomThreadCard(
         key: ValueKey(visibleThreads[i].id),
@@ -823,7 +823,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 72),
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       itemCount: visibleReplies.length,
       itemBuilder: (context, i) => CustomThreadCard(
         key: ValueKey(visibleReplies[i].id),
@@ -867,7 +867,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 72),
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       itemCount: visibleReposts.length,
       itemBuilder: (context, i) => CustomThreadCard(
         key: ValueKey(visibleReposts[i].id),
@@ -913,7 +913,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 72),
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       itemCount: mediaThreads.length,
       itemBuilder: (context, i) => CustomThreadCard(
         key: ValueKey(mediaThreads[i].id),

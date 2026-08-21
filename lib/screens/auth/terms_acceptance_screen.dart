@@ -228,7 +228,7 @@ class _TermsAcceptanceScreenState extends State<TermsAcceptanceScreen> {
                 ),
                 child: SingleChildScrollView(
                   controller: _scrollController,
-                  physics: const BouncingScrollPhysics(),
+                  physics: const ClampingScrollPhysics(),
                   child: Text(
                     _selectedTab == 0
                         ? AppLegalTerms.termsOfService

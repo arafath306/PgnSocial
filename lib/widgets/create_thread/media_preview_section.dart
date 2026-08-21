@@ -86,7 +86,7 @@ class MediaPreviewSection extends StatelessWidget {
               height: 160,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
+                physics: const ClampingScrollPhysics(),
                 itemCount: selectedImagesBytesList.length + 1,
                 itemBuilder: (context, index) {
                   // "Add More" card at the end

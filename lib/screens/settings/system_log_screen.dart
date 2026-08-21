@@ -287,7 +287,7 @@ class _SystemLogScreenState extends State<SystemLogScreen> {
                 }
 
                 return ListView.separated(
-                  physics: const BouncingScrollPhysics(),
+                  physics: const ClampingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                   itemCount: filteredLogs.length,
                   separatorBuilder: (context, index) => Divider(height: 1, color: context.border),

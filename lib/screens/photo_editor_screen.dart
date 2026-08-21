@@ -393,7 +393,7 @@ class _PhotoEditorScreenState extends State<PhotoEditorScreen> {
                           children: [
                             SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
-                              physics: const BouncingScrollPhysics(),
+                              physics: const ClampingScrollPhysics(),
                               padding: const EdgeInsets.symmetric(horizontal: 16),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,

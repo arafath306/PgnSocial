@@ -174,7 +174,7 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        physics: const BouncingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

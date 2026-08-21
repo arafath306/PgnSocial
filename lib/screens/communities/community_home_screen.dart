@@ -173,7 +173,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen>
       onRefresh: () => service.refreshAllCommunities(),
       child: ListView.separated(
         padding: const EdgeInsets.only(bottom: 80),
-        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
         itemCount: sortedCommunities.length,
         separatorBuilder: (context, index) => Divider(height: 1, thickness: 0.5, color: context.border),
         itemBuilder: (context, index) {
@@ -335,7 +335,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen>
       onRefresh: () => service.refreshAllCommunities(),
       child: ListView.separated(
         padding: const EdgeInsets.only(bottom: 80),
-        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
         itemCount: service.recommendedCommunities.length,
         separatorBuilder: (context, index) => Divider(height: 1, thickness: 0.5, color: context.border),
         itemBuilder: (context, index) {

@@ -122,7 +122,7 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
               Expanded(
                 child: SingleChildScrollView(
                   controller: scrollController,
-                  physics: const BouncingScrollPhysics(),
+                  physics: const ClampingScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,

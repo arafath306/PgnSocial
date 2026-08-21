@@ -284,7 +284,7 @@ class _BetaCenterScreenState extends State<BetaCenterScreen> with SingleTickerPr
   Widget _buildBugTab() {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       children: [
         Container(
           decoration: BoxDecoration(
@@ -435,7 +435,7 @@ class _BetaCenterScreenState extends State<BetaCenterScreen> with SingleTickerPr
   Widget _buildFeatureTab() {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       children: [
         Container(
           decoration: BoxDecoration(
@@ -508,7 +508,7 @@ class _BetaCenterScreenState extends State<BetaCenterScreen> with SingleTickerPr
   Widget _buildFeedbackTab() {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       children: [
         Container(
           decoration: BoxDecoration(
@@ -604,7 +604,7 @@ class _BetaCenterScreenState extends State<BetaCenterScreen> with SingleTickerPr
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       itemCount: _knownIssues.length,
       itemBuilder: (context, i) {
         final issue = _knownIssues[i];
@@ -734,7 +734,7 @@ class _BetaCenterScreenState extends State<BetaCenterScreen> with SingleTickerPr
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       itemCount: _changelogs.length,
       itemBuilder: (context, i) {
         final change = _changelogs[i];
@@ -856,7 +856,7 @@ class _BetaCenterScreenState extends State<BetaCenterScreen> with SingleTickerPr
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       itemCount: _myReports.length,
       itemBuilder: (context, i) {
         final rep = _myReports[i];
@@ -1187,7 +1187,7 @@ class _BetaCenterScreenState extends State<BetaCenterScreen> with SingleTickerPr
       ),
       body: TabBarView(
         controller: _tabController,
-        physics: const BouncingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         children: [
           _buildBugTab(),
           _buildFeatureTab(),

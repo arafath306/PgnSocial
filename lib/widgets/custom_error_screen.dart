@@ -142,7 +142,7 @@ class _CustomErrorScreenState extends State<CustomErrorScreen> {
                         ),
                       ),
                       child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
+                        physics: const ClampingScrollPhysics(),
                         child: Text(
                           "${widget.details.exception}\n\n${widget.details.stack}",
                           style: GoogleFonts.firaCode(

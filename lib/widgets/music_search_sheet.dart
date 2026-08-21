@@ -212,7 +212,7 @@ class _MusicSearchSheetState extends State<MusicSearchSheet> {
                       )
                     : ListView.builder(
                         itemCount: _tracks.length,
-                        physics: const BouncingScrollPhysics(),
+                        physics: const ClampingScrollPhysics(),
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         itemBuilder: (context, index) {
                           final track = _tracks[index];

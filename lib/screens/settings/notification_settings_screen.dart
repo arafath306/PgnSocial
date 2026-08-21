@@ -69,7 +69,7 @@ class _NotifSettingTile extends StatelessWidget {
           builder: (ctx, setModalState) {
             return SafeArea(
               child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const ClampingScrollPhysics(),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   child: Column(

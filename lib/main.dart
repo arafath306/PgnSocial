@@ -168,4 +168,10 @@ class MyCustomScrollBehavior extends MaterialScrollBehavior {
   Widget buildScrollbar(BuildContext context, Widget child, ScrollableDetails details) {
     return child;
   }
+
+  // Globally remove the stretch/sponge overscroll indicator on Android
+  @override
+  Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) {
+    return child;
+  }
 }

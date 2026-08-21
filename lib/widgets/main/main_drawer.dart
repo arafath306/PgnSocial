@@ -95,9 +95,11 @@ class MainDrawer extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Text(
+                child: ScrollConfiguration(
+                  behavior: const ScrollBehavior().copyWith(overscroll: false),
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    child: Text(
                     contentText,
                     style: GoogleFonts.inter(
                       fontSize: 14,
@@ -105,6 +107,7 @@ class MainDrawer extends StatelessWidget {
                       height: 1.5,
                     ),
                   ),
+                ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -381,9 +384,11 @@ class MainDrawer extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Column(
+            child: ScrollConfiguration(
+              behavior: const ScrollBehavior().copyWith(overscroll: false),
+              child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildProfileHeader(context),
@@ -534,6 +539,7 @@ class MainDrawer extends StatelessWidget {
                     ),
                 ],
               ),
+            ),
             ),
           ),
           Divider(height: 1, color: context.border),

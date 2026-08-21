@@ -180,9 +180,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Container(color: context.border, height: 1.0),
         ),
       ),
-      body: ListView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      body: ScrollConfiguration(
+        behavior: const ScrollBehavior().copyWith(overscroll: false),
+        child: ListView(
+          physics: const ClampingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
         children: [
           // --- Profile Header Card ---
           GestureDetector(
@@ -549,6 +551,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 32),
         ],
+      ),
       ),
     );
   }

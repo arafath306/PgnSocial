@@ -92,7 +92,7 @@ class CreateThreadToolbar extends StatelessWidget {
           Expanded(
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
+              physics: const ClampingScrollPhysics(),
               child: Row(
                 children: [
                   _buildToolbarIcon(

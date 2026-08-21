@@ -300,7 +300,7 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                     }
                     return ListView.separated(
                       padding: const EdgeInsets.only(bottom: 40),
-                      physics: const BouncingScrollPhysics(),
+                      physics: const ClampingScrollPhysics(),
                       itemCount: _searchResults.length,
                       separatorBuilder: (context, index) => Divider(height: 1, thickness: 0.5, color: context.border),
                       itemBuilder: (context, index) {
@@ -313,7 +313,7 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
                     // Show recent searches state when in search mode but query is empty
                     return ListView(
                       padding: const EdgeInsets.all(24),
-                      physics: const BouncingScrollPhysics(),
+                      physics: const ClampingScrollPhysics(),
                       children: [
                         if (service.recentSearches.isNotEmpty) ...[
                           Row(
@@ -396,7 +396,7 @@ class _CommunitySearchScreenState extends State<CommunitySearchScreen> {
 
                   return ListView.builder(
                     padding: const EdgeInsets.only(bottom: 80),
-                    physics: const BouncingScrollPhysics(),
+                    physics: const ClampingScrollPhysics(),
                     itemCount: grouped.keys.length,
                     itemBuilder: (context, sectionIndex) {
                       final topic = grouped.keys.elementAt(sectionIndex);

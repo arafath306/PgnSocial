@@ -390,7 +390,7 @@ class _CommentAttachmentPickerPanelState extends State<CommentAttachmentPickerPa
           ),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
+            physics: const ClampingScrollPhysics(),
             itemCount: _emojiCategories.length,
             itemBuilder: (context, index) {
               final cat = _emojiCategories[index];
@@ -435,7 +435,7 @@ class _CommentAttachmentPickerPanelState extends State<CommentAttachmentPickerPa
             controller: _emojiScrollController,
             padding: const EdgeInsets.all(8),
             physics: _panelHeight >= MediaQuery.of(context).size.height * 0.49 
-                ? const BouncingScrollPhysics() 
+                ? const ClampingScrollPhysics() 
                 : const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 8,
@@ -581,7 +581,7 @@ class _CommentAttachmentPickerPanelState extends State<CommentAttachmentPickerPa
                       controller: _gifScrollController,
                       padding: const EdgeInsets.all(8),
                       physics: _panelHeight >= MediaQuery.of(context).size.height * 0.49 
-                          ? const BouncingScrollPhysics() 
+                          ? const ClampingScrollPhysics() 
                           : const NeverScrollableScrollPhysics(),
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
