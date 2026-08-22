@@ -37,7 +37,7 @@ extension AlgorithmicFeedExtension on DatabaseService {
         
         final threadsRes = await _supabase
             .from('threads')
-            .select('*, profiles!user_id(*), communities(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*)')
+            .select('*, profiles!user_id(*), communities(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*), comments(profiles(avatar_url))')
             .inFilter('id', threadIds);
 
         final List<dynamic> threadsData = threadsRes as List<dynamic>;
@@ -77,7 +77,7 @@ extension AlgorithmicFeedExtension on DatabaseService {
         try {
           final repostsRes = await _supabase
               .from('reposts')
-              .select('*, profiles!user_id(*), threads(*, profiles!user_id(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*))' )
+              .select('*, profiles!user_id(*), threads(*, profiles!user_id(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*), comments(profiles(avatar_url)))' )
               .order('created_at', ascending: false)
               .limit(20);
 
@@ -125,7 +125,7 @@ extension AlgorithmicFeedExtension on DatabaseService {
       try {
         var query = _supabase
             .from('threads')
-            .select('*, profiles!user_id(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*)');
+            .select('*, profiles!user_id(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*), comments(profiles(avatar_url))');
             
         if (fetchedPosts.isNotEmpty) {
            final existingIds = fetchedPosts.map((p) => p.id).toList();

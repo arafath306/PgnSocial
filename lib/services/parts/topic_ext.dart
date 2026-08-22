@@ -52,7 +52,7 @@ extension TopicExtension on DatabaseService {
 
       final threadsRes = await _supabase
           .from('threads')
-          .select('*, profiles!user_id(*), likes(user_id), thread_hides(user_id)')
+          .select('*, profiles!user_id(*), likes(user_id), thread_hides(user_id), comments(profiles(avatar_url))')
           .inFilter('id', threadIds);
       
       final List<dynamic> threadsData = threadsRes as List<dynamic>;

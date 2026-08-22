@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../utils/app_theme.dart';
+import 'shared/app_emoji_picker.dart';
 
 class CommentAttachmentPickerPanel extends StatefulWidget {
   final ValueChanged<String> onEmojiSelected;
@@ -28,23 +29,9 @@ class _CommentAttachmentPickerPanelState extends State<CommentAttachmentPickerPa
   
   bool _isLoadingGifs = false;
   List<String> _gifUrls = [];
-  String _activeCategory = "Smileys";
   double _panelHeight = 280.0;
-  
-  final ScrollController _emojiScrollController = ScrollController();
   final ScrollController _gifScrollController = ScrollController();
-  
-  // Category tabs for emoji picker
-  final List<Map<String, dynamic>> _emojiCategories = [
-    {"label": "Smileys", "icon": "😀"},
-    {"label": "Nature", "icon": "🐱"},
-    {"label": "Food", "icon": "🍔"},
-    {"label": "Activity", "icon": "⚽"},
-    {"label": "Travel", "icon": "✈️"},
-    {"label": "Objects", "icon": "💡"},
-    {"label": "Symbols", "icon": "🔣"},
-    {"label": "Flags", "icon": "🏁"},
-  ];
+  // Removed unused emoji category variables
 
   // Curated fallback reaction GIFs list in case Giphy API is limited/offline
   final Map<String, List<String>> _fallbackGifs = {
@@ -108,71 +95,7 @@ class _CommentAttachmentPickerPanelState extends State<CommentAttachmentPickerPa
     ],
   };
 
-  // Curated lists of high-fidelity Unicode emojis by category
-  final Map<String, List<String>> _emojiData = {
-    "Smileys": [
-      "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇", "🙂", "🙃", "😉", "😌", "😍", "🥰", "😘", "😗", 
-      "😙", "😚", "😋", "😛", "😝", "😜", "🤪", "🤨", "🧐", "🤓", "😎", "🤩", "🥳", "😏", "😒", "😞", "😔", "😟", 
-      "😕", "🙁", "☹️", "😣", "😖", "😫", "😩", "🥺", "😢", "😭", "😤", "😠", "😡", "🤬", "🤯", "😳", "🥵", "🥶", 
-      "😱", "😨", "😰", "😥", "😓", "🤗", "🤔", "🤭", "🤫", "🤥", "😶", "😐", "😑", "😬", "🙄", "😯", "😦", "😧", 
-      "😮", "😲", "🥱", "😴", "🤤", "😪", "😵", "🤐", "🥴", "🤢", "🤮", "🤧", "😷", "🤒", "🤕", "🤑", "🤠", "😈", 
-      "👿", "👹", "👺", "🤡", "💩", "👻", "💀", "☠️", "👽", "👾", "🤖", "🎃"
-    ],
-    "Nature": [
-      "🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐼", "🐨", "🐯", "🦁", "🐮", "🐷", "🐽", "🐸", "🐵", "🙈", "🙉", 
-      "🙊", "🐒", "🐔", "🐧", "🐦", "🐤", "🐣", "🐥", "🦆", "🦅", "🦉", "🦇", "🐺", "🐗", "🐴", "🦄", "🐝", "🐛", "🦋", "🐌", 
-      "🐞", "🐜", "🦟", "🦗", "🕷️", "🕸️", "🦂", "🐢", "🐍", "🦎", "🦖", "🦕", "🐙", "🦑", "🦐", "🦞", "🦀", "🐡", "🐠", "🐟", 
-      "🐬", "🐳", "🐋", "🦈", "🐊", "🐅", "🐆", "🦓", "🦍", "🦧", "🐘", "🦛", "🦏", "🐪", "🐫", "🦒", "🦘", "🐃", "🐂", "🐄", 
-      "🐎", "🐖", "🐏", "🐑", "🐐", "🦌", "🐕", "🐩", "🐈", "🐓", "🦃", "🦚", "🦜", "🦢", "🕊️", "🐇", "🦝", "🦡", "🐾", 
-      "🌵", "🎄", "🌲", "🌳", "🌴", "🌱", "🌿", "☘️", "🍀", "🍁", "🍂", "🍃"
-    ],
-    "Food": [
-      "🍏", "🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🍈", "🍒", "🍑", "🥭", "🍍", "🥥", "🥝", "🍅", "🍆", 
-      "🥑", "🥦", "🥬", "🥒", "🌶️", "🌽", "🥕", "🥔", "🍠", "🥐", "🥯", "🍞", "🥖", "🥨", "🧀", "🥚", "🍳", "🥞", 
-      "🥓", "🥩", "🍗", "🍖", "🍔", "🍟", "🍕", "🌭", "🥪", "🌮", "🌯", "🥘", "🍲", "🥗", "🍿", "🧈", "🧂", "🥫", 
-      "🍱", "🍘", "🍙", "🍚", "🍛", "🍜", "🍝", "🍢", "🍣", "🍤", "🍥", "🦪", "🍡", "🥟", "🥡", "🍦", "🍧", "🍨", 
-      "🍩", "🍪", "🎂", "🍰", "🧁", "🥧", "🍫", "🍬", "🍭", "🍮", "🍯", "🍼", "🥛", "☕", "🍵", "🍶", "🍾", "🍷", 
-      "🍸", "🍹", "🍺", "🍻", "🥂", "🥃", "🥤", "🧉", "🧊"
-    ],
-    "Activity": [
-      "⚽", "🏀", "🏈", "⚾", "🥎", "🎾", "🏐", "🏉", "🎱", "🏓", "🏸", "🥅", "🏒", "🏑", "🏏", "⛳", "🏹", "🎣", 
-      "🤿", "🥊", "🥋", "⛸️", "🎿", "🛷", "🏆", "🥇", "🥈", "🥉", "🏅", "🎖️", "🎫", "🎟️", "🎪", "🎭", "🎨", "🎬", 
-      "🎤", "🎧", "🎼", "🎹", "🥁", "🎸", "🎮", "🕹️", "🎰", "🎲", "🧩", "🎳", "🎯", "skateboard", "🛹", "🛼", "🧗", "🤺", "🏇"
-    ],
-    "Travel": [
-      "🚗", "🚕", "🚙", "🚌", "🚎", "🏎️", "🚓", "🚑", "🚒", "🚐", "🚚", "🚛", "🚜", "🏍️", "🛵", "🚲", "🛴", "🚨", 
-      "🚔", "🚍", "🚘", "🚖", "✈️", "🛫", "🛬", "🛰️", "🚀", "🛸", "🚁", "🛶", "⛵", "🛥️", "🚢", "⚓", "⛽", "🚧", 
-      "🗺️", "🗿", "🗽", "🗼", "🏰", "🏯", "🏟️", "🎡", "🎢", "🎠", "⛱️", "🏖️", "🏝️", "🏜️", "🌋", "⛰️", "🏕️", "⛺", 
-      "🏠", "🏢", "🏣", "🏥", "🏦", "🏨", "🏪", "🏫", "🏬", "🏭", "💒", "⛪", "🕌", "🕋", "⛩️"
-    ],
-    "Objects": [
-      "⌚", "📱", "💻", "⌨️", "🖥️", "🖨️", "🖱️", "📷", "📸", "📹", "🎥", "📽️", "🎞️", "📞", "☎️", "📟", "📠", 
-      "📺", "📻", "🎙️", "🧭", "⏱️", "⏰", "⏳", "⌛", "🔋", "🔌", "💡", "🔦", "🕯️", "🗑️", "💵", "💴", 
-      "💶", "💷", "🪙", "💰", "💳", "💎", "⚖️", "🔧", "🔨", "⚒️", "🔩", "⚙️", "🧱", "⛓️", "🧲", "🔫", "💣", "🧨", 
-      "🪓", "🔪", "⚔️", "🛡️", "🚬", "⚰️", "🏺", "🔮", "🧴", "🔑", "🔐", "🔒", "🔓", "📢", "🔔", "🔕", 
-      "🩹", "🩺", "🧬", "🧪", "🔬", "🔭", "📡", "🧯", "🧹", "🧺", "🧻", "🧼", "🪠", "🧽", "🪣"
-    ],
-    "Symbols": [
-      "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔", "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", 
-      "💟", "☮️", "✝️", "☪️", "🕉️", "☸️", "☯️", "♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓", 
-      "🆔", "⚛️", "🉑", "☢️", "☣️", "📴", "📳", "🈶", "🈚", "🆚", "💮", "🉐", "㊙️", "㊗️", "🅰️", "🅱️", "🆎", "🅾️", 
-      "🆘", "❌", "⭕", "🛑", "⛔", "🚫", "💯", "🔕", "🔇", "🔈", "🔉", "🔊", "🔔", "💬", "💭", "🗯️", "🃏", "🌀"
-    ],
-    "Flags": [
-      "🏁", "🚩", "🎌", "🏳️", "🏴", "🏴‍☠️", "🏳️‍🌈", "🏳️‍⚧️", "🇺🇳", "🇦🇫", "🇦🇱", "🇩🇿", "🇦🇸", "🇦🇩", "🇦🇴", "🇦🇮", "🇦🇶", "🇦🇬", 
-      "🇦🇷", "🇦🇲", "🇦🇼", "🇦🇺", "🇦🇹", "🇦🇿", "🇧🇸", "🇧🇭", "🇧🇩", "🇧🇧", "🇧🇾", "🇧🇪", "🇧🇿", "🇧🇯", "🇧🇲", "🇧🇹", "🇧🇴", "🇧🇦", 
-      "🇧🇼", "🇧🇷", "🇮🇴", "🇻🇬", "🇧🇳", "🇧🇬", "🇧🇫", "🇧🇮", "🇰🇭", "🇨🇲", "🇨🇦", "🇮🇨", "🇨🇻", "🇧☉", "🇰🇾", "🇨🇫", "🇹🇩", "🇨🇱", 
-      "🇨🇳", "🇨🇽", "🇨🇨", "🇨☉", "🇰🇲", "🇨🇬", "🇨🇩", "🇨🇰", "🇨🇷", "🇨🇮", "🇭🇷", "🇨🇺", "🇨🇼", "🇨🇾", "🇨🇿", "🇩🇰", "🇩🇯", "🇩🇲", 
-      "🇩☉", "🇪🇨", "🇪🇬", "🇸🇻", "🇬🇶", "🇪🇷", "🇪🇪", "🇸🇿", "🇪🇹", "🇪🇺", "🇫🇰", "🇫🇴", "🇫🇯", "🇫🇮", "🇫🇷", "🇬🇫", "🇵🇫", "🇹🇫", 
-      "🇬🇦", "🇬🇲", "🇬🇪", "🇩🇪", "🇬🇭", "🇬🇮", "🇬🇷", "🇬🇱", "🇬🇩", "🇬🇵", "🇬🇺", "🇬🇹", "🇬🇬", "🇬🇳", "🇬🇼", "🇬🇾", "🇭🇹", "🇭🇳", 
-      "🇭🇰", "🇭🇺", "🇮🇸", "🇮🇳", "🇮🇩", "🇮🇷", "🇮🇶", "🇮🇪", "🇮🇲", "🇮🇱", "🇮🇹", "🇯🇲", "🇯🇵", "🇯🇪", "🇯☉", "🇰🇿", "🇰🇪", "🇰🇮", 
-      "🇰🇵", "🇰🇷", "🇽🇰", "🇰🇼", "🇰🇬", "🇱🇦", "🇱🇻", "🇱🇧", "🇱🇸", "🇱🇷", "🇱🇾", "🇱🇮", "🇱🇹", "🇱🇺", "🇲☉", "🇲🇬", "🇲🇼", "🇲🇾", 
-      "🇲🇻", "🇲🇱", "🇲🇹", "🇲🇭", "🇲🇶", "🇲🇷", "🇲🇺", "🇾🇹", "🇲🇽", "🇫🇲", "🇲🇩", "🇲🇨", "🇲🇳", "🇲🇪", "🇲🇸", "🇲🇦", "🇲🇿", "🇲🇲", 
-      "🇳🇦", "🇳🇷", "🇳🇵", "🇳🇱", "🇳🇨", "🇳🇿", "🇳🇮", "🇳🇪", "🇳🇬", "🇳🇺", "🇳🇫", "🇲🇵", "🇲🇰", "🇳☉", "🇴🇲", "🇵🇰", "🇵🇼", "🇵🇸", 
-      "🇵🇦", "🇵🇬", "🇵🇾", "🇵🇪", "🇵🇭", "🇵🇳", "🇵🇱", "🇵🇹", "🇵🇷", "🇶🇦", "🇷🇪", "🇷☉", "🇷🇺", "🇷🇼", "🇼🇸", "🇸🇲", "🇸🇹", "🇸🇦", 
-      "🇸🇳", "🇷🇸", "🇸🇨", "🇸🇱", "🇸🇬", "🇸🇽", "🇸🇰", "🇸🇮", "🇬🇧", "🇺🇸", "🇺🇾", "🇺🇿", "🇻🇪", "🇻🇳", "🇼🇫", "🇾🇪", "🇿🇲", "🇿🇼"
-    ]
-  };
+  // Removed unused _emojiData map
 
   @override
   void initState() {
@@ -208,7 +131,6 @@ class _CommentAttachmentPickerPanelState extends State<CommentAttachmentPickerPa
     _tabController.dispose();
     _gifSearchController.dispose();
     _gifSearchFocus.dispose();
-    _emojiScrollController.dispose();
     _gifScrollController.dispose();
     super.dispose();
   }
@@ -348,7 +270,7 @@ class _CommentAttachmentPickerPanelState extends State<CommentAttachmentPickerPa
                 const double minHeight = 250.0;
                 final dy = event.delta.dy;
                 
-                final activeScrollController = _tabController.index == 0 ? _emojiScrollController : _gifScrollController;
+                final activeScrollController = _gifScrollController;
                 final isAtTop = activeScrollController.hasClients ? activeScrollController.offset <= 0 : true;
 
                 if (dy < 0 && _panelHeight < maxHeight) {
@@ -377,88 +299,8 @@ class _CommentAttachmentPickerPanelState extends State<CommentAttachmentPickerPa
 
   // Emoji tab UI
   Widget _buildEmojiPickerTab() {
-    final List<String> currentCategoryEmojis = _emojiData[_activeCategory] ?? _emojiData["Smileys"]!;
-    return Column(
-      children: [
-        // Category selectors
-        Container(
-          height: 40,
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          decoration: BoxDecoration(
-            color: context.isDarkMode ? Colors.black12 : Colors.grey[50],
-            border: Border(bottom: BorderSide(color: context.border, width: 0.5)),
-          ),
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            physics: const ClampingScrollPhysics(),
-            itemCount: _emojiCategories.length,
-            itemBuilder: (context, index) {
-              final cat = _emojiCategories[index];
-              final isSel = _activeCategory == cat["label"];
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _activeCategory = cat["label"] as String;
-                  });
-                },
-                child: Container(
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  decoration: BoxDecoration(
-                    color: isSel ? Theme.of(context).primaryColor.withValues(alpha: 0.12) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      Text(cat["icon"] as String, style: const TextStyle(fontSize: 16)),
-                      const SizedBox(width: 4),
-                      Text(
-                        cat["label"] as String,
-                        style: GoogleFonts.inter(
-                          fontSize: 11.5,
-                          fontWeight: isSel ? FontWeight.bold : FontWeight.w500,
-                          color: isSel ? Theme.of(context).primaryColor : context.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-
-        // Grid of emojis
-        Expanded(
-          child: GridView.builder(
-            controller: _emojiScrollController,
-            padding: const EdgeInsets.all(8),
-            physics: _panelHeight >= MediaQuery.of(context).size.height * 0.49 
-                ? const ClampingScrollPhysics() 
-                : const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 8,
-              crossAxisSpacing: 6,
-              mainAxisSpacing: 6,
-            ),
-            itemCount: currentCategoryEmojis.length,
-            itemBuilder: (context, index) {
-              final String emoji = currentCategoryEmojis[index];
-              return InkWell(
-                onTap: () => widget.onEmojiSelected(emoji),
-                borderRadius: BorderRadius.circular(8),
-                child: Center(
-                  child: Text(
-                    emoji,
-                    style: const TextStyle(fontSize: 22),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+    return AppEmojiPicker(
+      onEmojiSelected: widget.onEmojiSelected,
     );
   }
 

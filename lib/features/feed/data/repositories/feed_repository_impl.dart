@@ -611,6 +611,16 @@ class FeedRepositoryImpl implements IFeedRepository {
       }
     }
 
+    List<String>? parsedCommenterAvatars;
+    if (json['comments'] != null) {
+      final commentsList = json['comments'] as List<dynamic>;
+      parsedCommenterAvatars = commentsList
+          .map((c) => c['profiles']?['avatar_url'] as String?)
+          .where((url) => url != null)
+          .cast<String>()
+          .toList();
+    }
+
     return ThreadPostEntity(
       id: json['id'] as String,
       userId: maskedUserId,
@@ -631,6 +641,7 @@ class FeedRepositoryImpl implements IFeedRepository {
       muteNotifications: json['mute_notifications'] as bool? ?? false,
       hideFromProfile: json['hide_from_profile'] as bool? ?? false,
       isHiddenFromMe: isHidden,
+      commenterAvatars: parsedCommenterAvatars,
       isRepost: json['is_repost'] as bool? ?? false,
       repostedPost: json['reposted_post'] != null
           ? _mapToEntity(json['reposted_post'] as Map<String, dynamic>)

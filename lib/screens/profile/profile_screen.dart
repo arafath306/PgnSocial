@@ -46,7 +46,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   List<ThreadPost> _viewedThreads = [];
   List<ThreadPost> _replies = [];
   List<ThreadPost> _reposts = [];
-  bool _isLoading = false;
+  bool _isLoading = true;
   
   double? _creatorPrice;
 

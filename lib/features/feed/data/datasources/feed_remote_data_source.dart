@@ -52,7 +52,7 @@ class FeedRemoteDataSourceImpl implements FeedRemoteDataSource {
   Future<List<dynamic>> fetchFeedRaw() async {
     final response = await supabaseClient
         .from('threads')
-        .select('*, profiles!user_id(*), communities(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*)')
+        .select('*, profiles!user_id(*), communities(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*), comments(profiles(avatar_url))')
         .isFilter('community_id', null)
         .order('created_at', ascending: false);
     return response as List<dynamic>;
@@ -62,7 +62,7 @@ class FeedRemoteDataSourceImpl implements FeedRemoteDataSource {
   Future<List<dynamic>> fetchRepostsRaw() async {
     final response = await supabaseClient
         .from('reposts')
-        .select('*, profiles!user_id(*), threads(*, profiles!user_id(*), communities(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*))')
+        .select('*, profiles!user_id(*), threads(*, profiles!user_id(*), communities(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*), comments(profiles(avatar_url)))')
         .order('created_at', ascending: false);
     return response as List<dynamic>;
   }
@@ -71,7 +71,7 @@ class FeedRemoteDataSourceImpl implements FeedRemoteDataSource {
   Future<List<dynamic>> fetchMyThreadsRaw(String userId) async {
     final response = await supabaseClient
         .from('threads')
-        .select('*, profiles!user_id(*), communities(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*)')
+        .select('*, profiles!user_id(*), communities(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*), comments(profiles(avatar_url))')
         .eq('user_id', userId)
         .order('created_at', ascending: false);
     return response as List<dynamic>;
@@ -82,7 +82,7 @@ class FeedRemoteDataSourceImpl implements FeedRemoteDataSource {
     final currentUid = supabaseClient.auth.currentUser?.id;
     var query = supabaseClient
         .from('threads')
-        .select('*, profiles!user_id(*), communities(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*)')
+        .select('*, profiles!user_id(*), communities(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*), comments(profiles(avatar_url))')
         .eq('user_id', userId);
 
     if (currentUid == null || currentUid != userId) {
@@ -106,7 +106,7 @@ class FeedRemoteDataSourceImpl implements FeedRemoteDataSource {
 
     final response = await supabaseClient
         .from('threads')
-        .select('*, profiles!user_id(*), communities(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*)')
+        .select('*, profiles!user_id(*), communities(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*), comments(profiles(avatar_url))')
         .inFilter('id', threadIds)
         .order('created_at', ascending: false);
     return response as List<dynamic>;

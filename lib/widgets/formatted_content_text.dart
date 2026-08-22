@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/database_service.dart';
@@ -38,36 +39,49 @@ class FormattedContentText extends StatelessWidget {
 
     final tokens = HashtagMentionParser.parse(text);
 
-    return RichText(
-      maxLines: maxLines,
-      overflow: overflow,
-      text: TextSpan(
-        style: baseStyle,
-        children: tokens.map((token) {
-          if (token.type == TextTokenType.hashtag) {
-            return TextSpan(
-              text: token.text,
-              style: baseStyle.copyWith(
-                color: activeLinkColor,
-                fontWeight: FontWeight.bold,
-              ),
-              recognizer: TapGestureRecognizer()
-                ..onTap = () => _handleHashtagTap(context, token.value),
-            );
-          } else if (token.type == TextTokenType.mention) {
-            return TextSpan(
-              text: token.text,
-              style: baseStyle.copyWith(
-                color: activeLinkColor,
-                fontWeight: FontWeight.bold,
-              ),
-              recognizer: TapGestureRecognizer()
-                ..onTap = () => _handleMentionTap(context, token.value),
-            );
-          } else {
-            return TextSpan(text: token.text, style: baseStyle);
-          }
-        }).toList(),
+    return GestureDetector(
+      onLongPress: () async {
+        await Clipboard.setData(ClipboardData(text: text));
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Text copied to clipboard'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+      child: RichText(
+        maxLines: maxLines,
+        overflow: overflow,
+        text: TextSpan(
+          style: baseStyle,
+          children: tokens.map((token) {
+            if (token.type == TextTokenType.hashtag) {
+              return TextSpan(
+                text: token.text,
+                style: baseStyle.copyWith(
+                  color: activeLinkColor,
+                  fontWeight: FontWeight.bold,
+                ),
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () => _handleHashtagTap(context, token.value),
+              );
+            } else if (token.type == TextTokenType.mention) {
+              return TextSpan(
+                text: token.text,
+                style: baseStyle.copyWith(
+                  color: activeLinkColor,
+                  fontWeight: FontWeight.bold,
+                ),
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () => _handleMentionTap(context, token.value),
+              );
+            } else {
+              return TextSpan(text: token.text, style: baseStyle);
+            }
+          }).toList(),
+        ),
       ),
     );
   }

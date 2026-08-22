@@ -89,6 +89,7 @@ class DatabaseService with ChangeNotifier {
       muteNotifications: entity.muteNotifications,
       hideFromProfile: entity.hideFromProfile,
       isHiddenFromMe: entity.isHiddenFromMe,
+      commenterAvatars: entity.commenterAvatars,
       isRepost: entity.isRepost,
       repostedPost: entity.repostedPost != null ? _entityToModel(entity.repostedPost!) : null,
       quoteText: entity.quoteText,
@@ -155,7 +156,7 @@ class DatabaseService with ChangeNotifier {
     try {
       final response = await _supabase
           .from('threads')
-          .select('*, profiles!user_id(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*)')
+          .select('*, profiles!user_id(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*), comments(profiles(avatar_url))')
           .eq('id', threadId)
           .maybeSingle();
 
@@ -349,7 +350,7 @@ class DatabaseService with ChangeNotifier {
     try {
       final response = await _supabase
           .from('saved_posts')
-          .select('thread_id, threads(*, profiles!user_id(*), likes(user_id), thread_hides(user_id))')
+          .select('thread_id, threads(*, profiles!user_id(*), likes(user_id), thread_hides(user_id), comments(profiles(avatar_url)))')
           .eq('user_id', _currentUid)
           .order('created_at', ascending: false);
       final List<dynamic> data = response as List<dynamic>;

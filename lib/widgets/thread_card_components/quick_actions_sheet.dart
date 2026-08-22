@@ -28,7 +28,7 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet>
   bool _isBlocked = false;
   bool _isFollowing = false;
 
-  static const int _itemCount = 6;
+  static const int _itemCount = 8;
 
   @override
   void initState() {
@@ -108,8 +108,23 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet>
   @override
   Widget build(BuildContext context) {
     final username = widget.post.author.username;
+    final hasMedia = (widget.post.imageUrls?.isNotEmpty == true) || widget.post.videoUrl != null;
 
     final actions = <_QuickActionItem>[
+      if (hasMedia)
+        _QuickActionItem(
+          icon: Icons.download_outlined,
+          label: 'Download media',
+          onTap: () async {
+            final parentCtx = widget.parentContext;
+            Navigator.pop(context);
+            await MediaDownloadService.downloadMedia(
+              parentCtx,
+              imageUrls: widget.post.imageUrls,
+              videoUrl: widget.post.videoUrl,
+            );
+          },
+        ),
       _QuickActionItem(
         icon: Icons.sentiment_dissatisfied_outlined,
         label: 'Not interested in this post',

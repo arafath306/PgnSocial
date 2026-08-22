@@ -65,7 +65,7 @@ extension ProfileExtension on DatabaseService {
     try {
       final response = await _supabase
           .from('threads')
-          .select('*, profiles!user_id(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*)')
+          .select('*, profiles!user_id(*), likes(user_id), thread_hides(user_id), poll_options(*), poll_votes(*), comments(profiles(avatar_url))')
           .eq('id', threadId)
           .maybeSingle();
       if (response == null) return null;

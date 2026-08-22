@@ -157,7 +157,7 @@ extension RepostsExtension on DatabaseService {
     try {
       final response = await _supabase
           .from('reposts')
-          .select('*, profiles!user_id(*), threads(*, profiles!user_id(*), likes(user_id), thread_hides(user_id))')
+          .select('*, profiles!user_id(*), threads(*, profiles!user_id(*), likes(user_id), thread_hides(user_id), comments(profiles(avatar_url)))')
           .eq('user_id', userId)
           .order('created_at', ascending: false);
 

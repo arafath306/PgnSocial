@@ -22,6 +22,7 @@ class ThreadPostEntity {
   final bool muteNotifications;
   final bool hideFromProfile;
   final bool isHiddenFromMe;
+  final List<String>? commenterAvatars;
 
   final bool isRepost;
   final ThreadPostEntity? repostedPost;
@@ -57,6 +58,7 @@ class ThreadPostEntity {
     this.muteNotifications = false,
     this.hideFromProfile = false,
     this.isHiddenFromMe = false,
+    this.commenterAvatars,
     this.isRepost = false,
     this.repostedPost,
     this.quoteText,
@@ -88,6 +90,7 @@ class ThreadPostEntity {
     bool? muteNotifications,
     bool? hideFromProfile,
     bool? isHiddenFromMe,
+    List<String>? commenterAvatars,
     bool? isRepost,
     ThreadPostEntity? repostedPost,
     String? quoteText,
@@ -118,6 +121,7 @@ class ThreadPostEntity {
       muteNotifications: muteNotifications ?? this.muteNotifications,
       hideFromProfile: hideFromProfile ?? this.hideFromProfile,
       isHiddenFromMe: isHiddenFromMe ?? this.isHiddenFromMe,
+      commenterAvatars: commenterAvatars ?? this.commenterAvatars,
       isRepost: isRepost ?? this.isRepost,
       repostedPost: repostedPost ?? this.repostedPost,
       quoteText: quoteText ?? this.quoteText,

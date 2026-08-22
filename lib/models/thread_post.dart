@@ -27,6 +27,7 @@ class ThreadPost {
   final int viewsCount;
   final String? communityId;
   final Community? community;
+  final List<String>? commenterAvatars;
 
   final bool isRepost;
   final ThreadPost? repostedPost;
@@ -58,6 +59,7 @@ class ThreadPost {
     this.viewsCount = 0,
     this.communityId,
     this.community,
+    this.commenterAvatars,
     required this.createdAt,
     this.isLikedByMe = false,
     this.reactionType,
@@ -141,6 +143,20 @@ class ThreadPost {
       }
     }
 
+    List<String>? parsedCommenterAvatars;
+    if (json['comments'] != null && json['comments'] is List) {
+      parsedCommenterAvatars = (json['comments'] as List).map((e) {
+        if (e is Map && e['profiles'] is Map) {
+          return e['profiles']['avatar_url']?.toString() ?? '';
+        }
+        return '';
+      }).where((s) => s.isNotEmpty).take(3).toList();
+    } else if (json['recent_commenters'] != null && json['recent_commenters'] is List) {
+      parsedCommenterAvatars = (json['recent_commenters'] as List).map((e) => e['avatar_url']?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+    } else if (json['commenter_avatars'] != null && json['commenter_avatars'] is List) {
+      parsedCommenterAvatars = (json['commenter_avatars'] as List).map((e) => e.toString()).toList();
+    }
+
     // Parse Poll Votes
     final votesList = json['poll_votes'] as List<dynamic>?;
     final isVoted = currentUid != null && votesList != null &&
@@ -202,6 +218,7 @@ class ThreadPost {
       viewsCount: (json['views_count'] as int?) ?? 0,
       communityId: json['community_id'] as String?,
       community: parsedCommunity,
+      commenterAvatars: parsedCommenterAvatars,
       createdAt: formatRelativeTime(json['created_at'] as String?),
       isLikedByMe: isLiked,
       reactionType: isLiked ? '❤️' : null,
@@ -239,6 +256,7 @@ class ThreadPost {
       'views_count': viewsCount,
       'community_id': communityId,
       'communities': community?.toJson(),
+      'commenter_avatars': commenterAvatars,
       'created_at': createdAt, // This is a formatted string, we save it back directly
       'is_pinned': isPinned,
       'mute_notifications': muteNotifications,
@@ -287,6 +305,7 @@ class ThreadPost {
     bool? hasVotedPoll,
     String? votedOptionId,
     MusicTrack? musicTrack,
+    List<String>? commenterAvatars,
   }) {
     return ThreadPost(
       id: id ?? this.id,
@@ -304,6 +323,7 @@ class ThreadPost {
       viewsCount: viewsCount ?? this.viewsCount,
       communityId: communityId ?? this.communityId,
       community: community ?? this.community,
+      commenterAvatars: commenterAvatars ?? this.commenterAvatars,
       createdAt: createdAt ?? this.createdAt,
       isLikedByMe: isLikedByMe ?? this.isLikedByMe,
       reactionType: reactionType ?? this.reactionType,
