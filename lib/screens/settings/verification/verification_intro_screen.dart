@@ -7,6 +7,7 @@ import '../../../services/database_service.dart';
 import '../../../state/verification_controller.dart';
 import '../../../utils/app_theme.dart';
 import 'personal_details_screen.dart';
+import '../../../models/profile.dart';
 
 class VerificationIntroScreen extends StatefulWidget {
   const VerificationIntroScreen({super.key});
@@ -68,6 +69,12 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final dbService = Provider.of<DatabaseService>(context);
+    final myProfile = dbService.myProfile;
+    if (myProfile != null && myProfile.isVerified) {
+      return _buildVerifiedDashboard(context, myProfile);
+    }
+
     return PopScope(
       canPop: _currentStep == 0,
       onPopInvokedWithResult: (didPop, result) {
@@ -403,9 +410,9 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
                   Text(
                     subtitle,
                     style: GoogleFonts.inter(
-                      fontSize: 12,
+                      fontSize: 12.5,
                       color: context.textSecondary,
-                      height: 1.3,
+                      height: 1.35,
                     ),
                   ),
                 ],
@@ -1061,6 +1068,352 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildVerifiedDashboard(BuildContext context, Profile myProfile) {
+    Color badgeColor;
+    String badgeName;
+    String powerLevelLabel;
+    double powerPercent;
+    List<String> benefits;
+
+    final badge = myProfile.badgeType?.toLowerCase() ?? 'blue';
+    if (badge == 'gold') {
+      badgeColor = const Color(0xFFD97706);
+      badgeName = 'Gold Verification';
+      powerLevelLabel = '99% Impersonation Protection & Maximum Algorithm Boost';
+      powerPercent = 0.99;
+      benefits = [
+        '📈 Unlimited monetization access & subscription tiers.',
+        '🏢 Official business banner & community promotion.',
+        '🛡️ Advanced anti-impersonation protection & profile lock.',
+        '⚡ Priority 24/7 dedicated support & faster payout processing.'
+      ];
+    } else if (badge == 'green') {
+      badgeColor = const Color(0xFF1E824C);
+      badgeName = 'Green Verification';
+      powerLevelLabel = '95% Authority Score & Targeted Feed Reach Boost';
+      powerPercent = 0.95;
+      benefits = [
+        '📰 High authority tag in trends feed & official journalism mark.',
+        '🎙️ Premium access to live audio/video broadcast features.',
+        '🔒 Enhanced verification security & multi-factor protection.',
+        '💬 Direct verified-only messaging channels and groups.'
+      ];
+    } else {
+      badgeColor = const Color(0xFF0095F6);
+      badgeName = 'Blue Verification';
+      powerLevelLabel = '85% Authenticated Creator Score & Boosted Reach';
+      powerPercent = 0.85;
+      benefits = [
+        '🎨 Full creator monetization features & exclusive options.',
+        '🚀 Pigeon Feed algorithm visibility boost in all posts.',
+        '💬 Comment priority in popular threads & auto-moderation.',
+        '🌟 Exclusive verified-only custom profile badges & tabs.'
+      ];
+    }
+
+    final expires = myProfile.verifiedExpiresAt;
+    String expiryText = 'Lifetime Active';
+    if (expires != null) {
+      final daysRemaining = expires.difference(DateTime.now()).inDays;
+      if (daysRemaining < 0) {
+        expiryText = 'Expired on ${expires.day}/${expires.month}/${expires.year}';
+      } else {
+        expiryText = 'Expires in $daysRemaining days (on ${expires.day}/${expires.month}/${expires.year})';
+      }
+    }
+
+    final isDark = context.isDarkMode;
+    final primaryGreen = context.primaryAccent;
+
+    return Scaffold(
+      backgroundColor: context.scaffoldBg,
+      appBar: AppBar(
+        backgroundColor: context.scaffoldBg,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: context.textPrimary, size: 22),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Verification Status',
+          style: GoogleFonts.inter(
+            color: context.textPrimary,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+      ),
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          children: [
+            // Hero Card
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: context.cardBg,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: context.border),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.04),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      Container(
+                        width: 90,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: badgeColor, width: 3),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(45),
+                          child: (myProfile.avatarUrl != null && myProfile.avatarUrl!.isNotEmpty)
+                              ? CachedNetworkImage(
+                                  imageUrl: myProfile.avatarUrl!,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                  errorWidget: (context, url, error) => const Icon(Icons.person, size: 45),
+                                )
+                              : const Icon(Icons.person, size: 45),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: context.cardBg,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.verified_rounded,
+                          color: badgeColor,
+                          size: 26,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'You are Verified!',
+                    style: GoogleFonts.inter(
+                      color: context.textPrimary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '@${myProfile.username}',
+                    style: GoogleFonts.inter(
+                      color: badgeColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: badgeColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      badgeName.toUpperCase(),
+                      style: GoogleFonts.inter(
+                        color: badgeColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Status Details Card
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: context.cardBg,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: context.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Verification Details',
+                    style: GoogleFonts.inter(
+                      color: context.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Status',
+                        style: GoogleFonts.inter(color: context.textSecondary, fontSize: 13),
+                      ),
+                      Row(
+                        children: [
+                          const Icon(Icons.check_circle_rounded, color: Color(0xFF1E824C), size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Active',
+                            style: GoogleFonts.inter(color: const Color(0xFF1E824C), fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Renewal Period',
+                        style: GoogleFonts.inter(color: context.textSecondary, fontSize: 13),
+                      ),
+                      Text(
+                        expiryText,
+                        style: GoogleFonts.inter(
+                          color: context.textPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Badge Power Score',
+                    style: GoogleFonts.inter(
+                      color: context.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    powerLevelLabel,
+                    style: GoogleFonts.inter(color: context.textSecondary, fontSize: 12),
+                  ),
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: powerPercent,
+                      minHeight: 8,
+                      backgroundColor: context.border,
+                      valueColor: AlwaysStoppedAnimation<Color>(primaryGreen),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Active Benefits Card
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: context.cardBg,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: context.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Active Badge Benefits',
+                    style: GoogleFonts.inter(
+                      color: context.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Column(
+                    children: benefits.map((b) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.check_circle_outline_rounded, color: primaryGreen, size: 18),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                b,
+                                style: GoogleFonts.inter(
+                                  color: context.textPrimary,
+                                  fontSize: 13,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Express Support Notice
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: primaryGreen.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: primaryGreen.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.verified_user_rounded, color: primaryGreen, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Pigeon Verified ensures maximum trust and reach. Any plan updates or renewals are processed within 24 hours.',
+                      style: GoogleFonts.inter(
+                        color: context.textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
