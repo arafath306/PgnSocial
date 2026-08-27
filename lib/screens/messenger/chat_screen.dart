@@ -22,6 +22,7 @@ import 'widgets/full_screen_media_viewer.dart';
 import 'widgets/messenger_profile_sheet.dart';
 import 'media_preview_screen.dart';
 import '../../widgets/theme_picker_sheet.dart';
+import '../../widgets/verification_badge.dart';
 part 'chat_screen_extensions.dart';
 
 
@@ -440,8 +441,11 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                           if (_realtimeOtherUser.isVerified) ...[
                             const SizedBox(width: 4),
-                            const Icon(Icons.verified,
-                                color: Colors.blue, size: 15),
+                            VerificationBadge(
+                              isVerified: true,
+                              badgeType: _realtimeOtherUser.badgeType,
+                              size: 15,
+                            ),
                           ],
                         ],
                       ),

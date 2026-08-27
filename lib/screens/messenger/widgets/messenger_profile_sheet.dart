@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dak/models/profile.dart';
 import 'package:dak/screens/profile/profile_screen.dart';
 import 'package:dak/utils/app_theme.dart';
+import '../../../widgets/verification_badge.dart';
 
 class MessengerProfileSheet extends StatefulWidget {
   final Profile otherUser;
@@ -190,9 +191,9 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
                           ),
                           if (widget.otherUser.isVerified) ...[
                             const SizedBox(width: 6),
-                            const Icon(
-                              Icons.verified,
-                              color: Color(0xFF2563EB), // Corporate blue
+                            VerificationBadge(
+                              isVerified: true,
+                              badgeType: widget.otherUser.badgeType,
                               size: 18,
                             ),
                           ],

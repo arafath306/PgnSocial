@@ -7,6 +7,7 @@ import '../../utils/app_theme.dart';
 import '../../utils/routes.dart';
 import '../../screens/thread_detail_screen.dart';
 import 'thread_detail_music_player.dart';
+import '../verification_badge.dart';
 
 class NestedOriginalPost extends StatelessWidget {
   final ThreadPost origPost;
@@ -52,7 +53,11 @@ class NestedOriginalPost extends StatelessWidget {
               ),
               if (origPost.author.isVerified) ...[
                 const SizedBox(width: 4),
-                const Icon(Icons.verified, color: Colors.blue, size: 12),
+                VerificationBadge(
+                  isVerified: true,
+                  badgeType: origPost.author.badgeType,
+                  size: 12,
+                ),
               ],
               const SizedBox(width: 4),
               Text(

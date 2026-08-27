@@ -6,6 +6,7 @@ import '../../services/database_service.dart';
 import '../../utils/app_theme.dart';
 import 'chat_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../widgets/verification_badge.dart';
 
 class MemberSearchSheet extends StatefulWidget {
   const MemberSearchSheet({super.key});
@@ -165,9 +166,9 @@ class _MemberSearchSheetState extends State<MemberSearchSheet> {
                                 ),
                                 if (user.isVerified) ...[
                                   const SizedBox(width: 4),
-                                  const Icon(
-                                    Icons.verified,
-                                    color: Colors.blue,
+                                  VerificationBadge(
+                                    isVerified: true,
+                                    badgeType: user.badgeType,
                                     size: 15,
                                   ),
                                 ],

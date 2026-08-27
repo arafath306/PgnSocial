@@ -11,6 +11,7 @@ import '../utils/app_theme.dart';
 import 'formatted_content_text.dart';
 import 'share_comment_sheet.dart';
 import 'comments_sheet.dart';
+import 'verification_badge.dart';
 
 class CommentItem extends StatefulWidget {
   final Map<String, dynamic> comment;
@@ -137,13 +138,13 @@ class _CommentItemState extends State<CommentItem> {
                                       ),
                                     ),
                                     if (!isAnon && author.isVerified)
-                                      const WidgetSpan(
+                                      WidgetSpan(
                                         alignment: PlaceholderAlignment.middle,
                                         child: Padding(
-                                          padding: EdgeInsets.only(right: 4, bottom: 2),
-                                          child: Icon(
-                                            Icons.verified,
-                                            color: Colors.blue,
+                                          padding: const EdgeInsets.only(right: 4, bottom: 2),
+                                          child: VerificationBadge(
+                                            isVerified: true,
+                                            badgeType: author.badgeType,
                                             size: 15,
                                           ),
                                         ),

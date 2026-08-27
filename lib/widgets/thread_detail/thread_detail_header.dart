@@ -7,6 +7,7 @@ import '../../services/database_service.dart';
 import '../../utils/app_theme.dart';
 import '../../utils/routes.dart';
 import '../../screens/profile/profile_screen.dart';
+import '../verification_badge.dart';
 
 class ThreadDetailHeader extends StatelessWidget {
   final ThreadPost activePost;
@@ -102,9 +103,9 @@ class ThreadDetailHeader extends StatelessWidget {
                             ),
                             if (!activePost.isAnonymous && activePost.author.isVerified) ...[
                               const SizedBox(width: 4),
-                              const Icon(
-                                Icons.verified,
-                                color: Colors.blue,
+                              VerificationBadge(
+                                isVerified: true,
+                                badgeType: activePost.author.badgeType,
                                 size: 14,
                               ),
                             ],

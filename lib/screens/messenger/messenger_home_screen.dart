@@ -14,6 +14,7 @@ import '../../widgets/chat_shimmer.dart';
 import 'widgets/user_actions_sheet.dart';
 import '../../services/general_settings_provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../widgets/verification_badge.dart';
 
 class MessengerHomeScreen extends StatefulWidget {
   const MessengerHomeScreen({super.key});
@@ -311,7 +312,11 @@ class _MessengerHomeScreenState extends State<MessengerHomeScreen> with Automati
                                   ),
                                   if (profile.isVerified) ...[
                                     const SizedBox(width: 4),
-                                    const Icon(Icons.verified, color: Colors.blue, size: 15),
+                                    VerificationBadge(
+                                      isVerified: true,
+                                      badgeType: profile.badgeType,
+                                      size: 15,
+                                    ),
                                   ],
                                 ],
                               ),

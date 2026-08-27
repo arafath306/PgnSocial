@@ -11,6 +11,7 @@ import '../utils/app_theme.dart';
 import 'comment_detail_screen.dart';
 import 'profile/profile_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../widgets/verification_badge.dart';
 
 class SavedPostsScreen extends StatefulWidget {
   const SavedPostsScreen({super.key});
@@ -432,7 +433,11 @@ class _SavedPostsScreenState extends State<SavedPostsScreen>
                               ),
                               if (author.isVerified) ...[
                                 const SizedBox(width: 4),
-                                const Icon(Icons.verified, color: Colors.blue, size: 14),
+                                VerificationBadge(
+                                  isVerified: true,
+                                  badgeType: author.badgeType,
+                                  size: 14,
+                                ),
                               ],
                             ],
                           ),

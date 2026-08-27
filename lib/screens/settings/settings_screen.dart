@@ -27,6 +27,7 @@ import '../profile/subscription_dashboard_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dak/l10n/generated/app_localizations.dart';
 import 'account_status_screen.dart';
+import '../../widgets/verification_badge.dart';
 class SettingsScreen extends StatefulWidget {
   final VoidCallback? onSwitchToProfile;
   const SettingsScreen({super.key, this.onSwitchToProfile});
@@ -260,9 +261,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                             if (myProfile?.isVerified == true) ...[
                               const SizedBox(width: 4),
-                              const Icon(
-                                Icons.verified,
-                                color: Colors.blue,
+                              VerificationBadge(
+                                isVerified: true,
+                                badgeType: myProfile?.badgeType,
                                 size: 16,
                               ),
                             ],

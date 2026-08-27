@@ -11,6 +11,7 @@ import '../../screens/settings/settings_screen.dart';
 import '../../screens/settings/beta_center_screen.dart';
 import '../../screens/saved_posts_screen.dart';
 import '../../screens/communities/community_home_screen.dart';
+import '../verification_badge.dart';
 
 /// Full drawer / desktop left-sidebar navigation panel.
 ///
@@ -183,7 +184,11 @@ class MainDrawer extends StatelessWidget {
                 ),
                 if (myProfile?.isVerified == true) ...[
                   const SizedBox(width: 4),
-                  const Icon(Icons.verified, color: Colors.blue, size: 16),
+                  VerificationBadge(
+                    isVerified: true,
+                    badgeType: myProfile?.badgeType,
+                    size: 16,
+                  ),
                 ],
               ],
             ),

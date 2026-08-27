@@ -13,6 +13,7 @@ import '../widgets/comments_sheet.dart';
 
 import '../widgets/comment_attachment_picker_panel.dart';
 import '../widgets/reply_input_composer.dart';
+import '../widgets/verification_badge.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class CommentDetailScreen extends StatefulWidget {
@@ -320,14 +321,18 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                                    color: context.textPrimary,
                                                  ),
                                                ),
-                                               if (author.isVerified)
-                                                 const WidgetSpan(
-                                                   alignment: PlaceholderAlignment.middle,
-                                                   child: Padding(
-                                                     padding: EdgeInsets.only(left: 4),
-                                                     child: Icon(Icons.verified, color: Colors.blue, size: 15),
-                                                   ),
-                                                 ),
+                                                if (author.isVerified)
+                                                  WidgetSpan(
+                                                    alignment: PlaceholderAlignment.middle,
+                                                    child: Padding(
+                                                      padding: const EdgeInsets.only(left: 4),
+                                                      child: VerificationBadge(
+                                                        isVerified: true,
+                                                        badgeType: author.badgeType,
+                                                        size: 15,
+                                                      ),
+                                                    ),
+                                                  ),
                                                TextSpan(
                                                  text: ' @${author.username}',
                                                  style: GoogleFonts.inter(
@@ -624,11 +629,15 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                                         ),
                                                       ),
                                                       if (rAuthor.isVerified)
-                                                        const WidgetSpan(
+                                                        WidgetSpan(
                                                           alignment: PlaceholderAlignment.middle,
                                                           child: Padding(
-                                                            padding: EdgeInsets.only(left: 4),
-                                                            child: Icon(Icons.verified, color: Colors.blue, size: 15),
+                                                            padding: const EdgeInsets.only(left: 4),
+                                                            child: VerificationBadge(
+                                                              isVerified: true,
+                                                              badgeType: rAuthor.badgeType,
+                                                              size: 15,
+                                                            ),
                                                           ),
                                                         ),
                                                       TextSpan(
