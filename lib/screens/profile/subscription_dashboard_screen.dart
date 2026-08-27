@@ -669,7 +669,7 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
                   children: [
                     Text('24-Hour Express Payout', style: GoogleFonts.inter(color: context.textPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
                     const SizedBox(height: 2),
-                    Text('২৪ ঘণ্টার মধ্যে আপনার নির্ধারিত bKash, Nagad বা Bank অ্যাকাউন্টে পেআউট সম্পন্ন হয়ে যাবে।', style: GoogleFonts.inter(color: context.textSecondary, fontSize: 12)),
+                    Text('Payouts will be completed and processed to your designated bKash, Nagad, or Bank account within 24 hours.', style: GoogleFonts.inter(color: context.textSecondary, fontSize: 12)),
                   ],
                 ),
               ),
