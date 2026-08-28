@@ -350,8 +350,8 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
                     ),
                     const SizedBox(width: 4),
                     Icon(
-                      Icons.remove_red_eye_outlined,
-                      size: 13,
+                      Icons.bar_chart_rounded,
+                      size: 14,
                       color: context.textSecondary,
                     ),
                     const SizedBox(width: 4),
