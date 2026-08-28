@@ -101,7 +101,7 @@ class ReplyInputComposer extends StatelessWidget {
                         constraints: const BoxConstraints(),
                       ),
 
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 2),
                       IconButton(
                         icon: Icon(
                           showEmojiPanel && pickerTabIndex == 0
