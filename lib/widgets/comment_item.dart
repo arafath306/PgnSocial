@@ -136,6 +136,7 @@ class _CommentItemState extends State<CommentItem> {
                                         fontWeight: FontWeight.w700,
                                         fontSize: 15.5,
                                         color: context.textPrimary,
+                                        height: 1.1,
                                       ),
                                     ),
                                     if (!isAnon && author.isVerified)

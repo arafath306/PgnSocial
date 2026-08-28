@@ -323,6 +323,7 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                                    fontWeight: FontWeight.w700,
                                                    fontSize: 15.5,
                                                    color: context.textPrimary,
+                                                   height: 1.1,
                                                  ),
                                                ),
                                                 if (author.isVerified)
@@ -657,6 +658,7 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                                           fontWeight: FontWeight.w700,
                                                           fontSize: 15.5,
                                                           color: context.textPrimary,
+                                                          height: 1.1,
                                                         ),
                                                       ),
                                                       if (rAuthor.isVerified)
