@@ -360,11 +360,14 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                        ),
                                      ),
                                      const SizedBox(width: 8),
-                                     IconButton(
-                                       icon: const Icon(Icons.more_horiz, size: 18, color: Colors.grey),
-                                       padding: EdgeInsets.zero,
-                                       constraints: const BoxConstraints(),
-                                       onPressed: () => _showQuickActions(context, _fatherComment, dbService),
+                                     GestureDetector(
+                                       behavior: HitTestBehavior.opaque,
+                                       onTap: () => _showQuickActions(context, _fatherComment, dbService),
+                                       child: Container(
+                                         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                         color: Colors.transparent,
+                                         child: const Icon(Icons.more_horiz, size: 18, color: Colors.grey),
+                                       ),
                                      ),
                                    ],
                                  ),
@@ -703,11 +706,14 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                         ),
                                       ),
                                             const SizedBox(width: 8),
-                                            IconButton(
-                                              icon: const Icon(CupertinoIcons.ellipsis, size: 18, color: Colors.grey),
-                                              padding: EdgeInsets.zero,
-                                              constraints: const BoxConstraints(),
-                                              onPressed: () => _showQuickActions(context, reply, dbService),
+                                            GestureDetector(
+                                              behavior: HitTestBehavior.opaque,
+                                              onTap: () => _showQuickActions(context, reply, dbService),
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                                color: Colors.transparent,
+                                                child: const Icon(CupertinoIcons.ellipsis, size: 18, color: Colors.grey),
+                                              ),
                                             ),
                                           ],
                                         ),

@@ -198,11 +198,14 @@ class _CommentItemState extends State<CommentItem> {
                       ),
                     ],
                     const SizedBox(width: 8),
-                    IconButton(
-                      icon: Icon(Icons.more_horiz, size: 18, color: context.textSecondary),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () => _showQuickActions(context, widget.comment, widget.dbService),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _showQuickActions(context, widget.comment, widget.dbService),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                        color: Colors.transparent,
+                        child: Icon(Icons.more_horiz, size: 18, color: context.textSecondary),
+                      ),
                     ),
                   ],
                 ),
