@@ -72,7 +72,7 @@ class _CommentItemState extends State<CommentItem> {
         children: [
           // Commenter Avatar
           Container(
-            margin: const EdgeInsets.only(top: 4.5),
+            margin: const EdgeInsets.only(top: 1.5),
             child: GestureDetector(
               onTap: isAnon
                   ? null
@@ -204,7 +204,7 @@ class _CommentItemState extends State<CommentItem> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 1.5),
 
                 // Content Text
                 FormattedContentText(
@@ -212,7 +212,7 @@ class _CommentItemState extends State<CommentItem> {
                   style: GoogleFonts.hindSiliguri(
                     fontSize: 15.5,
                     color: context.textPrimary,
-                    height: 1.45,
+                    height: 1.3,
                   ),
                 ),
                 if (widget.comment['image_url'] != null && (widget.comment['image_url'] as String).isNotEmpty) ...[
@@ -249,30 +249,34 @@ class _CommentItemState extends State<CommentItem> {
                         });
                         widget.dbService.toggleCommentLike(widget.comment['id'] as String, newVal);
                       },
-                      child: Row(
-                        children: [
-                          Icon(
-                            (widget.comment['is_liked_by_me'] as bool? ?? false)
-                                ? CupertinoIcons.heart_fill
-                                : CupertinoIcons.heart,
-                            size: 15,
-                            color: (widget.comment['is_liked_by_me'] as bool? ?? false)
-                                ? Colors.red
-                                : context.textPrimary.withValues(alpha: 0.75),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            "${widget.comment['likes_count'] ?? 0}",
-                            style: GoogleFonts.inter(
-                              fontSize: 13, 
-                              fontWeight: FontWeight.w500,
-                              color: context.textPrimary.withValues(alpha: 0.75),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                        color: Colors.transparent,
+                        child: Row(
+                          children: [
+                            Icon(
+                              (widget.comment['is_liked_by_me'] as bool? ?? false)
+                                  ? CupertinoIcons.heart_fill
+                                  : CupertinoIcons.heart,
+                              size: 17,
+                              color: (widget.comment['is_liked_by_me'] as bool? ?? false)
+                                  ? Colors.red
+                                  : context.textPrimary.withValues(alpha: 0.75),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            Text(
+                              "${widget.comment['likes_count'] ?? 0}",
+                              style: GoogleFonts.inter(
+                                fontSize: 13, 
+                                fontWeight: FontWeight.w500,
+                                color: context.textPrimary.withValues(alpha: 0.75),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 24),
+                    const SizedBox(width: 14),
 
                     // Comments/Replies metric (opens CommentDetailScreen)
                     GestureDetector(
@@ -287,22 +291,26 @@ class _CommentItemState extends State<CommentItem> {
                           ),
                         ).then((_) => widget.onReloadComments());
                       },
-                      child: Row(
-                        children: [
-                          Icon(CupertinoIcons.chat_bubble, size: 15, color: context.textPrimary.withValues(alpha: 0.75)),
-                          const SizedBox(width: 6),
-                          Text(
-                            "${widget.comment['replies_count'] ?? 0}",
-                            style: GoogleFonts.inter(
-                              fontSize: 13, 
-                              fontWeight: FontWeight.w500,
-                              color: context.textPrimary.withValues(alpha: 0.75),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                        color: Colors.transparent,
+                        child: Row(
+                          children: [
+                            Icon(CupertinoIcons.chat_bubble, size: 17, color: context.textPrimary.withValues(alpha: 0.75)),
+                            const SizedBox(width: 6),
+                            Text(
+                              "${widget.comment['replies_count'] ?? 0}",
+                              style: GoogleFonts.inter(
+                                fontSize: 13, 
+                                fontWeight: FontWeight.w500,
+                                color: context.textPrimary.withValues(alpha: 0.75),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 24),
+                    const SizedBox(width: 14),
 
                     // Save/Bookmark comment
                     GestureDetector(
@@ -326,30 +334,34 @@ class _CommentItemState extends State<CommentItem> {
                           ),
                         );
                       },
-                      child: Row(
-                        children: [
-                          Icon(
-                            (widget.comment['is_saved_by_me'] as bool? ?? false)
-                                ? CupertinoIcons.bookmark_fill
-                                : CupertinoIcons.bookmark,
-                            size: 15,
-                            color: (widget.comment['is_saved_by_me'] as bool? ?? false)
-                                ? Theme.of(context).primaryColor
-                                : context.textPrimary.withValues(alpha: 0.75),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            "${widget.comment['saves_count'] ?? 0}",
-                            style: GoogleFonts.inter(
-                              fontSize: 13, 
-                              fontWeight: FontWeight.w500,
-                              color: context.textPrimary.withValues(alpha: 0.75),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                        color: Colors.transparent,
+                        child: Row(
+                          children: [
+                            Icon(
+                              (widget.comment['is_saved_by_me'] as bool? ?? false)
+                                  ? CupertinoIcons.bookmark_fill
+                                  : CupertinoIcons.bookmark,
+                              size: 17,
+                              color: (widget.comment['is_saved_by_me'] as bool? ?? false)
+                                  ? Theme.of(context).primaryColor
+                                  : context.textPrimary.withValues(alpha: 0.75),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            Text(
+                              "${widget.comment['saves_count'] ?? 0}",
+                              style: GoogleFonts.inter(
+                                fontSize: 13, 
+                                fontWeight: FontWeight.w500,
+                                color: context.textPrimary.withValues(alpha: 0.75),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 24),
+                    const SizedBox(width: 14),
 
                     // Share Comment
                     GestureDetector(
@@ -363,19 +375,23 @@ class _CommentItemState extends State<CommentItem> {
                           widget.onReloadComments();
                         });
                       },
-                      child: Row(
-                        children: [
-                          Icon(CupertinoIcons.arrowshape_turn_up_right, size: 15, color: context.textPrimary.withValues(alpha: 0.75)),
-                          const SizedBox(width: 6),
-                          Text(
-                            "${widget.comment['shares_count'] ?? 0}",
-                            style: GoogleFonts.inter(
-                              fontSize: 13, 
-                              fontWeight: FontWeight.w500,
-                              color: context.textPrimary.withValues(alpha: 0.75),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                        color: Colors.transparent,
+                        child: Row(
+                          children: [
+                            Icon(CupertinoIcons.arrowshape_turn_up_right, size: 17, color: context.textPrimary.withValues(alpha: 0.75)),
+                            const SizedBox(width: 6),
+                            Text(
+                              "${widget.comment['shares_count'] ?? 0}",
+                              style: GoogleFonts.inter(
+                                fontSize: 13, 
+                                fontWeight: FontWeight.w500,
+                                color: context.textPrimary.withValues(alpha: 0.75),
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ],

@@ -271,25 +271,28 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          GestureDetector(
-                            onTap: () {
-                              final isOwn = author.id == (dbService.myProfile?.id ?? dbService.currentUid);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ProfileScreen(userId: isOwn ? null : author.id),
-                                ),
-                              );
-                            },
-                            child: CircleAvatar(
-                              radius: 20,
-                              backgroundColor: Colors.grey[800],
-                              backgroundImage: (author.avatarUrl != null && author.avatarUrl!.isNotEmpty)
-                                  ? CachedNetworkImageProvider(author.avatarUrl!)
-                                  : null,
-                              child: (author.avatarUrl == null || author.avatarUrl!.isEmpty)
-                                  ? const Icon(Icons.person, size: 20, color: Colors.white54)
-                                  : null,
+                          Container(
+                            margin: const EdgeInsets.only(top: 1.5),
+                            child: GestureDetector(
+                              onTap: () {
+                                final isOwn = author.id == (dbService.myProfile?.id ?? dbService.currentUid);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ProfileScreen(userId: isOwn ? null : author.id),
+                                  ),
+                                );
+                              },
+                              child: CircleAvatar(
+                                radius: 20,
+                                backgroundColor: Colors.grey[800],
+                                backgroundImage: (author.avatarUrl != null && author.avatarUrl!.isNotEmpty)
+                                    ? CachedNetworkImageProvider(author.avatarUrl!)
+                                    : null,
+                                child: (author.avatarUrl == null || author.avatarUrl!.isEmpty)
+                                    ? const Icon(Icons.person, size: 20, color: Colors.white54)
+                                    : null,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -363,13 +366,13 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                      ),
                                    ],
                                  ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 1.5),
                                 Text(
                                   _fatherComment['content'] as String,
                                   style: GoogleFonts.hindSiliguri(
                                     fontSize: 16.0,
                                     color: context.textPrimary,
-                                    height: 1.45,
+                                    height: 1.3,
                                   ),
                                 ),
                                 if (_fatherComment['image_url'] != null && (_fatherComment['image_url'] as String).isNotEmpty) ...[
@@ -386,142 +389,161 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                   ),
                                 ],
                                 const SizedBox(height: 10),
-                                // Actions Row
-                                Row(
-                                  children: [
-                                    // Like
-                                    GestureDetector(
-                                      onTap: () {
-                                        final bool currentVal = _fatherComment['is_liked_by_me'] as bool? ?? false;
-                                        final bool newVal = !currentVal;
-                                        final int currentLikes = _fatherComment['likes_count'] as int? ?? 0;
-                                        
-                                        setState(() {
-                                          _fatherComment['is_liked_by_me'] = newVal;
-                                          _fatherComment['likes_count'] = newVal 
-                                              ? currentLikes + 1 
-                                              : (currentLikes > 0 ? currentLikes - 1 : 0);
-                                        });
-                                        dbService.toggleCommentLike(_fatherComment['id'] as String, newVal);
-                                      },
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            (_fatherComment['is_liked_by_me'] as bool? ?? false)
-                                                ? CupertinoIcons.heart_fill
-                                                : CupertinoIcons.heart,
-                                            size: 15,
-                                            color: (_fatherComment['is_liked_by_me'] as bool? ?? false)
-                                                ? Colors.red
-                                                : context.textPrimary.withValues(alpha: 0.75),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            "${_fatherComment['likes_count'] ?? 0}",
-                                            style: GoogleFonts.inter(
-                                              fontSize: 13, 
-                                              fontWeight: FontWeight.w500,
-                                              color: context.textPrimary.withValues(alpha: 0.75),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 24),
-                                    // Reply count (opens keyboard)
-                                    GestureDetector(
-                                      onTap: () => _focusNode.requestFocus(),
-                                      child: Row(
-                                        children: [
-                                          Icon(CupertinoIcons.chat_bubble, size: 15, color: context.textPrimary.withValues(alpha: 0.75)),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            "${_fatherComment['replies_count'] ?? 0}",
-                                            style: GoogleFonts.inter(
-                                              fontSize: 13, 
-                                              fontWeight: FontWeight.w500,
-                                              color: context.textPrimary.withValues(alpha: 0.75),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 24),
-                                    // Save
-                                    GestureDetector(
-                                      onTap: () {
-                                        final bool currentSaved = _fatherComment['is_saved_by_me'] as bool? ?? false;
-                                        final bool newSaved = !currentSaved;
-                                        final int currentSaves = _fatherComment['saves_count'] as int? ?? 0;
+                                 // Actions Row
+                                 Row(
+                                   children: [
+                                     // Like
+                                     GestureDetector(
+                                       onTap: () {
+                                         final bool currentVal = _fatherComment['is_liked_by_me'] as bool? ?? false;
+                                         final bool newVal = !currentVal;
+                                         final int currentLikes = _fatherComment['likes_count'] as int? ?? 0;
+                                         
+                                         setState(() {
+                                           _fatherComment['is_liked_by_me'] = newVal;
+                                           _fatherComment['likes_count'] = newVal 
+                                               ? currentLikes + 1 
+                                               : (currentLikes > 0 ? currentLikes - 1 : 0);
+                                         });
+                                         dbService.toggleCommentLike(_fatherComment['id'] as String, newVal);
+                                       },
+                                       child: Container(
+                                         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                                         color: Colors.transparent,
+                                         child: Row(
+                                           children: [
+                                             Icon(
+                                               (_fatherComment['is_liked_by_me'] as bool? ?? false)
+                                                   ? CupertinoIcons.heart_fill
+                                                   : CupertinoIcons.heart,
+                                               size: 17,
+                                               color: (_fatherComment['is_liked_by_me'] as bool? ?? false)
+                                                   ? Colors.red
+                                                   : context.textPrimary.withValues(alpha: 0.75),
+                                             ),
+                                             const SizedBox(width: 6),
+                                             Text(
+                                               "${_fatherComment['likes_count'] ?? 0}",
+                                               style: GoogleFonts.inter(
+                                                 fontSize: 13, 
+                                                 fontWeight: FontWeight.w500,
+                                                 color: context.textPrimary.withValues(alpha: 0.75),
+                                               ),
+                                             ),
+                                           ],
+                                         ),
+                                       ),
+                                     ),
+                                     const SizedBox(width: 14),
 
-                                        setState(() {
-                                          _fatherComment['is_saved_by_me'] = newSaved;
-                                          _fatherComment['saves_count'] = newSaved 
-                                              ? currentSaves + 1 
-                                              : (currentSaves > 0 ? currentSaves - 1 : 0);
-                                        });
-                                        dbService.toggleSaveComment(_fatherComment['id'] as String);
-                                        ScaffoldMessenger.of(context).clearSnackBars();
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text(newSaved ? "Comment saved to bookmarks" : "Comment removed from bookmarks"),
-                                            duration: const Duration(seconds: 1),
-                                          ),
-                                        );
-                                      },
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            (_fatherComment['is_saved_by_me'] as bool? ?? false)
-                                                ? CupertinoIcons.bookmark_fill
-                                                : CupertinoIcons.bookmark,
-                                            size: 15,
-                                            color: (_fatherComment['is_saved_by_me'] as bool? ?? false)
-                                                ? Theme.of(context).primaryColor
-                                                : context.textPrimary.withValues(alpha: 0.75),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            "${_fatherComment['saves_count'] ?? 0}",
-                                            style: GoogleFonts.inter(
-                                              fontSize: 13, 
-                                              fontWeight: FontWeight.w500,
-                                              color: context.textPrimary.withValues(alpha: 0.75),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 24),
-                                    // Share
-                                    GestureDetector(
-                                      onTap: () {
-                                        showModalBottomSheet(
-                                          context: context,
-                                          isScrollControlled: true,
-                                          backgroundColor: Colors.transparent,
-                                          builder: (sheetCtx) => ShareCommentSheet(comment: _fatherComment),
-                                        ).then((_) {
-                                          _refreshFatherComment();
-                                        });
-                                      },
-                                      child: Row(
-                                        children: [
-                                          Icon(CupertinoIcons.arrowshape_turn_up_right, size: 15, color: context.textPrimary.withValues(alpha: 0.75)),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            "${_fatherComment['shares_count'] ?? 0}",
-                                            style: GoogleFonts.inter(
-                                              fontSize: 13, 
-                                              fontWeight: FontWeight.w500,
-                                              color: context.textPrimary.withValues(alpha: 0.75),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                     // Reply count (opens keyboard)
+                                     GestureDetector(
+                                       onTap: () => _focusNode.requestFocus(),
+                                       child: Container(
+                                         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                                         color: Colors.transparent,
+                                         child: Row(
+                                           children: [
+                                             Icon(CupertinoIcons.chat_bubble, size: 17, color: context.textPrimary.withValues(alpha: 0.75)),
+                                             const SizedBox(width: 6),
+                                             Text(
+                                               "${_fatherComment['replies_count'] ?? 0}",
+                                               style: GoogleFonts.inter(
+                                                 fontSize: 13, 
+                                                 fontWeight: FontWeight.w500,
+                                                 color: context.textPrimary.withValues(alpha: 0.75),
+                                               ),
+                                             ),
+                                           ],
+                                         ),
+                                       ),
+                                     ),
+                                     const SizedBox(width: 14),
+
+                                     // Save
+                                     GestureDetector(
+                                       onTap: () {
+                                         final bool currentSaved = _fatherComment['is_saved_by_me'] as bool? ?? false;
+                                         final bool newSaved = !currentSaved;
+                                         final int currentSaves = _fatherComment['saves_count'] as int? ?? 0;
+
+                                         setState(() {
+                                           _fatherComment['is_saved_by_me'] = newSaved;
+                                           _fatherComment['saves_count'] = newSaved 
+                                               ? currentSaves + 1 
+                                               : (currentSaves > 0 ? currentSaves - 1 : 0);
+                                         });
+                                         dbService.toggleSaveComment(_fatherComment['id'] as String);
+                                         ScaffoldMessenger.of(context).clearSnackBars();
+                                         ScaffoldMessenger.of(context).showSnackBar(
+                                           SnackBar(
+                                             content: Text(newSaved ? "Comment saved to bookmarks" : "Comment removed from bookmarks"),
+                                             duration: const Duration(seconds: 1),
+                                           ),
+                                         );
+                                       },
+                                       child: Container(
+                                         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                                         color: Colors.transparent,
+                                         child: Row(
+                                           children: [
+                                             Icon(
+                                               (_fatherComment['is_saved_by_me'] as bool? ?? false)
+                                                   ? CupertinoIcons.bookmark_fill
+                                                   : CupertinoIcons.bookmark,
+                                               size: 17,
+                                               color: (_fatherComment['is_saved_by_me'] as bool? ?? false)
+                                                   ? Theme.of(context).primaryColor
+                                                   : context.textPrimary.withValues(alpha: 0.75),
+                                             ),
+                                             const SizedBox(width: 6),
+                                             Text(
+                                               "${_fatherComment['saves_count'] ?? 0}",
+                                               style: GoogleFonts.inter(
+                                                 fontSize: 13, 
+                                                 fontWeight: FontWeight.w500,
+                                                 color: context.textPrimary.withValues(alpha: 0.75),
+                                               ),
+                                             ),
+                                           ],
+                                         ),
+                                       ),
+                                     ),
+                                     const SizedBox(width: 14),
+
+                                     // Share
+                                     GestureDetector(
+                                       onTap: () {
+                                         showModalBottomSheet(
+                                           context: context,
+                                           isScrollControlled: true,
+                                           backgroundColor: Colors.transparent,
+                                           builder: (sheetCtx) => ShareCommentSheet(comment: _fatherComment),
+                                         ).then((_) {
+                                           _refreshFatherComment();
+                                         });
+                                       },
+                                       child: Container(
+                                         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                                         color: Colors.transparent,
+                                         child: Row(
+                                           children: [
+                                             Icon(CupertinoIcons.arrowshape_turn_up_right, size: 17, color: context.textPrimary.withValues(alpha: 0.75)),
+                                             const SizedBox(width: 6),
+                                             Text(
+                                               "${_fatherComment['shares_count'] ?? 0}",
+                                               style: GoogleFonts.inter(
+                                                 fontSize: 13, 
+                                                 fontWeight: FontWeight.w500,
+                                                 color: context.textPrimary.withValues(alpha: 0.75),
+                                               ),
+                                             ),
+                                           ],
+                                         ),
+                                       ),
+                                     ),
+                                   ],
+                                 ),
                               ],
                             ),
                           ),
@@ -578,25 +600,28 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  GestureDetector(
-                                    onTap: () {
-                                      final isOwn = rAuthor.id == (dbService.myProfile?.id ?? dbService.currentUid);
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => ProfileScreen(userId: isOwn ? null : rAuthor.id),
-                                        ),
-                                      );
-                                    },
-                                    child: CircleAvatar(
-                                      radius: 18,
-                                      backgroundColor: Colors.grey[800],
-                                      backgroundImage: (rAuthor.avatarUrl != null && rAuthor.avatarUrl!.isNotEmpty)
-                                          ? CachedNetworkImageProvider(rAuthor.avatarUrl!)
-                                          : null,
-                                      child: (rAuthor.avatarUrl == null || rAuthor.avatarUrl!.isEmpty)
-                                          ? const Icon(Icons.person, size: 18, color: Colors.white54)
-                                          : null,
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 1.5),
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        final isOwn = rAuthor.id == (dbService.myProfile?.id ?? dbService.currentUid);
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => ProfileScreen(userId: isOwn ? null : rAuthor.id),
+                                          ),
+                                        );
+                                      },
+                                      child: CircleAvatar(
+                                        radius: 18,
+                                        backgroundColor: Colors.grey[800],
+                                        backgroundImage: (rAuthor.avatarUrl != null && rAuthor.avatarUrl!.isNotEmpty)
+                                            ? CachedNetworkImageProvider(rAuthor.avatarUrl!)
+                                            : null,
+                                        child: (rAuthor.avatarUrl == null || rAuthor.avatarUrl!.isEmpty)
+                                            ? const Icon(Icons.person, size: 18, color: Colors.white54)
+                                            : null,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 12),
@@ -670,13 +695,13 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                             ),
                                           ],
                                         ),
-                                        const SizedBox(height: 4),
+                                        const SizedBox(height: 1.5),
                                         Text(
                                           reply['content'] as String,
                                           style: GoogleFonts.hindSiliguri(
                                             fontSize: 15.0,
                                             color: context.textPrimary,
-                                            height: 1.45,
+                                            height: 1.3,
                                           ),
                                         ),
                                         if (reply['image_url'] != null && (reply['image_url'] as String).isNotEmpty) ...[
@@ -710,30 +735,35 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                                 });
                                                 dbService.toggleCommentLike(reply['id'] as String, newVal);
                                               },
-                                              child: Row(
-                                                children: [
-                                                  Icon(
-                                                    (reply['is_liked_by_me'] as bool? ?? false)
-                                                        ? CupertinoIcons.heart_fill
-                                                        : CupertinoIcons.heart,
-                                                    size: 15,
-                                                    color: (reply['is_liked_by_me'] as bool? ?? false)
-                                                        ? Colors.red
-                                                        : context.textPrimary.withValues(alpha: 0.75),
-                                                  ),
-                                                  const SizedBox(width: 6),
-                                                  Text(
-                                                    "${reply['likes_count'] ?? 0}",
-                                                    style: GoogleFonts.inter(
-                                                      fontSize: 13, 
-                                                      fontWeight: FontWeight.w500,
-                                                      color: context.textPrimary.withValues(alpha: 0.75),
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                                                color: Colors.transparent,
+                                                child: Row(
+                                                  children: [
+                                                    Icon(
+                                                      (reply['is_liked_by_me'] as bool? ?? false)
+                                                          ? CupertinoIcons.heart_fill
+                                                          : CupertinoIcons.heart,
+                                                      size: 17,
+                                                      color: (reply['is_liked_by_me'] as bool? ?? false)
+                                                          ? Colors.red
+                                                          : context.textPrimary.withValues(alpha: 0.75),
                                                     ),
-                                                  ),
-                                                ],
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      "${reply['likes_count'] ?? 0}",
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: 13, 
+                                                        fontWeight: FontWeight.w500,
+                                                        color: context.textPrimary.withValues(alpha: 0.75),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
                                             ),
-                                            const SizedBox(width: 24),
+                                            const SizedBox(width: 14),
+
                                             // Reply
                                             GestureDetector(
                                               onTap: () {
@@ -747,22 +777,27 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                                   ),
                                                 ).then((_) => _loadReplies());
                                               },
-                                              child: Row(
-                                                children: [
-                                                  Icon(CupertinoIcons.chat_bubble, size: 15, color: context.textPrimary.withValues(alpha: 0.75)),
-                                                  const SizedBox(width: 6),
-                                                  Text(
-                                                    "${reply['replies_count'] ?? 0}",
-                                                    style: GoogleFonts.inter(
-                                                      fontSize: 13, 
-                                                      fontWeight: FontWeight.w500,
-                                                      color: context.textPrimary.withValues(alpha: 0.75),
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                                                color: Colors.transparent,
+                                                child: Row(
+                                                  children: [
+                                                    Icon(CupertinoIcons.chat_bubble, size: 17, color: context.textPrimary.withValues(alpha: 0.75)),
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      "${reply['replies_count'] ?? 0}",
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: 13, 
+                                                        fontWeight: FontWeight.w500,
+                                                        color: context.textPrimary.withValues(alpha: 0.75),
+                                                      ),
                                                     ),
-                                                  ),
-                                                ],
+                                                  ],
+                                                ),
                                               ),
                                             ),
-                                            const SizedBox(width: 24),
+                                            const SizedBox(width: 14),
+
                                             // Save
                                             GestureDetector(
                                               onTap: () {
@@ -785,30 +820,35 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                                   ),
                                                 );
                                               },
-                                              child: Row(
-                                                children: [
-                                                  Icon(
-                                                    (reply['is_saved_by_me'] as bool? ?? false)
-                                                        ? CupertinoIcons.bookmark_fill
-                                                        : CupertinoIcons.bookmark,
-                                                    size: 15,
-                                                    color: (reply['is_saved_by_me'] as bool? ?? false)
-                                                        ? Theme.of(context).primaryColor
-                                                        : context.textPrimary.withValues(alpha: 0.75),
-                                                  ),
-                                                  const SizedBox(width: 6),
-                                                  Text(
-                                                    "${reply['saves_count'] ?? 0}",
-                                                    style: GoogleFonts.inter(
-                                                      fontSize: 13, 
-                                                      fontWeight: FontWeight.w500,
-                                                      color: context.textPrimary.withValues(alpha: 0.75),
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                                                color: Colors.transparent,
+                                                child: Row(
+                                                  children: [
+                                                    Icon(
+                                                      (reply['is_saved_by_me'] as bool? ?? false)
+                                                          ? CupertinoIcons.bookmark_fill
+                                                          : CupertinoIcons.bookmark,
+                                                      size: 17,
+                                                      color: (reply['is_saved_by_me'] as bool? ?? false)
+                                                          ? Theme.of(context).primaryColor
+                                                          : context.textPrimary.withValues(alpha: 0.75),
                                                     ),
-                                                  ),
-                                                ],
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      "${reply['saves_count'] ?? 0}",
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: 13, 
+                                                        fontWeight: FontWeight.w500,
+                                                        color: context.textPrimary.withValues(alpha: 0.75),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
                                             ),
-                                            const SizedBox(width: 24),
+                                            const SizedBox(width: 14),
+
                                             // Share
                                             GestureDetector(
                                               onTap: () {
@@ -821,19 +861,23 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                                   _loadReplies();
                                                 });
                                               },
-                                              child: Row(
-                                                children: [
-                                                  Icon(CupertinoIcons.arrowshape_turn_up_right, size: 15, color: context.textPrimary.withValues(alpha: 0.75)),
-                                                  const SizedBox(width: 6),
-                                                  Text(
-                                                    "${reply['shares_count'] ?? 0}",
-                                                    style: GoogleFonts.inter(
-                                                      fontSize: 13, 
-                                                      fontWeight: FontWeight.w500,
-                                                      color: context.textPrimary.withValues(alpha: 0.75),
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                                                color: Colors.transparent,
+                                                child: Row(
+                                                  children: [
+                                                    Icon(CupertinoIcons.arrowshape_turn_up_right, size: 17, color: context.textPrimary.withValues(alpha: 0.75)),
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      "${reply['shares_count'] ?? 0}",
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: 13, 
+                                                        fontWeight: FontWeight.w500,
+                                                        color: context.textPrimary.withValues(alpha: 0.75),
+                                                      ),
                                                     ),
-                                                  ),
-                                                ],
+                                                  ],
+                                                ),
                                               ),
                                             ),
                                           ],
