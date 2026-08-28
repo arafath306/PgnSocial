@@ -16,6 +16,7 @@ import '../widgets/share_post_sheet.dart';
 import '../widgets/comment_attachment_picker_panel.dart';
 import '../widgets/reply_input_composer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../widgets/verification_badge.dart';
 import '../services/screenshot_protection_service.dart';
 
 class ThreadDetailScreen extends StatefulWidget {
@@ -317,28 +318,42 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
                     : null,
               ),
               const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    activePost.author.fullName,
-                    style: GoogleFonts.hindSiliguri(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: context.textPrimary,
-                      height: 1.1,
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        activePost.author.fullName,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: GoogleFonts.hindSiliguri(
+                          fontSize: 16.0,
+                          fontWeight: FontWeight.w900,
+                          color: context.textPrimary,
+                          height: 1.1,
+                        ),
+                      ),
                     ),
-                  ),
-                  Text(
-                    "${_formatCount(activePost.viewsCount)} views",
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      color: context.textSecondary,
-                      height: 1.1,
+                    if (!activePost.isAnonymous && activePost.author.isVerified) ...[
+                      const SizedBox(width: 4),
+                      VerificationBadge(
+                        isVerified: true,
+                        badgeType: activePost.author.badgeType,
+                        size: 14,
+                      ),
+                    ],
+                    const SizedBox(width: 6),
+                    Text(
+                      '· ${_formatCount(activePost.viewsCount)} views',
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        color: context.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
