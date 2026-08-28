@@ -36,7 +36,7 @@ class ReplyInputComposer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
       child: Container(
         decoration: BoxDecoration(
           color: context.isDarkMode
@@ -44,7 +44,7 @@ class ReplyInputComposer extends StatelessWidget {
               : const Color(0xFFEFF3F4),
           borderRadius: BorderRadius.circular(30),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -100,13 +100,7 @@ class ReplyInputComposer extends StatelessWidget {
                         padding: const EdgeInsets.all(4),
                         constraints: const BoxConstraints(),
                       ),
-                      const SizedBox(width: 10),
-                      IconButton(
-                        icon: Icon(Icons.gif_box_outlined, size: 21, color: context.textMuted),
-                        onPressed: onOpenGif,
-                        padding: const EdgeInsets.all(4),
-                        constraints: const BoxConstraints(),
-                      ),
+
                       const SizedBox(width: 10),
                       IconButton(
                         icon: Icon(
