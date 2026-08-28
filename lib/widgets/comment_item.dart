@@ -108,6 +108,7 @@ class _CommentItemState extends State<CommentItem> {
               children: [
                 // Author Header Info Row
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: GestureDetector(
@@ -123,7 +124,7 @@ class _CommentItemState extends State<CommentItem> {
                                 );
                               },
                         child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
                               child: Text.rich(

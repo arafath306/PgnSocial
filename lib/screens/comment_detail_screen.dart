@@ -301,6 +301,7 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                  Row(
+                                   crossAxisAlignment: CrossAxisAlignment.start,
                                    children: [
                                      Expanded(
                                        child: GestureDetector(
@@ -630,6 +631,7 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Expanded(
                                               child: GestureDetector(
@@ -643,7 +645,7 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                                   );
                                                 },
                                                 child: Row(
-                                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
                                                   children: [
                                                     Expanded(
                                                       child: Text.rich(
