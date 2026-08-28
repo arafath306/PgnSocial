@@ -642,7 +642,11 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                                     ),
                                                   );
                                                 },
-                                                child: Text.rich(
+                                                child: Row(
+                                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text.rich(
                                                   TextSpan(
                                                     children: [
                                                       TextSpan(
@@ -672,20 +676,28 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                                           color: context.textSecondary,
                                                         ),
                                                       ),
-                                                      TextSpan(
-                                                        text: ' · ${reply['created_at']}',
-                                                        style: GoogleFonts.inter(
-                                                          fontSize: 13.5,
-                                                          color: context.textSecondary,
-                                                        ),
-                                                      ),
+
                                                     ],
                                                   ),
                                                   maxLines: 1,
                                                   overflow: TextOverflow.ellipsis,
                                                 ),
                                               ),
-                                            ),
+                                              if (reply['created_at'] != null && reply['created_at'].toString().isNotEmpty)
+                                                Padding(
+                                                  padding: const EdgeInsets.only(left: 4),
+                                                  child: Text(
+                                                    '· ${reply['created_at']}',
+                                                    style: GoogleFonts.inter(
+                                                      fontSize: 13.5,
+                                                      color: context.textSecondary,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
                                             const SizedBox(width: 8),
                                             IconButton(
                                               icon: const Icon(CupertinoIcons.ellipsis, size: 18, color: Colors.grey),
