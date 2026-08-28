@@ -111,7 +111,7 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            '২৪ ঘণ্টার মধ্যে আপনার অ্যাকাউন্টে পেআউট প্রসেস সম্পন্ন হবে।',
+                            'Payouts will be processed and completed to your account within 24 hours.',
                             style: GoogleFonts.inter(
                               color: context.textPrimary,
                               fontSize: 12,
