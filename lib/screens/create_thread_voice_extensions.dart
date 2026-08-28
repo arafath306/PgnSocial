@@ -47,42 +47,7 @@ extension CreateThreadVoiceExtensions on _CreateThreadScreenState {
     }
   }
 
-  void _deleteRecording() {
-    setState(() {
-      _recordedAudioPath = null;
-      _recordingSeconds = 0;
-      _showVoiceRecorder = false;
-    });
-  }
 
-  Future<void> _toggleAudioPreview() async {
-    if (_recordedAudioPath == null) return;
-    if (_isPlayingAudio) {
-      await _audioPlayer.pause();
-      setState(() => _isPlayingAudio = false);
-    } else {
-      await _audioPlayer.play(DeviceFileSource(_recordedAudioPath!));
-      setState(() => _isPlayingAudio = true);
-    }
-  }
 
-  void _toggleRecording() {
-    if (_isRecording) {
-      _recordingTimer?.cancel();
-      setState(() {
-        _isRecording = false;
-      });
-    } else {
-      setState(() {
-        _isRecording = true;
-        _recordingSeconds = 0;
-      });
-      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        setState(() {
-          _recordingSeconds++;
-        });
-      });
-    }
-  }
 
 }

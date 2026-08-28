@@ -145,8 +145,33 @@ extension CreateThreadPublishExtensions on _CreateThreadScreenState {
       try {
         final bytes = await File(_recordedAudioPath!).readAsBytes();
         audioPublicUrl = await db.uploadPostAudio(bytes, 'm4a');
+        if (audioPublicUrl == null) {
+          throw Exception('Audio upload returned null');
+        }
       } catch (e) {
         debugPrint("Voice post upload failed: $e");
+        if (mounted) {
+          setState(() => _isUploadingImage = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(children: [
+                const Icon(Icons.mic_off_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Voice upload failed. Please check your connection and try again.',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ]),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+        return; // Block post submission
       }
     }
 

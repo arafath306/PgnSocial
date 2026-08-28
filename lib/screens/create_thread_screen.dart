@@ -16,7 +16,7 @@ import '../widgets/create_thread/hashtag_autocomplete_overlay.dart';
 import '../widgets/create_thread/poll_creator.dart';
 import '../widgets/create_thread/url_input_section.dart';
 import '../widgets/create_thread/voice_recorder_ui.dart';
-import '../widgets/audio_waveform_widget.dart';
+
 
 import '../models/profile.dart';
 import '../models/thread_post.dart';
@@ -96,7 +96,6 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
   final _audioRecorder = AudioRecorder();
   final _audioPlayer = AudioPlayer();
   String? _recordedAudioPath;
-  bool _isPlayingAudio = false;
 
   bool _isLoadingExistingMedia = false;
   
@@ -109,9 +108,6 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
     super.initState();
     _contentController.addListener(_onContentChanged);
     _loadDraftCount();
-    _audioPlayer.onPlayerComplete.listen((_) {
-      if (mounted) setState(() => _isPlayingAudio = false);
-    });
 
     // Always refresh feature flags when this screen opens so that
     // admin changes (e.g. toggling anonymous posting) take effect
@@ -467,77 +463,6 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
                             setState(() => _selectedMusic = null),
                       ),
 
-                      // Voice Recorder inline recording controls
-                      if (_showVoiceRecorder) ...[
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: context.isDarkMode
-                                ? const Color(0xFF1E2030)
-                                : const Color(0xFFF3F4F6),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: context.border),
-                          ),
-                          child: Row(
-                            children: [
-                              GestureDetector(
-                                onTap: _recordedAudioPath != null
-                                    ? _toggleAudioPreview
-                                    : (_isRecording
-                                        ? _stopRecording
-                                        : _startRecording),
-                                child: CircleAvatar(
-                                  radius: 20,
-                                  backgroundColor: _isRecording
-                                      ? Colors.redAccent
-                                      : const Color(0xFF1E824C),
-                                  child: Icon(
-                                    _recordedAudioPath != null
-                                        ? (_isPlayingAudio
-                                            ? Icons.pause
-                                            : Icons.play_arrow)
-                                        : (_isRecording
-                                            ? Icons.stop
-                                            : Icons.mic),
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _recordedAudioPath != null
-                                    ? AudioWaveformWidget(
-                                        progress: _isPlayingAudio ? 0.6 : 0.0,
-                                        seedKey: _recordedAudioPath,
-                                        activeColor: const Color(0xFF1E824C),
-                                        inactiveColor: context.isDarkMode
-                                            ? const Color(0xFF334155)
-                                            : const Color(0xFFCBD5E1),
-                                        height: 24,
-                                      )
-                                    : Text(
-                                        _isRecording
-                                            ? "Recording... ${_recordingSeconds}s"
-                                            : "Tap microphone to record voice post",
-                                        style: GoogleFonts.inter(
-                                          color: _isRecording ? Colors.redAccent : context.textPrimary,
-                                          fontWeight:
-                                              _isRecording ? FontWeight.bold : FontWeight.normal,
-                                        ),
-                                      ),
-                              ),
-                              if (_recordedAudioPath != null)
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline,
-                                      color: Colors.redAccent),
-                                  onPressed: _deleteRecording,
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
 
                       // Optional Image URL / Video URL inputs
                       UrlInputSection(
@@ -613,13 +538,23 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
                         VoiceRecorderUI(
                           isRecording: _isRecording,
                           recordingSeconds: _recordingSeconds,
-                          onToggleRecording: _toggleRecording,
+                          onToggleRecording: () {
+                            if (_isRecording) {
+                              _stopRecording();
+                            } else {
+                              _startRecording();
+                            }
+                          },
                           onClose: () {
                             _recordingTimer?.cancel();
+                            if (_isRecording) {
+                              _audioRecorder.stop();
+                            }
                             setState(() {
                               _showVoiceRecorder = false;
                               _isRecording = false;
                               _recordingSeconds = 0;
+                              _recordedAudioPath = null;
                             });
                           },
                         ),
