@@ -345,7 +345,18 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
                     ],
                     const SizedBox(width: 6),
                     Text(
-                      '· ${_formatCount(activePost.viewsCount)} views',
+                      '·',
+                      style: TextStyle(color: context.textSecondary),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.remove_red_eye_outlined,
+                      size: 13,
+                      color: context.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${_formatCount(activePost.viewsCount)} views',
                       style: GoogleFonts.inter(
                         fontSize: 11.5,
                         color: context.textSecondary,

@@ -138,7 +138,18 @@ class ThreadDetailHeader extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      "· ${formatCount(activePost.viewsCount)} views",
+                      "·",
+                      style: TextStyle(color: context.textSecondary),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.remove_red_eye_outlined,
+                      size: 13,
+                      color: context.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      "${formatCount(activePost.viewsCount)} views",
                       style: TextStyle(
                         color: context.textSecondary,
                         fontSize: 13.5,
