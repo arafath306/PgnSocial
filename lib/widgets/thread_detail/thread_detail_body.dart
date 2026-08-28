@@ -10,7 +10,6 @@ import '../../utils/routes.dart';
 import '../../screens/create_thread_screen.dart';
 import '../poll_widget.dart';
 import '../voice_post_player.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'nested_original_post.dart';
 import 'thread_detail_music_player.dart';
 
@@ -65,22 +64,7 @@ class ThreadDetailBody extends StatelessWidget {
           ],
           PollWidget(post: activePost, dbService: dbService),
           
-          if (activePost.commenterAvatars != null && activePost.commenterAvatars!.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _buildCommenterAvatars(context, activePost.commenterAvatars!),
-                const SizedBox(width: 8),
-                Text(
-                  'Recent commenters',
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: context.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ],
+
           
           Divider(height: 24, color: context.border),
 
@@ -345,57 +329,5 @@ class ThreadDetailBody extends StatelessWidget {
     );
   }
 
-  Widget _buildCommenterAvatars(BuildContext context, List<String> avatars) {
-    final displayAvatars = avatars.take(3).toList();
-    if (displayAvatars.isEmpty) return const SizedBox.shrink();
 
-    final count = displayAvatars.length;
-    final double containerWidth = 28.0;
-    final double containerHeight = 28.0;
-
-    Widget buildAvatar(String url, double size, double top, double left) {
-      return Positioned(
-        top: top,
-        left: left,
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: context.scaffoldBg, width: 2.0),
-            image: url.isNotEmpty
-                ? DecorationImage(
-                    image: CachedNetworkImageProvider(url, maxHeight: 50),
-                    fit: BoxFit.cover,
-                  )
-                : null,
-          ),
-          child: url.isEmpty
-              ? Icon(Icons.person, size: size - 6, color: Colors.white54)
-              : null,
-        ),
-      );
-    }
-
-    return SizedBox(
-      width: containerWidth,
-      height: containerHeight,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          if (count == 1)
-            buildAvatar(displayAvatars[0], 20.0, 4.0, 4.0),
-          if (count == 2) ...[
-            buildAvatar(displayAvatars[1], 14.0, 2.0, 2.0),
-            buildAvatar(displayAvatars[0], 18.0, 8.0, 8.0),
-          ],
-          if (count == 3) ...[
-            buildAvatar(displayAvatars[2], 12.0, 14.0, 2.0),
-            buildAvatar(displayAvatars[1], 14.0, 2.0, 4.0),
-            buildAvatar(displayAvatars[0], 18.0, 8.0, 10.0),
-          ],
-        ],
-      ),
-    );
-  }
 }
