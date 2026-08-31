@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io' show Platform;
 import 'local_notification_service.dart';
+import 'database_service.dart';
 
 // Helper to route notification display based on notification type
 Future<void> _displayNotification({
@@ -103,7 +104,6 @@ class PushNotificationService {
     // 3. Set Background Handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    // 4. Foreground Messages Listener — Show OS-level notification tray banner
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       debugPrint('Got a message whilst in the foreground!');
       debugPrint('Message data: ${message.data}');
@@ -111,7 +111,24 @@ class PushNotificationService {
       final notification = message.notification;
       final title = notification?.title ?? message.data['title'] ?? 'Dak Notification';
       final body = notification?.body ?? message.data['body'] ?? '';
-      final type = message.data['type'] ?? 'activity';
+      final channelId = message.data['channel_id'] as String?;
+      final type = message.data['type'] ?? (channelId == 'pigeon_messages' ? 'message' : 'activity');
+
+      // Check if user is actively chatting with the sender
+      final activeChatId = DatabaseService.activeChatUserId;
+      if (activeChatId != null && activeChatId.isNotEmpty) {
+        final senderId = message.data['sender_id'] ??
+            message.data['senderId'] ??
+            message.data['tag'] ??
+            message.data['userId'];
+
+        if (type == 'message' || channelId == 'pigeon_messages') {
+          if (senderId != null && senderId.toString() == activeChatId) {
+            debugPrint('[PushNotificationService] Suppressed notification for active chat user: $senderId');
+            return; // Suppress notification since user is inside this exact chat!
+          }
+        }
+      }
 
       if (body.isNotEmpty || notification != null) {
         await _displayNotification(

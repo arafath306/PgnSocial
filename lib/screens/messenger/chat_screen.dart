@@ -14,6 +14,7 @@ import '../../services/general_settings_provider.dart';
 import '../../utils/app_theme.dart';
 import '../../utils/chat_themes.dart';
 import '../../utils/media_saver_utility.dart';
+import '../../services/local_notification_service.dart';
 
 import '../../widgets/shared/app_emoji_picker.dart';
 import 'widgets/message_list.dart';
@@ -89,6 +90,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _realtimeOtherUser = widget.otherUser;
     final dbService = Provider.of<DatabaseService>(context, listen: false);
     dbService.currentActiveChatUserId = widget.otherUser.id;
+    LocalNotificationService.cancelNotification(widget.otherUser.id.hashCode);
     _messagesStream = dbService.getMessagesStream(widget.otherUser.id);
 
     // Mark read once on enter, not on every rebuild

@@ -406,4 +406,13 @@ class LocalNotificationService {
       debugPrint('Error showing summary notification: $e');
     }
   }
+
+  /// Cancels a specific notification by ID (e.g. when entering that user's chat)
+  static Future<void> cancelNotification(int id) async {
+    try {
+      await _plugin.cancel(id: id);
+    } catch (e) {
+      debugPrint('Error cancelling notification: $e');
+    }
+  }
 }

@@ -58,7 +58,11 @@ part 'parts/algorithmicfeed_ext.dart';
 part 'parts/verification_ext.dart';
 
 class DatabaseService with ChangeNotifier {
-  String? currentActiveChatUserId;
+  static String? activeChatUserId;
+  String? get currentActiveChatUserId => activeChatUserId;
+  set currentActiveChatUserId(String? val) {
+    activeChatUserId = val;
+  }
   void updateState() => notifyListeners();
   final _supabase = sl<SupabaseClient>();
 
