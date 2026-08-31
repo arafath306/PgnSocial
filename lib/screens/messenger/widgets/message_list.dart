@@ -20,6 +20,7 @@ class MessageList extends StatefulWidget {
   final void Function(Map<String, dynamic> msg, String emoji)? onToggleReaction;
   final String? currentUserId;
   final String? highlightedMessageId;
+  final String? searchQuery;
 
   const MessageList({super.key, required this.stream,
     required this.activeTheme,
@@ -34,6 +35,7 @@ class MessageList extends StatefulWidget {
     this.onToggleReaction,
     this.currentUserId,
     this.highlightedMessageId,
+    this.searchQuery,
   });
 
   @override
@@ -160,6 +162,7 @@ class MessageListState extends State<MessageList> {
                         : null,
                     currentUserId: widget.currentUserId,
                     isHighlighted: widget.highlightedMessageId == msg['id'],
+                    searchQuery: widget.searchQuery,
                     marginBottom: marginBottom,
                   ),
                 ),

@@ -67,6 +67,12 @@ class _ChatScreenState extends State<ChatScreen> {
   String? _highlightedMessageId;
   Timer? _highlightTimer;
 
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  List<String> _matchingMessageIds = [];
+  int _currentMatchIndex = 0;
+
   StreamSubscription<Map<String, dynamic>>? _typingSub;
   bool _otherIsTyping = false;
   Timer? _typingTimer;
@@ -125,6 +131,74 @@ class _ChatScreenState extends State<ChatScreen> {
     _highlightTimer = Timer(const Duration(milliseconds: 1800), () {
       if (mounted) setState(() => _highlightedMessageId = null);
     });
+  }
+
+  void _startSearch() {
+    setState(() {
+      _isSearching = true;
+      _matchingMessageIds = [];
+      _currentMatchIndex = 0;
+    });
+    _searchFocusNode.requestFocus();
+  }
+
+  void _stopSearch() {
+    setState(() {
+      _isSearching = false;
+      _searchController.clear();
+      _matchingMessageIds = [];
+      _currentMatchIndex = 0;
+      _highlightedMessageId = null;
+    });
+    _searchFocusNode.unfocus();
+  }
+
+  void _onSearchQueryChanged(String query) {
+    final trimmed = query.trim().toLowerCase();
+    if (trimmed.isEmpty) {
+      setState(() {
+        _matchingMessageIds = [];
+        _currentMatchIndex = 0;
+        _highlightedMessageId = null;
+      });
+      return;
+    }
+
+    final List<String> matches = [];
+    for (final msg in _allMessages) {
+      final text = msg['text']?.toString().toLowerCase() ?? '';
+      if (text.contains(trimmed)) {
+        matches.add(msg['id'] as String);
+      }
+    }
+
+    setState(() {
+      _matchingMessageIds = matches;
+      _currentMatchIndex = matches.isNotEmpty ? matches.length - 1 : 0;
+    });
+
+    if (matches.isNotEmpty) {
+      _jumpToMessage(matches[_currentMatchIndex]);
+    }
+  }
+
+  void _nextMatch() {
+    if (_matchingMessageIds.isEmpty) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      _currentMatchIndex = (_currentMatchIndex + 1) % _matchingMessageIds.length;
+    });
+    _jumpToMessage(_matchingMessageIds[_currentMatchIndex]);
+  }
+
+  void _prevMatch() {
+    if (_matchingMessageIds.isEmpty) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      _currentMatchIndex =
+          (_currentMatchIndex - 1 + _matchingMessageIds.length) % _matchingMessageIds.length;
+    });
+    _jumpToMessage(_matchingMessageIds[_currentMatchIndex]);
   }
 
   Future<void> _refreshOtherUserStatus() async {
@@ -259,6 +333,8 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _highlightTimer?.cancel();
     _scrollController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     _statusUpdateTimer?.cancel();
     _typingSub?.cancel();
     _typingTimer?.cancel();
@@ -403,103 +479,195 @@ class _ChatScreenState extends State<ChatScreen> {
         backgroundColor: context.scaffoldBg,
         surfaceTintColor: Colors.transparent,
         elevation: 0.5,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: context.textPrimary, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: _isSearching
+            ? IconButton(
+                icon: Icon(Icons.arrow_back_rounded,
+                    color: context.textPrimary, size: 22),
+                onPressed: _stopSearch,
+              )
+            : IconButton(
+                icon: Icon(Icons.arrow_back_ios_new_rounded,
+                    color: context.textPrimary, size: 18),
+                onPressed: () => Navigator.pop(context),
+              ),
         titleSpacing: 0,
-        title: InkWell(
-          onTap: _showMessengerProfile,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4.0),
-            child: Row(
-              children: [
-                Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: context.border,
-                      backgroundImage:
-                          _realtimeOtherUser.avatarUrl != null &&
-                                  _realtimeOtherUser.avatarUrl!.isNotEmpty
-                              ? CachedNetworkImageProvider(_realtimeOtherUser.avatarUrl!)
-                              : null,
-                    ),
-                    if (showGreenDot)
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                                color: context.scaffoldBg, width: 1.5),
-                          ),
-                        ),
-                      ),
-                  ],
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                onChanged: _onSearchQueryChanged,
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  color: context.textPrimary,
+                  fontWeight: FontWeight.w500,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+                decoration: InputDecoration(
+                  hintText: 'Search in conversation...',
+                  hintStyle: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: context.textMuted,
+                  ),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+              )
+            : InkWell(
+                onTap: _showMessengerProfile,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Row(
                     children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                      Stack(
                         children: [
-                          Flexible(
-                            child: Text(
-                              _realtimeOtherUser.fullName,
-                              style: GoogleFonts.inter(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: context.textPrimary),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: context.border,
+                            backgroundImage:
+                                _realtimeOtherUser.avatarUrl != null &&
+                                        _realtimeOtherUser.avatarUrl!.isNotEmpty
+                                    ? CachedNetworkImageProvider(_realtimeOtherUser.avatarUrl!)
+                                    : null,
                           ),
-                          if (_realtimeOtherUser.isVerified) ...[
-                            const SizedBox(width: 4),
-                            VerificationBadge(
-                              isVerified: true,
-                              badgeType: _realtimeOtherUser.badgeType,
-                              size: 15,
+                          if (showGreenDot)
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: Colors.green,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                      color: context.scaffoldBg, width: 1.5),
+                                ),
+                              ),
                             ),
-                          ],
                         ],
                       ),
-                      Text(
-                        statusText,
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          color: (_otherIsTyping || otherIsActive)
-                              ? Colors.green
-                              : context.textMuted,
-                          fontWeight: (_otherIsTyping || otherIsActive)
-                              ? FontWeight.w600
-                              : FontWeight.normal,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    _realtimeOtherUser.fullName,
+                                    style: GoogleFonts.inter(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                        color: context.textPrimary),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (_realtimeOtherUser.isVerified) ...[
+                                  const SizedBox(width: 4),
+                                  VerificationBadge(
+                                    isVerified: true,
+                                    badgeType: _realtimeOtherUser.badgeType,
+                                    size: 15,
+                                  ),
+                                ],
+                              ],
+                            ),
+                            Text(
+                              statusText,
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                color: (_otherIsTyping || otherIsActive)
+                                    ? Colors.green
+                                    : context.textMuted,
+                                fontWeight: (_otherIsTyping || otherIsActive)
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
+              ),
+        actions: _isSearching
+            ? [
+                if (_searchController.text.isNotEmpty) ...[
+                  if (_matchingMessageIds.isNotEmpty) ...[
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: context.primaryAccent.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${_currentMatchIndex + 1}/${_matchingMessageIds.length}',
+                          style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.bold,
+                            color: context.primaryAccent,
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.keyboard_arrow_up_rounded,
+                          color: context.textPrimary, size: 24),
+                      tooltip: 'Previous match',
+                      onPressed: _prevMatch,
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.keyboard_arrow_down_rounded,
+                          color: context.textPrimary, size: 24),
+                      tooltip: 'Next match',
+                      onPressed: _nextMatch,
+                    ),
+                  ] else ...[
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Text(
+                          '0 results',
+                          style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            color: context.textMuted,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                  IconButton(
+                    icon: Icon(Icons.close_rounded,
+                        color: context.textSecondary, size: 20),
+                    onPressed: () {
+                      _searchController.clear();
+                      _onSearchQueryChanged('');
+                    },
+                  ),
+                ],
+                const SizedBox(width: 4),
+              ]
+            : [
+                IconButton(
+                  icon: Icon(Icons.search_rounded,
+                      color: context.textPrimary, size: 22),
+                  tooltip: 'Search in chat',
+                  onPressed: _startSearch,
+                ),
+                IconButton(
+                  icon: Icon(Icons.info_outlined,
+                      color: context.textPrimary, size: 20),
+                  tooltip: 'Conversation info',
+                  onPressed: _showMessengerProfile,
+                ),
+                const SizedBox(width: 8),
               ],
-            ),
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.info_outlined,
-                color: context.textPrimary, size: 20),
-            onPressed: _showMessengerProfile,
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -552,6 +720,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 deletedIds: _deletedIds,
                 scrollController: _scrollController,
                 highlightedMessageId: _highlightedMessageId,
+                searchQuery: _isSearching ? _searchController.text : null,
               onAllMessagesUpdated: (msgs) {
                 _allMessages = msgs;
                 String? newThemeId;

@@ -17,6 +17,7 @@ class MessageBubble extends StatefulWidget {
   final VoidCallback? onDoubleTap;
   final String? currentUserId;
   final bool isHighlighted;
+  final String? searchQuery;
   final double marginBottom;
 
   const MessageBubble({
@@ -30,6 +31,7 @@ class MessageBubble extends StatefulWidget {
     this.onDoubleTap,
     this.currentUserId,
     this.isHighlighted = false,
+    this.searchQuery,
     this.marginBottom = 10.0,
   });
 
@@ -393,6 +395,50 @@ class _MessageBubbleState extends State<MessageBubble>
     }
 
     Widget buildTextContentWidget(String bodyText) {
+      final baseStyle = GoogleFonts.inter(
+        fontSize: 14.5,
+        height: 1.25,
+        color: isMe ? Colors.white : context.textPrimary,
+        fontWeight: FontWeight.w400,
+      );
+
+      Widget textChild;
+      final query = widget.searchQuery?.trim().toLowerCase();
+
+      if (query != null && query.isNotEmpty && bodyText.toLowerCase().contains(query)) {
+        final List<TextSpan> spans = [];
+        final lower = bodyText.toLowerCase();
+        int start = 0;
+
+        while (true) {
+          final index = lower.indexOf(query, start);
+          if (index == -1) {
+            spans.add(TextSpan(text: bodyText.substring(start), style: baseStyle));
+            break;
+          }
+          if (index > start) {
+            spans.add(TextSpan(text: bodyText.substring(start, index), style: baseStyle));
+          }
+          spans.add(
+            TextSpan(
+              text: bodyText.substring(index, index + query.length),
+              style: baseStyle.copyWith(
+                backgroundColor: isMe
+                    ? Colors.amberAccent.withValues(alpha: 0.8)
+                    : Colors.amber.withValues(alpha: 0.4),
+                color: isMe ? Colors.black87 : context.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          );
+          start = index + query.length;
+        }
+
+        textChild = Text.rich(TextSpan(children: spans));
+      } else {
+        textChild = Text(bodyText, style: baseStyle);
+      }
+
       return Padding(
         padding: hasMedia
             ? const EdgeInsets.fromLTRB(10, 6, 8, 4)
@@ -404,15 +450,7 @@ class _MessageBubbleState extends State<MessageBubble>
           children: [
             Align(
               alignment: Alignment.centerLeft,
-              child: Text(
-                bodyText,
-                style: GoogleFonts.inter(
-                  fontSize: 14.5,
-                  height: 1.25,
-                  color: isMe ? Colors.white : context.textPrimary,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
+              child: textChild,
             ),
             const SizedBox(height: 2),
             buildTimeRow(overlayMode: false),
