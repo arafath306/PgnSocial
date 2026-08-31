@@ -17,6 +17,7 @@ extension MessagingExtension on DatabaseService {
         'reply_to_id': msg.replyToId,
         'reply_to_text': msg.replyToText,
         'reply_to_sender': msg.replyToSender,
+        'reactions': msg.reactions,
       }).toList();
     });
   }
@@ -139,6 +140,17 @@ extension MessagingExtension on DatabaseService {
     return result.fold(
       (failure) {
         debugPrint("Delete message error: ${failure.message}");
+        return false;
+      },
+      (_) => true,
+    );
+  }
+
+  Future<bool> toggleMessageReaction(String messageId, String emoji) async {
+    final result = await sl<IChatRepository>().toggleReaction(messageId, emoji);
+    return result.fold(
+      (failure) {
+        debugPrint("Toggle reaction error: ${failure.message}");
         return false;
       },
       (_) => true,

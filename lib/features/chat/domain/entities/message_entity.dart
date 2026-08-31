@@ -10,6 +10,7 @@ class MessageEntity {
   final String? replyToId;
   final String? replyToText;
   final String? replyToSender;
+  final Map<String, String>? reactions;
 
   MessageEntity({
     required this.id,
@@ -23,6 +24,7 @@ class MessageEntity {
     this.replyToId,
     this.replyToText,
     this.replyToSender,
+    this.reactions,
   });
 }
 

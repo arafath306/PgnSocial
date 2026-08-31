@@ -181,6 +181,11 @@ class ChatRepositoryImpl implements IChatRepository {
         }
       }
 
+      Map<String, String>? reactions;
+      if (json['reactions'] != null && json['reactions'] is Map) {
+        reactions = (json['reactions'] as Map).map((k, v) => MapEntry(k.toString(), v.toString()));
+      }
+
       return MessageEntity(
         id: json['id'] as String,
         text: text,
@@ -195,6 +200,7 @@ class ChatRepositoryImpl implements IChatRepository {
         replyToId: replyToId,
         replyToText: replyToText,
         replyToSender: replyToSender,
+        reactions: reactions,
       );
     }
 
@@ -387,6 +393,18 @@ class ChatRepositoryImpl implements IChatRepository {
   Future<Either<Failure, void>> deleteMessage(String messageId) async {
     try {
       await remoteDataSource.deleteMessage(messageId);
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> toggleReaction(String messageId, String emoji) async {
+    final uid = _currentUid;
+    if (uid.isEmpty) return Left(ServerFailure('User not authenticated'));
+    try {
+      await remoteDataSource.toggleReaction(messageId, uid, emoji);
       return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString()));

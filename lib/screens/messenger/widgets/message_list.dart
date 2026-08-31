@@ -17,6 +17,8 @@ class MessageList extends StatefulWidget {
   final void Function(Map<String, dynamic>) onMessageAction;
   final void Function(Map<String, dynamic>) onReply;
   final void Function(String) onOpenMedia;
+  final void Function(Map<String, dynamic> msg, String emoji)? onToggleReaction;
+  final String? currentUserId;
 
   const MessageList({super.key, required this.stream,
     required this.activeTheme,
@@ -28,6 +30,8 @@ class MessageList extends StatefulWidget {
     required this.onMessageAction,
     required this.onReply,
     required this.onOpenMedia,
+    this.onToggleReaction,
+    this.currentUserId,
   });
 
   @override
@@ -149,6 +153,10 @@ class MessageListState extends State<MessageList> {
                     onTap: () => widget.onMessageAction(msg),
                     onReply: () => widget.onReply(msg),
                     onOpenMedia: widget.onOpenMedia,
+                    onToggleReaction: widget.onToggleReaction != null
+                        ? (emoji) => widget.onToggleReaction!(msg, emoji)
+                        : null,
+                    currentUserId: widget.currentUserId,
                     marginBottom: marginBottom,
                   ),
                 ),

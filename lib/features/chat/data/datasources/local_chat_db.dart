@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../../domain/entities/message_entity.dart';
@@ -20,8 +21,15 @@ class LocalChatDatabase {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          try {
+            await db.execute('ALTER TABLE messages ADD COLUMN reactions TEXT');
+          } catch (_) {}
+        }
+      },
     );
   }
 
@@ -40,7 +48,8 @@ class LocalChatDatabase {
         reply_to_id TEXT,
         reply_to_text TEXT,
         reply_to_sender TEXT,
-        room_id TEXT
+        room_id TEXT,
+        reactions TEXT
       )
     ''');
     
@@ -74,6 +83,7 @@ class LocalChatDatabase {
         'reply_to_text': msg.replyToText,
         'reply_to_sender': msg.replyToSender,
         'room_id': roomId,
+        'reactions': msg.reactions != null ? jsonEncode(msg.reactions) : null,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -101,6 +111,7 @@ class LocalChatDatabase {
           'reply_to_text': msg.replyToText,
           'reply_to_sender': msg.replyToSender,
           'room_id': roomId,
+          'reactions': msg.reactions != null ? jsonEncode(msg.reactions) : null,
         },
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
@@ -119,19 +130,32 @@ class LocalChatDatabase {
       orderBy: 'created_at ASC',
     );
     
-    return maps.map((map) => MessageEntity(
-      id: map['id'] as String,
-      text: map['text'] as String,
-      isMe: map['sender_id'] == currentUid,
-      time: map['time'] as String,
-      createdAt: map['created_at'] as String,
-      mediaUrl: map['media_url'] as String?,
-      mediaType: map['media_type'] as String?,
-      isRead: (map['is_read'] as int) == 1,
-      replyToId: map['reply_to_id'] as String?,
-      replyToText: map['reply_to_text'] as String?,
-      replyToSender: map['reply_to_sender'] as String?,
-    )).toList();
+    return maps.map((map) {
+      Map<String, String>? reactions;
+      if (map['reactions'] != null && (map['reactions'] as String).isNotEmpty) {
+        try {
+          final decoded = jsonDecode(map['reactions'] as String);
+          if (decoded is Map) {
+            reactions = decoded.map((k, v) => MapEntry(k.toString(), v.toString()));
+          }
+        } catch (_) {}
+      }
+
+      return MessageEntity(
+        id: map['id'] as String,
+        text: map['text'] as String,
+        isMe: map['sender_id'] == currentUid,
+        time: map['time'] as String,
+        createdAt: map['created_at'] as String,
+        mediaUrl: map['media_url'] as String?,
+        mediaType: map['media_type'] as String?,
+        isRead: (map['is_read'] as int) == 1,
+        replyToId: map['reply_to_id'] as String?,
+        replyToText: map['reply_to_text'] as String?,
+        replyToSender: map['reply_to_sender'] as String?,
+        reactions: reactions,
+      );
+    }).toList();
   }
 
   Future<void> deleteMessage(String id) async {

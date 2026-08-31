@@ -13,6 +13,7 @@ abstract class ChatRemoteDataSource {
   Stream<sb.PostgresChangePayload> getMessagesRealtimeStream(String otherUserId);
   Future<void> editMessage(String messageId, String senderId, String receiverId, String content);
   Future<void> deleteMessage(String messageId);
+  Future<void> toggleReaction(String messageId, String userId, String emoji);
   void sendTypingEvent(String currentUserId, String otherUserId, bool isTyping);
   Stream<Map<String, dynamic>> getTypingStream(String currentUserId, String otherUserId);
 }
@@ -182,6 +183,33 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   @override
   Future<void> deleteMessage(String messageId) async {
     await supabaseClient.from('messages').delete().eq('id', messageId);
+  }
+
+  @override
+  Future<void> toggleReaction(String messageId, String userId, String emoji) async {
+    try {
+      final res = await supabaseClient
+          .from('messages')
+          .select('reactions')
+          .eq('id', messageId)
+          .maybeSingle();
+      Map<String, dynamic> reactions = {};
+      if (res != null && res['reactions'] != null && res['reactions'] is Map) {
+        reactions = Map<String, dynamic>.from(res['reactions'] as Map);
+      }
+      if (reactions[userId] == emoji) {
+        reactions.remove(userId);
+      } else {
+        reactions[userId] = emoji;
+      }
+      await supabaseClient
+          .from('messages')
+          .update({'reactions': reactions})
+          .eq('id', messageId);
+    } catch (e) {
+      debugPrint('[ChatDataSource] Error toggling reaction: $e');
+      rethrow;
+    }
   }
 
   @override

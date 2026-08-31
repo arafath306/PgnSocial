@@ -20,6 +20,7 @@ import 'widgets/chat_composer.dart';
 import 'widgets/blocked_banner.dart';
 import 'widgets/full_screen_media_viewer.dart';
 import 'widgets/messenger_profile_sheet.dart';
+import 'widgets/reaction_bar.dart';
 import 'media_preview_screen.dart';
 import '../../widgets/theme_picker_sheet.dart';
 import '../../widgets/verification_badge.dart';
@@ -564,6 +565,8 @@ class _ChatScreenState extends State<ChatScreen> {
               onMessageAction: _showMessageActionMenu,
               onReply: (msg) => setState(() => _replyingToMessage = msg),
               onOpenMedia: _openFullScreenMedia,
+              onToggleReaction: (msg, emoji) => _toggleMessageReaction(msg['id'] as String, emoji),
+              currentUserId: sb.Supabase.instance.client.auth.currentUser?.id,
             ),
           ),
 

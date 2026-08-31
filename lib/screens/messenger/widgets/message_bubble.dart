@@ -7,13 +7,15 @@ import '../../../utils/chat_themes.dart';
 import 'swipe_to_reply.dart';
 import 'chat_voice_player.dart';
 
-
-class MessageBubble extends StatelessWidget {
+class MessageBubble extends StatefulWidget {
   final Map<String, dynamic> msg;
   final ChatTheme activeTheme;
   final VoidCallback onTap;
   final VoidCallback onReply;
   final void Function(String) onOpenMedia;
+  final void Function(String emoji)? onToggleReaction;
+  final VoidCallback? onDoubleTap;
+  final String? currentUserId;
   final double marginBottom;
 
   const MessageBubble({
@@ -23,9 +25,87 @@ class MessageBubble extends StatelessWidget {
     required this.onTap,
     required this.onReply,
     required this.onOpenMedia,
+    this.onToggleReaction,
+    this.onDoubleTap,
+    this.currentUserId,
     this.marginBottom = 10.0,
-  });  @override
+  });
+
+  @override
+  State<MessageBubble> createState() => _MessageBubbleState();
+}
+
+class _MessageBubbleState extends State<MessageBubble>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _heartAnimController;
+  late Animation<double> _heartScale;
+  late Animation<double> _heartOpacity;
+  bool _showHeartPop = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _heartAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _heartScale = TweenSequence<double>([
+      TweenSequenceItem(
+          tween: Tween(begin: 0.0, end: 1.35)
+              .chain(CurveTween(curve: Curves.easeOutBack)),
+          weight: 50),
+      TweenSequenceItem(
+          tween: Tween(begin: 1.35, end: 1.0)
+              .chain(CurveTween(curve: Curves.easeInOut)),
+          weight: 50),
+    ]).animate(_heartAnimController);
+    _heartOpacity = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 30),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.0), weight: 40),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 30),
+    ]).animate(_heartAnimController);
+
+    _heartAnimController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        if (mounted) setState(() => _showHeartPop = false);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _heartAnimController.dispose();
+    super.dispose();
+  }
+
+  void _triggerDoubleTapHeart() {
+    setState(() => _showHeartPop = true);
+    _heartAnimController.forward(from: 0.0);
+    if (widget.onDoubleTap != null) {
+      widget.onDoubleTap!();
+    } else if (widget.onToggleReaction != null) {
+      widget.onToggleReaction!('❤️');
+    }
+  }
+
+  Map<String, String> _parseReactions() {
+    final raw = widget.msg['reactions'];
+    if (raw == null) return {};
+    if (raw is Map) {
+      return raw.map((k, v) => MapEntry(k.toString(), v.toString()));
+    }
+    return {};
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final msg = widget.msg;
+    final activeTheme = widget.activeTheme;
+    final onTap = widget.onTap;
+    final onReply = widget.onReply;
+    final onOpenMedia = widget.onOpenMedia;
+    final marginBottom = widget.marginBottom;
+
     final bool isMe = msg['isMe'] as bool;
     final String? mediaUrl = msg['media_url'] as String?;
     final localMediaBytes = msg['local_media_bytes'];
@@ -57,13 +137,14 @@ class MessageBubble extends StatelessWidget {
       );
     }
 
-    final bool hasMedia = (localMediaBytes != null || (mediaUrl != null && mediaUrl.isNotEmpty)) && mediaType != 'audio';
+    final bool hasMedia = (localMediaBytes != null ||
+            (mediaUrl != null && mediaUrl.isNotEmpty)) &&
+        mediaType != 'audio';
 
-    String timeStr = msg['time'] as String;
+    String timeStr = msg['time'] as String? ?? '';
     if (msg['created_at'] != null) {
       try {
         final dt = DateTime.parse(msg['created_at'] as String);
-        // Convert to Dhaka Time (GMT+6)
         final dhakaTime = dt.toUtc().add(const Duration(hours: 6));
         final hour24 = dhakaTime.hour;
         final minute = dhakaTime.minute.toString().padLeft(2, '0');
@@ -72,8 +153,8 @@ class MessageBubble extends StatelessWidget {
         if (hour12 == 0) hour12 = 12;
         timeStr = '$hour12:$minute $period';
       } catch (e) {
-      debugPrint('[MessageBubble] Error parsing time: $e');
-    }
+        debugPrint('[MessageBubble] Error parsing time: $e');
+      }
     }
 
     Widget buildTimeRow({required bool overlayMode}) {
@@ -87,7 +168,9 @@ class MessageBubble extends StatelessWidget {
       final iconColor = overlayMode
           ? (isSending
               ? Colors.white.withValues(alpha: 0.5)
-              : (isRead ? Colors.greenAccent : Colors.white.withValues(alpha: 0.8)))
+              : (isRead
+                  ? Colors.greenAccent
+                  : Colors.white.withValues(alpha: 0.8)))
           : (isSending
               ? Colors.white54
               : (isRead ? Colors.greenAccent : Colors.white60));
@@ -136,242 +219,172 @@ class MessageBubble extends StatelessWidget {
               height: 240,
               fit: BoxFit.cover,
               placeholder: (context, url) => const _ImageShimmerPlaceholder(),
-              errorWidget: (context, url, error) =>
-                  const Icon(Icons.broken_image, size: 50),
+              errorWidget: (context, url, error) => Container(
+                width: double.infinity,
+                height: 240,
+                color: Colors.black26,
+                child: const Center(
+                  child: Icon(Icons.broken_image_rounded,
+                      color: Colors.white54, size: 32),
+                ),
+              ),
             );
 
-      final imageWidget = bytesOrUrl is Uint8List
-          ? GestureDetector(
-              onTap: onTap,
-              onLongPress: onTap,
-              child: image,
-            )
-          : GestureDetector(
-              onTap: () => onOpenMedia(bytesOrUrl as String),
-              onLongPress: onTap,
-              child: image,
-            );
+      final isOnlyImage = (text == null || text.isEmpty);
 
-      if (text == null || text.isEmpty) {
-        // Overlay time row on top of image
-        return ClipRRect(
+      return GestureDetector(
+        onTap: () {
+          if (mediaUrl != null && mediaUrl.isNotEmpty) {
+            onOpenMedia(mediaUrl);
+          }
+        },
+        child: ClipRRect(
           borderRadius: clipRadius,
           child: Stack(
-            alignment: Alignment.bottomRight,
             children: [
-              imageWidget,
-              Positioned(
-                bottom: 6,
-                right: 6,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(10),
+              image,
+              if (isOnlyImage)
+                Positioned(
+                  bottom: 6,
+                  right: 8,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: buildTimeRow(overlayMode: true),
                   ),
-                  child: buildTimeRow(overlayMode: true),
                 ),
-              ),
             ],
           ),
-        );
-      } else {
-        // No overlay, just image
-        return ClipRRect(
-          borderRadius: clipRadius,
-          child: imageWidget,
-        );
-      }
+        ),
+      );
     }
 
-    Widget bubbleContent = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Reply quote
-        if (replyToId != null)
+    Widget buildReplyQuoteHeader() {
+      if (replyToId == null) return const SizedBox.shrink();
+
+      final isDark = context.isDarkMode;
+      final quoteBg = isMe
+          ? Colors.black.withValues(alpha: 0.15)
+          : (isDark
+              ? Colors.white.withValues(alpha: 0.06)
+              : Colors.black.withValues(alpha: 0.04));
+
+      final barColor = isMe ? Colors.white70 : context.primaryAccent;
+      final nameColor = isMe ? Colors.white : context.primaryAccent;
+      final bodyColor = isMe ? Colors.white70 : context.textSecondary;
+
+      return Container(
+        margin: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: quoteBg,
+          borderRadius: BorderRadius.circular(8),
+          border: Border(left: BorderSide(color: barColor, width: 3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              replyToSender ?? '',
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: nameColor,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 1),
+            Text(
+              replyToText ?? '',
+              style: GoogleFonts.inter(
+                fontSize: 11.5,
+                color: bodyColor,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget buildVoicePlayerWidget(String url) {
+      return Column(
+        crossAxisAlignment:
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ChatVoicePlayer(
+            audioUrl: url,
+            isMe: isMe,
+          ),
           Padding(
-            padding: hasMedia
-                ? const EdgeInsets.fromLTRB(12, 10, 12, 6)
-                : EdgeInsets.zero,
-            child: Container(
-              margin: hasMedia ? EdgeInsets.zero : const EdgeInsets.only(bottom: 6),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: isMe
-                    ? Colors.white.withValues(alpha: 0.15)
-                    : (context.isDarkMode
-                        ? Colors.white.withValues(alpha: 0.05)
-                        : Colors.black.withValues(alpha: 0.04)),
-                borderRadius: BorderRadius.circular(8),
-                border: Border(
-                  left: BorderSide(
-                    color: isMe
-                        ? Colors.white70
-                        : context.primaryAccent,
-                    width: 3.5,
-                  ),
+            padding: const EdgeInsets.only(right: 8, bottom: 4),
+            child: buildTimeRow(overlayMode: false),
+          ),
+        ],
+      );
+    }
+
+    Widget buildTextContentWidget(String bodyText) {
+      return Padding(
+        padding: hasMedia
+            ? const EdgeInsets.fromLTRB(10, 6, 8, 4)
+            : const EdgeInsets.only(right: 4, bottom: 2),
+        child: Column(
+          crossAxisAlignment:
+              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                bodyText,
+                style: GoogleFonts.inter(
+                  fontSize: 14.5,
+                  height: 1.25,
+                  color: isMe ? Colors.white : context.textPrimary,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    replyToSender ?? 'Someone',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: isMe
-                          ? Colors.white
-                          : context.primaryAccent,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    replyToText ?? '',
-                    style: GoogleFonts.inter(
-                      fontSize: 12.5,
-                      color: isMe
-                          ? Colors.white70
-                          : context.textSecondary,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
             ),
-          ),
-        // Media (image / GIF / audio)
-        if (mediaType == 'audio') ...[
-          if (mediaUrl != null && mediaUrl.isNotEmpty)
-            ChatVoicePlayer(audioUrl: mediaUrl, isMe: isMe),
-          if (text != null && text.isNotEmpty) const SizedBox(height: 8),
-        ] else if (localMediaBytes != null) ...[
-          buildImageWidget(localMediaBytes),
-          if (text != null && text.isNotEmpty) const SizedBox(height: 8),
-        ] else if (mediaUrl != null && mediaUrl.isNotEmpty) ...[
-          buildImageWidget(mediaUrl),
-          if (text != null && text.isNotEmpty) const SizedBox(height: 8),
-        ],
-        // Text & Timestamp
-        if (text != null && text.isNotEmpty)
-          Padding(
-            padding: hasMedia
-                ? const EdgeInsets.fromLTRB(12, 6, 12, 4)
-                : EdgeInsets.zero,
-            child: Builder(
-              builder: (context) {
-                // 1. Calculate bubble constraints based on screen width
-                final double screenWidth = MediaQuery.of(context).size.width;
-                final double bubbleMaxWidth = (screenWidth * 0.75).clamp(80.0, 450.0);
-                final double horizontalPadding = hasMedia ? 24.0 : 20.0;
-                final double textMaxWidth = bubbleMaxWidth - horizontalPadding;
-
-                // 2. Setup text style
-                final TextStyle textStyle = GoogleFonts.inter(
-                  fontSize: 14.5,
-                  color: isMe 
-                      ? (activeTheme.isDark ? Colors.white : Colors.black87)
-                      : context.textPrimary,
-                  height: 1.4,
-                );
-
-                // 3. Setup time widget
-                final Widget timeWidget = Padding(
-                  padding: const EdgeInsets.only(bottom: 2),
-                  child: buildTimeRow(overlayMode: false),
-                );
-
-                // 4. Measure text layout dynamically
-                final textPainter = TextPainter(
-                  text: TextSpan(text: text, style: textStyle),
-                  textDirection: TextDirection.ltr,
-                );
-                textPainter.layout(maxWidth: textMaxWidth);
-
-                // 5. Estimate time row width safely (text + spacing + checkmark icon)
-                const double timeWidth = 72.0;
-
-                final List<LineMetrics> lines = textPainter.computeLineMetrics();
-                if (lines.isEmpty) {
-                  return Text(text, style: textStyle);
-                }
-
-                final lastLine = lines.last;
-                final lastLineLength = lastLine.width;
-
-                if (lines.length == 1) {
-                  // Single line check: if text + time fits within max width, keep inline
-                  final bool fitsInline = (lastLineLength + 8 + timeWidth) <= textMaxWidth;
-                  if (fitsInline) {
-                    return Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Flexible(
-                          child: Text(text, style: textStyle),
-                        ),
-                        const SizedBox(width: 8),
-                        timeWidget,
-                      ],
-                    );
-                  } else {
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(text, style: textStyle),
-                        const SizedBox(height: 4),
-                        timeWidget,
-                      ],
-                    );
-                  }
-                } else {
-                  // Multi-line check: if last line has enough empty space for time
-                  final double longestLine = textPainter.width;
-                  final bool fitsOnSameLine = (longestLine - lastLineLength) >= timeWidth;
-                  if (fitsOnSameLine) {
-                    return Stack(
-                      children: [
-                        Text(text, style: textStyle),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: timeWidget,
-                        ),
-                      ],
-                    );
-                  } else {
-                    return Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(text, style: textStyle),
-                        const SizedBox(height: 4),
-                        timeWidget,
-                      ],
-                    );
-                  }
-                }
-              },
-            ),
-          )
-        else if (!hasMedia)
-          Align(
-            alignment: Alignment.centerRight,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 2, left: 16),
-              child: buildTimeRow(overlayMode: false),
-            ),
-          ),
-      ],
-    );
-
-    if (!hasMedia) {
-      bubbleContent = IntrinsicWidth(child: bubbleContent);
+            const SizedBox(height: 2),
+            buildTimeRow(overlayMode: false),
+          ],
+        ),
+      );
     }
+
+    Widget bubbleContent;
+
+    if (mediaType == 'audio' && mediaUrl != null && mediaUrl.isNotEmpty) {
+      bubbleContent = buildVoicePlayerWidget(mediaUrl);
+    } else {
+      bubbleContent = Column(
+        crossAxisAlignment:
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          buildReplyQuoteHeader(),
+          if (localMediaBytes != null) buildImageWidget(localMediaBytes),
+          if (localMediaBytes == null &&
+              mediaUrl != null &&
+              mediaUrl.isNotEmpty)
+            buildImageWidget(mediaUrl),
+          if (text != null && text.isNotEmpty) buildTextContentWidget(text),
+        ],
+      );
+    }
+
+    final reactions = _parseReactions();
+    final hasReactions = reactions.isNotEmpty;
+    final effectiveMarginBottom = marginBottom + (hasReactions ? 12.0 : 0.0);
 
     return SwipeToReply(
       onReply: onReply,
@@ -379,51 +392,153 @@ class MessageBubble extends StatelessWidget {
       child: Align(
         alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
         child: Container(
-          margin: EdgeInsets.only(bottom: marginBottom),
+          margin: EdgeInsets.only(bottom: effectiveMarginBottom),
           constraints: BoxConstraints(
-              maxWidth: (MediaQuery.of(context).size.width * 0.75).clamp(80.0, 450.0)),
-          child: GestureDetector(
-            onTap: onTap,
-            onLongPress: onTap,
-            child: Container(
-              padding: hasMedia
-                  ? EdgeInsets.zero
-                  : const EdgeInsets.fromLTRB(12, 8, 8, 4),
-              decoration: BoxDecoration(
-                color: isMe
-                    ? (activeTheme.gradientColors == null ? activeTheme.primaryColor : null)
-                    : context.cardBg,
-                gradient: (isMe && activeTheme.gradientColors != null)
-                    ? LinearGradient(
-                        colors: activeTheme.gradientColors!,
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      )
-                    : null,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: isMe
-                      ? const Radius.circular(16)
-                      : const Radius.circular(0),
-                  bottomRight: isMe
-                      ? const Radius.circular(0)
-                      : const Radius.circular(16),
-                ),
-                border: isMe
-                    ? null
-                    : Border.all(color: context.border, width: 0.8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.015),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+              maxWidth: (MediaQuery.of(context).size.width * 0.75)
+                  .clamp(80.0, 450.0)),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              GestureDetector(
+                onTap: onTap,
+                onLongPress: onTap,
+                onDoubleTap: _triggerDoubleTapHeart,
+                child: Container(
+                  padding: hasMedia
+                      ? EdgeInsets.zero
+                      : const EdgeInsets.fromLTRB(12, 8, 8, 4),
+                  decoration: BoxDecoration(
+                    color: isMe
+                        ? (activeTheme.gradientColors == null
+                            ? activeTheme.primaryColor
+                            : null)
+                        : context.cardBg,
+                    gradient: (isMe && activeTheme.gradientColors != null)
+                        ? LinearGradient(
+                            colors: activeTheme.gradientColors!,
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : null,
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(16),
+                      topRight: const Radius.circular(16),
+                      bottomLeft: isMe
+                          ? const Radius.circular(16)
+                          : const Radius.circular(0),
+                      bottomRight: isMe
+                          ? const Radius.circular(0)
+                          : const Radius.circular(16),
+                    ),
+                    border: isMe
+                        ? null
+                        : Border.all(color: context.border, width: 0.8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.015),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                ],
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      bubbleContent,
+                      if (_showHeartPop)
+                        FadeTransition(
+                          opacity: _heartOpacity,
+                          child: ScaleTransition(
+                            scale: _heartScale,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.black.withValues(alpha: 0.4),
+                              ),
+                              child: const Text(
+                                '❤️',
+                                style: TextStyle(fontSize: 36),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ),
-              child: bubbleContent,
-            ),
+              if (hasReactions)
+                Positioned(
+                  bottom: -10,
+                  right: isMe ? 8 : null,
+                  left: isMe ? null : 8,
+                  child: _buildReactionsBadge(context, reactions, isMe),
+                ),
+            ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReactionsBadge(
+      BuildContext context, Map<String, String> reactions, bool isMe) {
+    final isDark = context.isDarkMode;
+    final myUid = widget.currentUserId;
+    final hasMyReaction = myUid != null && reactions.containsKey(myUid);
+
+    // Count frequency of each emoji
+    final Map<String, int> emojiCounts = {};
+    for (final emoji in reactions.values) {
+      emojiCounts[emoji] = (emojiCounts[emoji] ?? 0) + 1;
+    }
+
+    // Top 3 distinct emojis
+    final topEmojis = emojiCounts.keys.take(3).toList();
+    final totalCount = reactions.length;
+
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: hasMyReaction
+                ? context.primaryAccent.withValues(alpha: 0.8)
+                : context.border.withValues(alpha: 0.6),
+            width: hasMyReaction ? 1.2 : 0.8,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ...topEmojis.map((emoji) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 1),
+                  child: Text(emoji, style: const TextStyle(fontSize: 13)),
+                )),
+            if (totalCount > 1) ...[
+              const SizedBox(width: 3),
+              Text(
+                '$totalCount',
+                style: GoogleFonts.inter(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: hasMyReaction
+                      ? context.primaryAccent
+                      : context.textSecondary,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -434,10 +549,12 @@ class _ImageShimmerPlaceholder extends StatefulWidget {
   const _ImageShimmerPlaceholder();
 
   @override
-  State<_ImageShimmerPlaceholder> createState() => _ImageShimmerPlaceholderState();
+  State<_ImageShimmerPlaceholder> createState() =>
+      _ImageShimmerPlaceholderState();
 }
 
-class _ImageShimmerPlaceholderState extends State<_ImageShimmerPlaceholder> with SingleTickerProviderStateMixin {
+class _ImageShimmerPlaceholderState extends State<_ImageShimmerPlaceholder>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _opacity;
 
@@ -462,7 +579,8 @@ class _ImageShimmerPlaceholderState extends State<_ImageShimmerPlaceholder> with
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
-    final baseColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+    final baseColor =
+        isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
     return AnimatedBuilder(
       animation: _opacity,
       builder: (context, _) => Opacity(
@@ -479,7 +597,3 @@ class _ImageShimmerPlaceholderState extends State<_ImageShimmerPlaceholder> with
     );
   }
 }
-
-// â”€â”€â”€ Chat Composer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Completely isolated widget. Only rebuilds when its own state changes,
-// NOT when messages arrive. The input field is local â€” no external setState.
