@@ -6,6 +6,7 @@ import '../../../utils/app_theme.dart';
 import '../../../utils/chat_themes.dart';
 import 'swipe_to_reply.dart';
 import 'chat_voice_player.dart';
+import 'reaction_bar.dart';
 
 class MessageBubble extends StatefulWidget {
   final Map<String, dynamic> msg;
@@ -562,14 +563,29 @@ class _MessageBubbleState extends State<MessageBubble>
                           child: ScaleTransition(
                             scale: _heartScale,
                             child: Container(
-                              padding: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: Colors.black.withValues(alpha: 0.4),
+                                color: Colors.black.withValues(alpha: 0.5),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFFF2D55).withValues(alpha: 0.5),
+                                    blurRadius: 20,
+                                    spreadRadius: 3,
+                                  ),
+                                ],
                               ),
-                              child: const Text(
-                                '❤️',
-                                style: TextStyle(fontSize: 36),
+                              child: ShaderMask(
+                                shaderCallback: (bounds) => const LinearGradient(
+                                  colors: [Color(0xFFFF3366), Color(0xFFFF0844)],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ).createShader(bounds),
+                                child: const Icon(
+                                  Icons.favorite_rounded,
+                                  size: 42,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
@@ -633,8 +649,8 @@ class _MessageBubbleState extends State<MessageBubble>
           mainAxisSize: MainAxisSize.min,
           children: [
             ...topEmojis.map((emoji) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 1),
-                  child: Text(emoji, style: const TextStyle(fontSize: 13)),
+                  padding: const EdgeInsets.symmetric(horizontal: 1.5),
+                  child: renderReactionEmoji(emoji, size: 14),
                 )),
             if (totalCount > 1) ...[
               const SizedBox(width: 3),

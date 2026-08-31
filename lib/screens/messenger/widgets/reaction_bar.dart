@@ -93,6 +93,30 @@ class ReactionBar extends StatelessWidget {
   }
 }
 
+Widget renderReactionEmoji(String emoji, {double size = 20}) {
+  if (emoji == '❤️' || emoji == '\u2764' || emoji == '\u2764\uFE0F' || emoji == '❤') {
+    return ShaderMask(
+      shaderCallback: (bounds) => const LinearGradient(
+        colors: [Color(0xFFFF3366), Color(0xFFFF0844)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ).createShader(bounds),
+      child: Icon(
+        Icons.favorite_rounded,
+        size: size,
+        color: Colors.white,
+      ),
+    );
+  }
+  return Text(
+    emoji,
+    style: TextStyle(
+      fontSize: size * 0.9,
+      fontFamilyFallback: const ['Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji'],
+    ),
+  );
+}
+
 class _ReactionButton extends StatefulWidget {
   final String emoji;
   final bool isSelected;
@@ -153,10 +177,7 @@ class _ReactionButtonState extends State<_ReactionButton>
                 ? Border.all(color: context.primaryAccent, width: 1.5)
                 : null,
           ),
-          child: Text(
-            widget.emoji,
-            style: const TextStyle(fontSize: 24),
-          ),
+          child: renderReactionEmoji(widget.emoji, size: 26),
         ),
       ),
     );
