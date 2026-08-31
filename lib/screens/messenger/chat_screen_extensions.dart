@@ -913,7 +913,7 @@ extension ChatScreenExtensions on _ChatScreenState {
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(
-            isPinned ? '📌 Message pinned' : 'Message unpinned',
+            isPinned ? 'Message pinned' : 'Message unpinned',
             style: GoogleFonts.inter(color: Colors.white),
           ),
           duration: const Duration(seconds: 2),

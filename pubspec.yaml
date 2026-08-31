@@ -2,7 +2,7 @@ name: dak
 description: "Pigeon - A modern social media platform."
 publish_to: 'none'
 
-version: 6.8.3+70
+version: 6.8.4+71
 
 environment:
   sdk: ^3.12.1
