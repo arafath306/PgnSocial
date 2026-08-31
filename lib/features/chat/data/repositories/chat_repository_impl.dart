@@ -9,6 +9,7 @@ import '../../domain/repositories/chat_repository.dart';
 import '../datasources/chat_remote_data_source.dart';
 import '../datasources/local_chat_db.dart';
 import '../../../../core/security/e2ee_service.dart';
+import '../../../../utils/chat_themes.dart';
 
 class ChatRepositoryImpl implements IChatRepository {
   final ChatRemoteDataSource remoteDataSource;
@@ -117,10 +118,44 @@ class ChatRepositoryImpl implements IChatRepository {
           }
         }
 
+        final String mediaType = json['media_type'] as String? ?? '';
         final String mediaUrl = json['media_url'] as String? ?? '';
-        final String displayMessage = content.isNotEmpty
-            ? content
-            : (mediaUrl.isNotEmpty ? '📷 Photo' : '');
+
+        String displayMessage;
+        if (mediaType == 'theme_change') {
+          if (content.startsWith('custom:')) {
+            displayMessage = '🎨 Changed custom theme';
+          } else {
+            final theme = getChatThemeById(content);
+            displayMessage = '🎨 Changed theme to ${theme.name}';
+          }
+        } else if (mediaType == 'wallpaper_change') {
+          if (mediaUrl == 'none' || content == 'none') {
+            displayMessage = '🖼️ Removed chat wallpaper';
+          } else {
+            displayMessage = '🖼️ Changed chat wallpaper';
+          }
+        } else if (mediaType == 'audio') {
+          displayMessage = '🎙️ Voice message';
+        } else if (mediaType == 'image') {
+          displayMessage = '📷 Photo';
+        } else if (content.isNotEmpty) {
+          final trimmed = content.trim();
+          if (trimmed.startsWith('custom:')) {
+            displayMessage = '🎨 Changed custom theme';
+          } else if (allChatThemes.any((t) => t.id == trimmed)) {
+            final theme = getChatThemeById(trimmed);
+            displayMessage = '🎨 Changed theme to ${theme.name}';
+          } else if (trimmed == 'none') {
+            displayMessage = '🖼️ Removed chat wallpaper';
+          } else {
+            displayMessage = content;
+          }
+        } else if (mediaUrl.isNotEmpty) {
+          displayMessage = '📷 Photo';
+        } else {
+          displayMessage = '';
+        }
 
         if (!conversations.containsKey(otherId)) {
           conversations[otherId] = {

@@ -10,6 +10,7 @@ import 'chat_screen.dart';
 import 'chat_settings_screen.dart';
 import 'member_search_sheet.dart';
 import '../../widgets/chat_shimmer.dart';
+import '../../utils/chat_themes.dart';
 
 import 'widgets/user_actions_sheet.dart';
 import '../../services/general_settings_provider.dart';
@@ -92,6 +93,26 @@ class _MessengerHomeScreenState extends State<MessengerHomeScreen> with Automati
   void dispose() {
     _notifSub?.cancel();
     super.dispose();
+  }
+
+  String _formatLastMessagePreview(String rawMsg) {
+    if (rawMsg.isEmpty) return '';
+    final trimmed = rawMsg.trim();
+
+    if (trimmed.startsWith('custom:')) {
+      return '🎨 Changed custom theme';
+    }
+
+    if (allChatThemes.any((t) => t.id == trimmed)) {
+      final theme = getChatThemeById(trimmed);
+      return '🎨 Changed theme to ${theme.name}';
+    }
+
+    if (trimmed == 'none') {
+      return '🖼️ Removed chat wallpaper';
+    }
+
+    return rawMsg;
   }
 
   Future<void> _loadChats({bool silent = false}) async {
@@ -337,7 +358,7 @@ class _MessengerHomeScreenState extends State<MessengerHomeScreen> with Automati
                             children: [
                               Expanded(
                                 child: Text(
-                                  lastMsg,
+                                  _formatLastMessagePreview(lastMsg),
                                   style: GoogleFonts.hindSiliguri(
                                     color: unreadCount > 0 ? context.textPrimary : context.textSecondary,
                                     fontSize: 13.5,
