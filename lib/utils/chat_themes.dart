@@ -112,6 +112,13 @@ const List<ChatTheme> availableChatThemes = [
   ),
 ];
 
+const List<ChatTheme> allChatThemes = availableChatThemes;
+
+bool isChatTheme(String? id) {
+  if (id == null || id.isEmpty) return false;
+  return availableChatThemes.any((theme) => theme.id == id);
+}
+
 // Helper to get theme by ID
 ChatTheme getChatThemeById(String? id) {
   if (id == null || id.isEmpty) return availableChatThemes.first;

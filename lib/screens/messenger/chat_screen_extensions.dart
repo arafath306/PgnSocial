@@ -894,13 +894,26 @@ extension ChatScreenExtensions on _ChatScreenState {
   }
 
   Future<void> _togglePinMessage(String messageId, bool isPinned) async {
+    HapticFeedback.lightImpact();
+    setState(() {
+      final idx = _allMessages.indexWhere((m) => m['id'] == messageId);
+      if (idx != -1) {
+        _allMessages[idx]['is_pinned'] = isPinned;
+        if (isPinned) {
+          _allMessages[idx]['pinned_at'] = DateTime.now().toUtc().toIso8601String();
+        }
+      }
+      final currentPinned = _allMessages.where((m) => m['is_pinned'] == true).length;
+      _lastPinnedCount = currentPinned;
+    });
+
     final dbService = Provider.of<DatabaseService>(context, listen: false);
     try {
       final success = await dbService.togglePinMessage(messageId, isPinned);
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(
-            isPinned ? 'Message pinned' : 'Message unpinned',
+            isPinned ? '📌 Message pinned' : 'Message unpinned',
             style: GoogleFonts.inter(color: Colors.white),
           ),
           duration: const Duration(seconds: 2),

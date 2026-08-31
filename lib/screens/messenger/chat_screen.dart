@@ -77,6 +77,9 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _otherIsTyping = false;
   Timer? _typingTimer;
 
+  int _currentPinnedIndex = 0;
+  int _lastPinnedCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -701,14 +704,27 @@ class _ChatScreenState extends State<ChatScreen> {
                     _allMessages.where((m) => m['is_pinned'] == true).toList();
                 if (pinnedMessages.isEmpty) return const SizedBox.shrink();
 
+                if (_currentPinnedIndex >= pinnedMessages.length) {
+                  _currentPinnedIndex = 0;
+                }
+
+                final currentMsg = pinnedMessages[_currentPinnedIndex];
+
                 return PinnedMessageBanner(
-                  message: pinnedMessages.last,
-                  currentIndex: 1,
+                  message: currentMsg,
+                  currentIndex: _currentPinnedIndex + 1,
                   totalPinned: pinnedMessages.length,
-                  onTap: () =>
-                      _jumpToMessage(pinnedMessages.last['id'] as String),
+                  onTap: () {
+                    _jumpToMessage(currentMsg['id'] as String);
+                    if (pinnedMessages.length > 1) {
+                      setState(() {
+                        _currentPinnedIndex =
+                            (_currentPinnedIndex + 1) % pinnedMessages.length;
+                      });
+                    }
+                  },
                   onUnpin: () => _togglePinMessage(
-                      pinnedMessages.last['id'] as String, false),
+                      currentMsg['id'] as String, false),
                 );
               },
             ),
@@ -751,7 +767,15 @@ class _ChatScreenState extends State<ChatScreen> {
                 
                 if (newWallpaperUrl == '') newWallpaperUrl = null;
                 
-                if (newThemeId != _currentThemeId || newWallpaperUrl != _customWallpaperUrl) {
+                final currentPinned = msgs.where((m) => m['is_pinned'] == true).length;
+                final bool pinnedChanged = currentPinned != _lastPinnedCount;
+                if (pinnedChanged) {
+                  _lastPinnedCount = currentPinned;
+                }
+
+                if (newThemeId != _currentThemeId ||
+                    newWallpaperUrl != _customWallpaperUrl ||
+                    pinnedChanged) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (mounted) {
                       setState(() {
