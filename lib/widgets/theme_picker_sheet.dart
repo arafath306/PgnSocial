@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../utils/chat_themes.dart';
@@ -22,8 +23,9 @@ class ThemePickerSheet extends StatefulWidget {
   State<ThemePickerSheet> createState() => _ThemePickerSheetState();
 }
 
-class _ThemePickerSheetState extends State<ThemePickerSheet> {
+class _ThemePickerSheetState extends State<ThemePickerSheet> with SingleTickerProviderStateMixin {
   late String _selectedThemeId;
+  int _selectedFilterIndex = 0; // 0: All, 1: Gradients, 2: Solids
 
   @override
   void initState() {
@@ -48,6 +50,15 @@ class _ThemePickerSheetState extends State<ThemePickerSheet> {
     }
   }
 
+  List<ChatTheme> get _filteredThemes {
+    if (_selectedFilterIndex == 1) {
+      return availableChatThemes.where((t) => t.gradientColors != null).toList();
+    } else if (_selectedFilterIndex == 2) {
+      return availableChatThemes.where((t) => t.gradientColors == null).toList();
+    }
+    return availableChatThemes;
+  }
+
   @override
   Widget build(BuildContext context) {
     final activeTheme = getChatThemeById(_selectedThemeId);
@@ -56,12 +67,12 @@ class _ThemePickerSheetState extends State<ThemePickerSheet> {
     return Container(
       decoration: BoxDecoration(
         color: context.cardBg,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 20,
-            spreadRadius: 2,
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 24,
+            spreadRadius: 4,
           )
         ],
       ),
@@ -73,7 +84,7 @@ class _ThemePickerSheetState extends State<ThemePickerSheet> {
           // Drag Handle bar
           Center(
             child: Container(
-              width: 38,
+              width: 40,
               height: 4,
               decoration: BoxDecoration(
                 color: context.border.withValues(alpha: 0.8),
@@ -83,44 +94,74 @@ class _ThemePickerSheetState extends State<ThemePickerSheet> {
           ),
           const SizedBox(height: 18),
 
-          // Header Title
+          // Header Title & Subtitle
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
-              'Customize Chat',
-              style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: context.textPrimary,
-                letterSpacing: -0.4,
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Chat Theme & Style',
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: context.textPrimary,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Customize background and message colors',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: context.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: context.primaryAccent.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.palette_rounded,
+                    color: context.primaryAccent,
+                    size: 20,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
 
-          // ⚡ Live Preview Card (Mini Mock Chat)
+          // ⚡ Live Preview Card (Mock Interactive Message Bubble)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Container(
-              height: 130,
+              height: 136,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: activeTheme.gradientColors != null
                     ? null
-                    : activeTheme.primaryColor.withValues(alpha: isDarkSheet ? 0.12 : 0.06),
+                    : activeTheme.primaryColor.withValues(alpha: isDarkSheet ? 0.14 : 0.07),
                 gradient: activeTheme.gradientColors != null
                     ? LinearGradient(
                         colors: activeTheme.gradientColors!
-                            .map((c) => c.withValues(alpha: isDarkSheet ? 0.18 : 0.08))
+                            .map((c) => c.withValues(alpha: isDarkSheet ? 0.22 : 0.1))
                             .toList(),
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       )
                     : null,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: context.border.withValues(alpha: 0.6), width: 1),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: context.border.withValues(alpha: 0.7), width: 1),
               ),
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -128,39 +169,39 @@ class _ThemePickerSheetState extends State<ThemePickerSheet> {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
                       decoration: BoxDecoration(
                         color: isDarkSheet ? const Color(0xFF1E293B) : Colors.white,
                         borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(12),
-                          topRight: Radius.circular(12),
-                          bottomRight: Radius.circular(12),
+                          topLeft: Radius.circular(14),
+                          topRight: Radius.circular(14),
+                          bottomRight: Radius.circular(14),
                         ),
-                        border: Border.all(color: context.border.withValues(alpha: 0.5), width: 0.8),
+                        border: Border.all(color: context.border.withValues(alpha: 0.6), width: 0.8),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.02),
-                            blurRadius: 2,
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 4,
                             offset: const Offset(0, 1),
                           )
                         ],
                       ),
                       child: Text(
-                        "Hey! Do you like this chat theme? 🤔",
+                        "Hey! Loving this sleek theme ✨",
                         style: GoogleFonts.inter(
-                          fontSize: 11.5,
+                          fontSize: 12,
                           fontWeight: FontWeight.w500,
                           color: context.textPrimary,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  // Outgoing Message Bubble
+                  const SizedBox(height: 10),
+                  // Outgoing Message Bubble with active theme applied
                   Align(
                     alignment: Alignment.centerRight,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
                       decoration: BoxDecoration(
                         color: activeTheme.gradientColors == null ? activeTheme.primaryColor : null,
                         gradient: activeTheme.gradientColors != null
@@ -171,26 +212,26 @@ class _ThemePickerSheetState extends State<ThemePickerSheet> {
                               )
                             : null,
                         borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(12),
-                          topRight: Radius.circular(12),
-                          bottomLeft: Radius.circular(12),
+                          topLeft: Radius.circular(14),
+                          topRight: Radius.circular(14),
+                          bottomLeft: Radius.circular(14),
                         ),
                         boxShadow: [
                           BoxShadow(
                             color: (activeTheme.gradientColors == null 
                                     ? activeTheme.primaryColor 
                                     : activeTheme.gradientColors!.first)
-                                .withValues(alpha: 0.25),
+                                .withValues(alpha: 0.35),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           )
                         ],
                       ),
                       child: Text(
-                        "Yes! It looks absolutely 10/10! 😍",
+                        "Looks like a billion dollar app! 🚀",
                         style: GoogleFonts.inter(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                           color: activeTheme.isDark ? Colors.white : Colors.black87,
                         ),
                       ),
@@ -200,44 +241,48 @@ class _ThemePickerSheetState extends State<ThemePickerSheet> {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
 
-          // Scrollable Predefined Themes List
+          // Filter Segment Chips (All / Gradients / Solids)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
-              'Select Chat Theme',
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: context.textSecondary,
-                letterSpacing: 0.2,
-              ),
+            child: Row(
+              children: [
+                _buildSegmentChip(0, 'All (${availableChatThemes.length})'),
+                const SizedBox(width: 8),
+                _buildSegmentChip(1, 'Gradients'),
+                const SizedBox(width: 8),
+                _buildSegmentChip(2, 'Solids'),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
+
+          // Horizontal Palette List
           SizedBox(
-            height: 96,
+            height: 98,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              itemCount: availableChatThemes.length,
+              itemCount: _filteredThemes.length,
               itemBuilder: (context, index) {
-                final theme = availableChatThemes[index];
+                final theme = _filteredThemes[index];
                 final isSelected = theme.id == _selectedThemeId;
 
                 return GestureDetector(
                   onTap: () {
+                    HapticFeedback.lightImpact();
                     setState(() => _selectedThemeId = theme.id);
                   },
                   child: Container(
-                    margin: const EdgeInsets.only(right: 16),
+                    margin: const EdgeInsets.only(right: 14),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Container(
-                          width: 54,
-                          height: 54,
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          width: isSelected ? 56 : 50,
+                          height: isSelected ? 56 : 50,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: theme.gradientColors == null ? theme.primaryColor : null,
@@ -253,30 +298,36 @@ class _ThemePickerSheetState extends State<ThemePickerSheet> {
                                 : Border.all(color: context.border.withValues(alpha: 0.6), width: 1.5),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.08),
-                                blurRadius: 4,
+                                color: isSelected
+                                    ? context.primaryAccent.withValues(alpha: 0.4)
+                                    : Colors.black.withValues(alpha: 0.08),
+                                blurRadius: isSelected ? 10 : 4,
                                 offset: const Offset(0, 2),
                               )
                             ],
                           ),
                           child: isSelected
                               ? Icon(
-                                  Icons.check_circle_rounded,
+                                  Icons.check_rounded,
                                   color: theme.isDark ? Colors.white : Colors.black87,
-                                  size: 20,
+                                  size: 22,
                                 )
                               : null,
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          theme.name,
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            color: isSelected ? context.primaryAccent : context.textSecondary,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        const SizedBox(height: 6),
+                        SizedBox(
+                          width: 68,
+                          child: Text(
+                            theme.name,
+                            style: GoogleFonts.inter(
+                              fontSize: 10.5,
+                              color: isSelected ? context.primaryAccent : context.textSecondary,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
                         ),
                       ],
                     ),
@@ -285,7 +336,7 @@ class _ThemePickerSheetState extends State<ThemePickerSheet> {
               },
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
           // Apply Theme Button
           Padding(
@@ -295,6 +346,7 @@ class _ThemePickerSheetState extends State<ThemePickerSheet> {
               height: 48,
               child: ElevatedButton(
                 onPressed: () {
+                  HapticFeedback.mediumImpact();
                   Navigator.pop(context);
                   widget.onThemeSelected(_selectedThemeId);
                 },
@@ -302,22 +354,29 @@ class _ThemePickerSheetState extends State<ThemePickerSheet> {
                   backgroundColor: context.primaryAccent,
                   foregroundColor: Colors.white,
                   elevation: 2,
-                  shadowColor: context.primaryAccent.withValues(alpha: 0.3),
+                  shadowColor: context.primaryAccent.withValues(alpha: 0.35),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: Text(
-                  'Apply Selected Theme',
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14.5,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.check_circle_outline_rounded, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Apply Theme',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Wallpaper Settings Section
           Padding(
@@ -325,14 +384,14 @@ class _ThemePickerSheetState extends State<ThemePickerSheet> {
             child: Text(
               'Wallpapers & Backgrounds',
               style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
                 color: context.textSecondary,
                 letterSpacing: 0.2,
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
           // Wallpapers Actions Container Card
           Padding(
@@ -341,40 +400,44 @@ class _ThemePickerSheetState extends State<ThemePickerSheet> {
               decoration: BoxDecoration(
                 color: isDarkSheet ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: context.border.withValues(alpha: 0.5), width: 0.8),
+                border: Border.all(color: context.border.withValues(alpha: 0.6), width: 0.8),
               ),
               child: Column(
                 children: [
                   ListTile(
-                    onTap: () => _pickCustomImage(context),
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      _pickCustomImage(context);
+                    },
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: context.primaryAccent.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.photo_library_outlined, color: context.primaryAccent, size: 18),
+                      child: Icon(Icons.image_outlined, color: context.primaryAccent, size: 18),
                     ),
                     title: Text(
-                      'Custom Wallpaper',
+                      'Set Custom Wallpaper',
                       style: GoogleFonts.inter(
                         color: context.textPrimary,
                         fontWeight: FontWeight.bold,
-                        fontSize: 13.5,
+                        fontSize: 13,
                       ),
                     ),
                     subtitle: Text(
-                      'Choose a photo from your gallery',
+                      'Choose a background photo from gallery',
                       style: GoogleFonts.inter(
                         color: context.textSecondary,
-                        fontSize: 11.5,
+                        fontSize: 11,
                       ),
                     ),
-                    trailing: Icon(Icons.chevron_right, color: context.textMuted, size: 18),
+                    trailing: Icon(Icons.chevron_right_rounded, color: context.textMuted, size: 18),
                   ),
                   Divider(height: 1, color: context.border.withValues(alpha: 0.5)),
                   ListTile(
                     onTap: () {
+                      HapticFeedback.lightImpact();
                       Navigator.pop(context);
                       widget.onRemoveWallpaper();
                     },
@@ -387,18 +450,18 @@ class _ThemePickerSheetState extends State<ThemePickerSheet> {
                       child: const Icon(Icons.hide_image_outlined, color: Colors.red, size: 18),
                     ),
                     title: Text(
-                      'Remove Wallpaper',
+                      'Remove Custom Wallpaper',
                       style: GoogleFonts.inter(
                         color: Colors.red,
                         fontWeight: FontWeight.bold,
-                        fontSize: 13.5,
+                        fontSize: 13,
                       ),
                     ),
                     subtitle: Text(
-                      'Reset to chat theme default background',
+                      'Reset to clean theme background',
                       style: GoogleFonts.inter(
                         color: context.textSecondary,
-                        fontSize: 11.5,
+                        fontSize: 11,
                       ),
                     ),
                   ),
@@ -407,6 +470,40 @@ class _ThemePickerSheetState extends State<ThemePickerSheet> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSegmentChip(int index, String label) {
+    final isSelected = _selectedFilterIndex == index;
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _selectedFilterIndex = index);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? context.primaryAccent.withValues(alpha: 0.15)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? context.primaryAccent
+                : context.border.withValues(alpha: 0.6),
+            width: isSelected ? 1.2 : 0.8,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11.5,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            color: isSelected ? context.primaryAccent : context.textSecondary,
+          ),
+        ),
       ),
     );
   }

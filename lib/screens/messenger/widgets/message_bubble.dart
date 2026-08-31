@@ -119,21 +119,67 @@ class _MessageBubbleState extends State<MessageBubble>
     final String? mediaType = msg['media_type'] as String?;
     final String? text = msg['text'] as String?;
 
-    if (mediaType == 'theme_change') {
-      final themeName = getChatThemeById(text).name;
+    if (mediaType == 'theme_change' || mediaType == 'wallpaper_change') {
       final who = isMe ? 'You' : 'Someone';
-      final textToShow = (text != null && text.startsWith('custom:'))
-          ? '$who changed the chat wallpaper'
-          : '$who changed the chat theme to $themeName';
+      String textToShow;
+      IconData iconData = Icons.palette_rounded;
+
+      if (mediaType == 'wallpaper_change') {
+        final url = msg['media_url'] as String?;
+        if (url == 'none') {
+          textToShow = '$who removed the chat wallpaper';
+          iconData = Icons.hide_image_outlined;
+        } else {
+          textToShow = '$who changed the chat wallpaper';
+          iconData = Icons.wallpaper_rounded;
+        }
+      } else {
+        final themeName = getChatThemeById(text).name;
+        if (text != null && text.startsWith('custom:')) {
+          textToShow = '$who changed the chat wallpaper';
+          iconData = Icons.wallpaper_rounded;
+        } else {
+          textToShow = '$who changed the theme to $themeName';
+          iconData = Icons.palette_rounded;
+        }
+      }
+
       return Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         alignment: Alignment.center,
-        child: Text(
-          textToShow,
-          style: GoogleFonts.inter(
-            fontSize: 12.5,
-            color: context.textMuted,
-            fontWeight: FontWeight.w500,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: context.isDarkMode
+                ? const Color(0xFF1E293B).withValues(alpha: 0.85)
+                : const Color(0xFFE2E8F0).withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: context.border.withValues(alpha: 0.5),
+              width: 0.6,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(iconData, size: 14, color: context.primaryAccent),
+              const SizedBox(width: 6),
+              Text(
+                textToShow,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: context.textPrimary.withValues(alpha: 0.9),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ),
       );

@@ -17,51 +17,62 @@ class ChatTheme {
 }
 
 const List<ChatTheme> availableChatThemes = [
-  // Solid Colors
+  // ── Signature & Corporate Solids ──────────────────────────────────────────
   ChatTheme(
     id: 'default',
-    name: 'App Default',
-    primaryColor: Color(0xFF1E824C), // Brand Color (Green)
+    name: 'Dak Emerald',
+    primaryColor: Color(0xFF1E824C), // Signature Dak Green
   ),
   ChatTheme(
-    id: 'coral',
-    name: 'Coral Pink',
-    primaryColor: Color(0xFFFF5E7E),
+    id: 'midnight_blue',
+    name: 'Sapphire Blue',
+    primaryColor: Color(0xFF1D9BF0), // Twitter/X Blue
   ),
   ChatTheme(
-    id: 'forest',
-    name: 'Forest Green',
-    primaryColor: Color(0xFF2E7D32),
+    id: 'slate_titanium',
+    name: 'Slate Titanium',
+    primaryColor: Color(0xFF475569), // Minimal Corporate Slate
   ),
   ChatTheme(
-    id: 'purple_solid',
+    id: 'royal_purple',
     name: 'Royal Purple',
-    primaryColor: Color(0xFF9C27B0),
+    primaryColor: Color(0xFF7C3AED),
+  ),
+  ChatTheme(
+    id: 'forest_green',
+    name: 'Forest Jade',
+    primaryColor: Color(0xFF059669),
   ),
   ChatTheme(
     id: 'dark_mode',
-    name: 'Monochrome',
-    primaryColor: Color(0xFF303030),
+    name: 'Obsidian Black',
+    primaryColor: Color(0xFF1E293B),
   ),
 
-  // Gradients
+  // ── Premium Gradients ─────────────────────────────────────────────────────
   ChatTheme(
-    id: 'instagram',
-    name: 'Instagram',
-    primaryColor: Color(0xFFE1306C),
-    gradientColors: [Color(0xFF833AB4), Color(0xFFFD1D1D), Color(0xFFF56040)],
+    id: 'sapphire_gradient',
+    name: 'Twitter Blue',
+    primaryColor: Color(0xFF1D9BF0),
+    gradientColors: [Color(0xFF1D9BF0), Color(0xFF0A66C2)],
   ),
   ChatTheme(
-    id: 'ocean',
-    name: 'Ocean Depth',
-    primaryColor: Color(0xFF2193b0),
-    gradientColors: [Color(0xFF2193b0), Color(0xFF6dd5ed)],
+    id: 'royal_velvet',
+    name: 'Neon Velvet',
+    primaryColor: Color(0xFF8B5CF6),
+    gradientColors: [Color(0xFF8B5CF6), Color(0xFFEC4899)],
   ),
   ChatTheme(
-    id: 'sunset',
-    name: 'Sunset Glow',
-    primaryColor: Color(0xFFff7e5f),
-    gradientColors: [Color(0xFFff7e5f), Color(0xFFfeb47b)],
+    id: 'pacific_ocean',
+    name: 'Pacific Cyan',
+    primaryColor: Color(0xFF06B6D4),
+    gradientColors: [Color(0xFF06B6D4), Color(0xFF3B82F6)],
+  ),
+  ChatTheme(
+    id: 'sunset_flare',
+    name: 'Sunset Flare',
+    primaryColor: Color(0xFFFF5E7E),
+    gradientColors: [Color(0xFFFF5E7E), Color(0xFFFFBE76)],
   ),
   ChatTheme(
     id: 'cyberpunk',
@@ -70,35 +81,34 @@ const List<ChatTheme> availableChatThemes = [
     gradientColors: [Color(0xFFFF007F), Color(0xFF00F0FF)],
   ),
   ChatTheme(
-    id: 'mango',
-    name: 'Mango Pulp',
-    primaryColor: Color(0xFFf12711),
-    gradientColors: [Color(0xFFf12711), Color(0xFFf5af19)],
+    id: 'mint_aurora',
+    name: 'Mint Aurora',
+    primaryColor: Color(0xFF10B981),
+    gradientColors: [Color(0xFF10B981), Color(0xFF047857)],
   ),
   ChatTheme(
-    id: 'emerald',
-    name: 'Emerald Water',
-    primaryColor: Color(0xFF348F50),
-    gradientColors: [Color(0xFF348F50), Color(0xFF56B4D3)],
+    id: 'solar_mango',
+    name: 'Solar Sunrise',
+    primaryColor: Color(0xFFF59E0B),
+    gradientColors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
   ),
   ChatTheme(
-    id: 'lavender',
-    name: 'Lavender Dusk',
-    primaryColor: Color(0xFF654ea3),
-    gradientColors: [Color(0xFF654ea3), Color(0xFFeaafc8)],
+    id: 'rose_sakura',
+    name: 'Rose Gold',
+    primaryColor: Color(0xFFF43F5E),
+    gradientColors: [Color(0xFFF43F5E), Color(0xFFFB7185)],
   ),
   ChatTheme(
-    id: 'northern_lights',
-    name: 'Northern Lights',
+    id: 'electric_indigo',
+    name: 'Electric Indigo',
+    primaryColor: Color(0xFF4F46E5),
+    gradientColors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
+  ),
+  ChatTheme(
+    id: 'nordic_lights',
+    name: 'Nordic Lights',
     primaryColor: Color(0xFF43C6AC),
     gradientColors: [Color(0xFF43C6AC), Color(0xFF191654)],
-  ),
-  ChatTheme(
-    id: 'cherry',
-    name: 'Cherry Blossom',
-    primaryColor: Color(0xFFee9ca7),
-    gradientColors: [Color(0xFFee9ca7), Color(0xFFffdde1)],
-    isDark: false, // light text isn't good on this
   ),
 ];
 
@@ -110,7 +120,10 @@ ChatTheme getChatThemeById(String? id) {
   if (id.startsWith('custom:')) return availableChatThemes.first;
 
   try {
-    return availableChatThemes.firstWhere((theme) => theme.id == id);
+    return availableChatThemes.firstWhere(
+      (theme) => theme.id == id,
+      orElse: () => availableChatThemes.first,
+    );
   } catch (e) {
     return availableChatThemes.first;
   }
