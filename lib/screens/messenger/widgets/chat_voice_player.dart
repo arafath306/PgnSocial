@@ -4,13 +4,17 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../widgets/audio_waveform_widget.dart';
 
+import 'dart:typed_data';
+
 class ChatVoicePlayer extends StatefulWidget {
-  final String audioUrl;
+  final String? audioUrl;
+  final Uint8List? audioBytes;
   final bool isMe;
 
   const ChatVoicePlayer({
     super.key,
-    required this.audioUrl,
+    this.audioUrl,
+    this.audioBytes,
     required this.isMe,
   });
 
@@ -58,9 +62,23 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
     });
 
     try {
-      await _player.setSourceUrl(widget.audioUrl);
+      if (widget.audioBytes != null) {
+        await _player.setSourceBytes(widget.audioBytes!);
+      } else if (widget.audioUrl != null && widget.audioUrl!.isNotEmpty) {
+        await _player.setSourceUrl(widget.audioUrl!);
+      }
     } catch (e) {
       debugPrint("Error setting audio source: $e");
+    }
+  }
+
+  @override
+  void didUpdateWidget(ChatVoicePlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.audioUrl != oldWidget.audioUrl &&
+        widget.audioUrl != null &&
+        widget.audioUrl!.isNotEmpty) {
+      _player.setSourceUrl(widget.audioUrl!);
     }
   }
 
@@ -94,7 +112,11 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
         if (_position >= _duration && _duration > Duration.zero) {
           await _player.seek(Duration.zero);
         }
-        await _player.play(UrlSource(widget.audioUrl));
+        if (widget.audioBytes != null) {
+          await _player.play(BytesSource(widget.audioBytes!));
+        } else if (widget.audioUrl != null && widget.audioUrl!.isNotEmpty) {
+          await _player.play(UrlSource(widget.audioUrl!));
+        }
       }
     } catch (e) {
       debugPrint("Error toggling play: $e");

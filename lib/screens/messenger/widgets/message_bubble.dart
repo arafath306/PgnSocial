@@ -377,7 +377,7 @@ class _MessageBubbleState extends State<MessageBubble>
       );
     }
 
-    Widget buildVoicePlayerWidget(String url) {
+    Widget buildVoicePlayerWidget({String? url, Uint8List? bytes}) {
       return Column(
         crossAxisAlignment:
             isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -385,6 +385,7 @@ class _MessageBubbleState extends State<MessageBubble>
         children: [
           ChatVoicePlayer(
             audioUrl: url,
+            audioBytes: bytes,
             isMe: isMe,
           ),
           Padding(
@@ -465,8 +466,11 @@ class _MessageBubbleState extends State<MessageBubble>
 
     Widget bubbleContent;
 
-    if (mediaType == 'audio' && mediaUrl != null && mediaUrl.isNotEmpty) {
-      bubbleContent = buildVoicePlayerWidget(mediaUrl);
+    if (mediaType == 'audio') {
+      bubbleContent = buildVoicePlayerWidget(
+        url: mediaUrl,
+        bytes: localMediaBytes is Uint8List ? localMediaBytes : null,
+      );
     } else {
       bubbleContent = Column(
         crossAxisAlignment:
@@ -474,10 +478,12 @@ class _MessageBubbleState extends State<MessageBubble>
         mainAxisSize: MainAxisSize.min,
         children: [
           buildReplyQuoteHeader(),
-          if (localMediaBytes != null) buildImageWidget(localMediaBytes),
+          if (localMediaBytes != null && mediaType != 'audio')
+            buildImageWidget(localMediaBytes),
           if (localMediaBytes == null &&
               mediaUrl != null &&
-              mediaUrl.isNotEmpty)
+              mediaUrl.isNotEmpty &&
+              mediaType != 'audio')
             buildImageWidget(mediaUrl),
           if (text != null && text.isNotEmpty) buildTextContentWidget(text),
         ],

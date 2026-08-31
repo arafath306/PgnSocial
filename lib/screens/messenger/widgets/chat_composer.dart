@@ -107,6 +107,8 @@ class ChatComposerState extends State<ChatComposer> {
 
   @override
   void dispose() {
+    _recordingTimer?.cancel();
+    _audioRecorder.dispose();
     _typingBroadcastTimer?.cancel();
     _typingStopTimer?.cancel();
     if (_isTyping) {
@@ -118,10 +120,10 @@ class ChatComposerState extends State<ChatComposer> {
     super.dispose();
   }
 
-
   Future<void> _startRecording() async {
     try {
       if (await _audioRecorder.hasPermission()) {
+        HapticFeedback.mediumImpact();
         final dir = await getTemporaryDirectory();
         final path = '${dir.path}/chat_audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
         
@@ -151,26 +153,44 @@ class ChatComposerState extends State<ChatComposer> {
 
   Future<void> _stopRecording({bool cancel = false}) async {
     _recordingTimer?.cancel();
-    final path = await _audioRecorder.stop();
-    setState(() {
-      _isRecording = false;
-    });
+    HapticFeedback.lightImpact();
     
-    if (cancel && path != null) {
-      final file = File(path);
-      if (await file.exists()) {
-        await file.delete();
+    try {
+      final isRec = await _audioRecorder.isRecording();
+      String? path;
+      if (isRec) {
+        path = await _audioRecorder.stop();
       }
-      return;
-    }
-    
-    if (path != null && widget.onSendAudio != null) {
-      final file = File(path);
-      if (await file.exists()) {
-        final bytes = await file.readAsBytes();
-        widget.onSendAudio!(bytes);
-        await file.delete();
+      
+      setState(() {
+        _isRecording = false;
+        _recordingSeconds = 0;
+      });
+      
+      if (cancel && path != null) {
+        final file = File(path);
+        if (await file.exists()) {
+          await file.delete();
+        }
+        return;
       }
+      
+      if (path != null && widget.onSendAudio != null) {
+        final file = File(path);
+        if (await file.exists()) {
+          final bytes = await file.readAsBytes();
+          if (bytes.isNotEmpty) {
+            widget.onSendAudio!(bytes);
+          }
+          await file.delete();
+        }
+      }
+    } catch (e) {
+      debugPrint("Error stopping recording: $e");
+      setState(() {
+        _isRecording = false;
+        _recordingSeconds = 0;
+      });
     }
   }
 
@@ -242,43 +262,86 @@ class ChatComposerState extends State<ChatComposer> {
             padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8, top: 4),
             child: _isRecording
                 ? Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
-                        color: context.isDarkMode ? const Color(0xFF151824) : const Color(0xFFF3F5F4),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: widget.activeTheme.primaryColor, width: 1.5),
+                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                      borderRadius: BorderRadius.circular(26),
+                      border: Border.all(
+                        color: Colors.redAccent.withValues(alpha: 0.6),
+                        width: 1.2,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.redAccent.withValues(alpha: 0.2),
+                          blurRadius: 12,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
                     child: Row(
                       children: [
-                        const Icon(Icons.mic, color: Colors.redAccent, size: 24),
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                            color: Colors.redAccent,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "${_recordingSeconds ~/ 60}:${(_recordingSeconds % 60).toString().padLeft(2, '0')}",
+                          style: GoogleFonts.inter(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            "Recording... ${_recordingSeconds ~/ 60}:${(_recordingSeconds % 60).toString().padLeft(2, '0')}",
+                            "Recording audio...",
                             style: GoogleFonts.inter(
-                              color: context.textPrimary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
+                              color: context.textSecondary,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline_rounded,
+                              color: Colors.redAccent, size: 22),
+                          tooltip: 'Cancel recording',
+                          onPressed: () => _stopRecording(cancel: true),
+                        ),
+                        const SizedBox(width: 4),
                         GestureDetector(
-                          onTap: () => _stopRecording(cancel: true),
-                          child: Icon(Icons.delete_outline, color: context.textSecondary, size: 24),
-                        ),
-                        const SizedBox(width: 16),
-                          GestureDetector(
-                            onTap: () => _stopRecording(cancel: false),
-                            child: Container(
-                              width: 36, height: 36,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: widget.activeTheme.gradientColors == null ? widget.activeTheme.primaryColor : null,
-                                gradient: widget.activeTheme.gradientColors != null ? LinearGradient(colors: widget.activeTheme.gradientColors!) : null,
-                              ),
-                              child: const Icon(Icons.send_rounded, color: Colors.white, size: 16),
+                          onTap: () => _stopRecording(cancel: false),
+                          child: Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: widget.activeTheme.gradientColors == null
+                                  ? widget.activeTheme.primaryColor
+                                  : null,
+                              gradient: widget.activeTheme.gradientColors != null
+                                  ? LinearGradient(
+                                      colors: widget.activeTheme.gradientColors!)
+                                  : null,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: widget.activeTheme.primaryColor
+                                      .withValues(alpha: 0.4),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
+                            child: const Icon(Icons.send_rounded,
+                                color: Colors.white, size: 18),
                           ),
+                        ),
                       ],
                     ),
                   )
