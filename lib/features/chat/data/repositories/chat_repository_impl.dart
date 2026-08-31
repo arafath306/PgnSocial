@@ -201,6 +201,8 @@ class ChatRepositoryImpl implements IChatRepository {
         replyToText: replyToText,
         replyToSender: replyToSender,
         reactions: reactions,
+        isPinned: json['is_pinned'] as bool? ?? false,
+        pinnedAt: json['pinned_at'] as String?,
       );
     }
 
@@ -405,6 +407,16 @@ class ChatRepositoryImpl implements IChatRepository {
     if (uid.isEmpty) return Left(ServerFailure('User not authenticated'));
     try {
       await remoteDataSource.toggleReaction(messageId, uid, emoji);
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> togglePinMessage(String messageId, bool isPinned) async {
+    try {
+      await remoteDataSource.togglePinMessage(messageId, isPinned);
       return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString()));

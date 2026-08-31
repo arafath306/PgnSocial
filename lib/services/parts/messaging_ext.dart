@@ -18,6 +18,8 @@ extension MessagingExtension on DatabaseService {
         'reply_to_text': msg.replyToText,
         'reply_to_sender': msg.replyToSender,
         'reactions': msg.reactions,
+        'is_pinned': msg.isPinned,
+        'pinned_at': msg.pinnedAt,
       }).toList();
     });
   }
@@ -151,6 +153,17 @@ extension MessagingExtension on DatabaseService {
     return result.fold(
       (failure) {
         debugPrint("Toggle reaction error: ${failure.message}");
+        return false;
+      },
+      (_) => true,
+    );
+  }
+
+  Future<bool> togglePinMessage(String messageId, bool isPinned) async {
+    final result = await sl<IChatRepository>().togglePinMessage(messageId, isPinned);
+    return result.fold(
+      (failure) {
+        debugPrint("Toggle pin message error: ${failure.message}");
         return false;
       },
       (_) => true,

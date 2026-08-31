@@ -588,7 +588,28 @@ extension ChatScreenExtensions on _ChatScreenState {
                 _showFullEmojiReactionPicker(messageId, myReaction);
               },
             ),
-            Divider(height: 12, color: context.border.withValues(alpha: 0.5)),
+            // Pin / Unpin
+            ListTile(
+              leading: Icon(
+                Icons.push_pin_rounded,
+                color: (msg['is_pinned'] as bool? ?? false)
+                    ? Colors.amber
+                    : context.primaryAccent,
+              ),
+              title: Text(
+                (msg['is_pinned'] as bool? ?? false)
+                    ? 'Unpin message'
+                    : 'Pin message',
+                style: GoogleFonts.inter(color: context.textPrimary),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _togglePinMessage(
+                  messageId,
+                  !(msg['is_pinned'] as bool? ?? false),
+                );
+              },
+            ),
             // Reply
             ListTile(
               leading:
@@ -863,12 +884,32 @@ extension ChatScreenExtensions on _ChatScreenState {
     );
   }
 
-  void _toggleMessageReaction(String messageId, String emoji) {
+  Future<void> _toggleMessageReaction(String messageId, String emoji) async {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
-    dbService.toggleMessageReaction(messageId, emoji).catchError((err) {
+    try {
+      await dbService.toggleMessageReaction(messageId, emoji);
+    } catch (err) {
       debugPrint('[ChatScreen] Error toggling reaction: $err');
-      return false;
-    });
+    }
+  }
+
+  Future<void> _togglePinMessage(String messageId, bool isPinned) async {
+    final dbService = Provider.of<DatabaseService>(context, listen: false);
+    try {
+      final success = await dbService.togglePinMessage(messageId, isPinned);
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            isPinned ? 'Message pinned' : 'Message unpinned',
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
+          duration: const Duration(seconds: 2),
+          backgroundColor: context.primaryAccent,
+        ));
+      }
+    } catch (err) {
+      debugPrint('[ChatScreen] Error toggling pin message: $err');
+    }
   }
 
   void _showFullEmojiReactionPicker(String messageId, String? currentReaction) {

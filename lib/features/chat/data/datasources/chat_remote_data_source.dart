@@ -14,6 +14,7 @@ abstract class ChatRemoteDataSource {
   Future<void> editMessage(String messageId, String senderId, String receiverId, String content);
   Future<void> deleteMessage(String messageId);
   Future<void> toggleReaction(String messageId, String userId, String emoji);
+  Future<void> togglePinMessage(String messageId, bool isPinned);
   void sendTypingEvent(String currentUserId, String otherUserId, bool isTyping);
   Stream<Map<String, dynamic>> getTypingStream(String currentUserId, String otherUserId);
 }
@@ -208,6 +209,19 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
           .eq('id', messageId);
     } catch (e) {
       debugPrint('[ChatDataSource] Error toggling reaction: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> togglePinMessage(String messageId, bool isPinned) async {
+    try {
+      await supabaseClient.from('messages').update({
+        'is_pinned': isPinned,
+        'pinned_at': isPinned ? DateTime.now().toUtc().toIso8601String() : null,
+      }).eq('id', messageId);
+    } catch (e) {
+      debugPrint('[ChatDataSource] Error toggling pin message: $e');
       rethrow;
     }
   }

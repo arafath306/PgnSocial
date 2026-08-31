@@ -11,6 +11,8 @@ class MessageEntity {
   final String? replyToText;
   final String? replyToSender;
   final Map<String, String>? reactions;
+  final bool isPinned;
+  final String? pinnedAt;
 
   MessageEntity({
     required this.id,
@@ -25,6 +27,8 @@ class MessageEntity {
     this.replyToText,
     this.replyToSender,
     this.reactions,
+    this.isPinned = false,
+    this.pinnedAt,
   });
 }
 

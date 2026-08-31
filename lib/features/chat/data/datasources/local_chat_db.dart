@@ -21,12 +21,18 @@ class LocalChatDatabase {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _createDB,
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
           try {
             await db.execute('ALTER TABLE messages ADD COLUMN reactions TEXT');
+          } catch (_) {}
+        }
+        if (oldVersion < 3) {
+          try {
+            await db.execute('ALTER TABLE messages ADD COLUMN is_pinned INTEGER DEFAULT 0');
+            await db.execute('ALTER TABLE messages ADD COLUMN pinned_at TEXT');
           } catch (_) {}
         }
       },
@@ -49,7 +55,9 @@ class LocalChatDatabase {
         reply_to_text TEXT,
         reply_to_sender TEXT,
         room_id TEXT,
-        reactions TEXT
+        reactions TEXT,
+        is_pinned INTEGER DEFAULT 0,
+        pinned_at TEXT
       )
     ''');
     
@@ -84,6 +92,8 @@ class LocalChatDatabase {
         'reply_to_sender': msg.replyToSender,
         'room_id': roomId,
         'reactions': msg.reactions != null ? jsonEncode(msg.reactions) : null,
+        'is_pinned': msg.isPinned ? 1 : 0,
+        'pinned_at': msg.pinnedAt,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -112,6 +122,8 @@ class LocalChatDatabase {
           'reply_to_sender': msg.replyToSender,
           'room_id': roomId,
           'reactions': msg.reactions != null ? jsonEncode(msg.reactions) : null,
+          'is_pinned': msg.isPinned ? 1 : 0,
+          'pinned_at': msg.pinnedAt,
         },
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
@@ -154,6 +166,8 @@ class LocalChatDatabase {
         replyToText: map['reply_to_text'] as String?,
         replyToSender: map['reply_to_sender'] as String?,
         reactions: reactions,
+        isPinned: (map['is_pinned'] as int? ?? 0) == 1,
+        pinnedAt: map['pinned_at'] as String?,
       );
     }).toList();
   }

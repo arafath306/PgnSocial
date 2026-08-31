@@ -16,6 +16,7 @@ class MessageBubble extends StatefulWidget {
   final void Function(String emoji)? onToggleReaction;
   final VoidCallback? onDoubleTap;
   final String? currentUserId;
+  final bool isHighlighted;
   final double marginBottom;
 
   const MessageBubble({
@@ -28,6 +29,7 @@ class MessageBubble extends StatefulWidget {
     this.onToggleReaction,
     this.onDoubleTap,
     this.currentUserId,
+    this.isHighlighted = false,
     this.marginBottom = 10.0,
   });
 
@@ -175,10 +177,22 @@ class _MessageBubbleState extends State<MessageBubble>
               ? Colors.white54
               : (isRead ? Colors.greenAccent : Colors.white60));
 
+      final bool isPinned = msg['is_pinned'] as bool? ?? false;
+
       return Row(
         mainAxisAlignment: MainAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (isPinned) ...[
+            Icon(
+              Icons.push_pin_rounded,
+              size: 11,
+              color: overlayMode
+                  ? Colors.white.withValues(alpha: 0.9)
+                  : (isMe ? Colors.white70 : context.primaryAccent),
+            ),
+            const SizedBox(width: 3),
+          ],
           Text(timeStr, style: textStyle),
           if (isMe) ...[
             const SizedBox(width: 4),
@@ -403,7 +417,8 @@ class _MessageBubbleState extends State<MessageBubble>
                 onTap: onTap,
                 onLongPress: onTap,
                 onDoubleTap: _triggerDoubleTapHeart,
-                child: Container(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 350),
                   padding: hasMedia
                       ? EdgeInsets.zero
                       : const EdgeInsets.fromLTRB(12, 8, 8, 4),
@@ -430,15 +445,24 @@ class _MessageBubbleState extends State<MessageBubble>
                           ? const Radius.circular(0)
                           : const Radius.circular(16),
                     ),
-                    border: isMe
-                        ? null
-                        : Border.all(color: context.border, width: 0.8),
+                    border: widget.isHighlighted
+                        ? Border.all(color: context.primaryAccent, width: 2.0)
+                        : (isMe
+                            ? null
+                            : Border.all(color: context.border, width: 0.8)),
                     boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.015),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
+                      if (widget.isHighlighted)
+                        BoxShadow(
+                          color: context.primaryAccent.withValues(alpha: 0.5),
+                          blurRadius: 12,
+                          spreadRadius: 2,
+                        )
+                      else
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.015),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
                     ],
                   ),
                   child: Stack(

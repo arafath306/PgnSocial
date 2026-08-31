@@ -22,6 +22,7 @@ import 'widgets/blocked_banner.dart';
 import 'widgets/full_screen_media_viewer.dart';
 import 'widgets/messenger_profile_sheet.dart';
 import 'widgets/reaction_bar.dart';
+import 'widgets/pinned_message_banner.dart';
 import 'media_preview_screen.dart';
 import '../../widgets/theme_picker_sheet.dart';
 import '../../widgets/verification_badge.dart';
@@ -63,6 +64,8 @@ class _ChatScreenState extends State<ChatScreen> {
   int _pickerTabIndex = 0;
   String? _currentThemeId;
   String? _customWallpaperUrl;
+  String? _highlightedMessageId;
+  Timer? _highlightTimer;
 
   StreamSubscription<Map<String, dynamic>>? _typingSub;
   bool _otherIsTyping = false;
@@ -103,6 +106,24 @@ class _ChatScreenState extends State<ChatScreen> {
           });
         }
       }
+    });
+  }
+
+  void _jumpToMessage(String messageId) {
+    final reversedList = _allMessages.reversed.toList();
+    final index = reversedList.indexWhere((m) => m['id'] == messageId);
+    if (index != -1 && _scrollController.hasClients) {
+      final targetOffset = (index * 72.0).clamp(0.0, _scrollController.position.maxScrollExtent);
+      _scrollController.animateTo(
+        targetOffset,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
+      );
+    }
+    _highlightTimer?.cancel();
+    setState(() => _highlightedMessageId = messageId);
+    _highlightTimer = Timer(const Duration(milliseconds: 1800), () {
+      if (mounted) setState(() => _highlightedMessageId = null);
     });
   }
 
@@ -236,6 +257,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    _highlightTimer?.cancel();
     _scrollController.dispose();
     _statusUpdateTimer?.cancel();
     _typingSub?.cancel();
@@ -505,14 +527,31 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         child: Column(
           children: [
-          // â”€â”€ Message list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-          Expanded(
-            child: MessageList(
-              stream: _messagesStream,
-              activeTheme: activeTheme,
-              pendingMessages: _pendingMessages,
-              deletedIds: _deletedIds,
-              scrollController: _scrollController,
+            Builder(
+              builder: (context) {
+                final pinnedMessages =
+                    _allMessages.where((m) => m['is_pinned'] == true).toList();
+                if (pinnedMessages.isEmpty) return const SizedBox.shrink();
+
+                return PinnedMessageBanner(
+                  message: pinnedMessages.last,
+                  currentIndex: 1,
+                  totalPinned: pinnedMessages.length,
+                  onTap: () =>
+                      _jumpToMessage(pinnedMessages.last['id'] as String),
+                  onUnpin: () => _togglePinMessage(
+                      pinnedMessages.last['id'] as String, false),
+                );
+              },
+            ),
+            Expanded(
+              child: MessageList(
+                stream: _messagesStream,
+                activeTheme: activeTheme,
+                pendingMessages: _pendingMessages,
+                deletedIds: _deletedIds,
+                scrollController: _scrollController,
+                highlightedMessageId: _highlightedMessageId,
               onAllMessagesUpdated: (msgs) {
                 _allMessages = msgs;
                 String? newThemeId;
