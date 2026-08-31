@@ -185,22 +185,33 @@ class ChatComposerState extends State<ChatComposer> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.isDarkMode;
+
     return Container(
-      decoration: BoxDecoration(
-        color: context.cardBg,
-        border: Border(top: BorderSide(color: context.border, width: 0.8)),
-      ),
+      color: Colors.transparent,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Reply bar
+          // Reply bar (Floating pill)
           if (widget.replyingToMessage != null)
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: context.isDarkMode
-                  ? Colors.black26
-                  : Colors.grey[100],
+              margin: const EdgeInsets.fromLTRB(10, 0, 10, 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: context.border.withValues(alpha: isDark ? 0.3 : 0.6),
+                  width: 0.8,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
               width: double.infinity,
               child: Row(
                 children: [
@@ -277,11 +288,21 @@ class ChatComposerState extends State<ChatComposer> {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: context.isDarkMode
-                          ? const Color(0xFF151824)
-                          : const Color(0xFFF3F5F4),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: context.border, width: 0.8),
+                      color: isDark
+                          ? const Color(0xFF1E293B)
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(26),
+                      border: Border.all(
+                        color: context.border.withValues(alpha: isDark ? 0.3 : 0.6),
+                        width: 0.8,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.08),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
@@ -363,32 +384,40 @@ class ChatComposerState extends State<ChatComposer> {
                 ),
                 const SizedBox(width: 8),
                 
-                                // Mic / Send Button
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 2),
-                    width: 44, height: 44,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: widget.activeTheme.gradientColors == null ? widget.activeTheme.primaryColor : null,
-                      gradient: widget.activeTheme.gradientColors != null ? LinearGradient(colors: widget.activeTheme.gradientColors!) : null,
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        _hasText ? Icons.send_rounded : Icons.mic_rounded,
-                        color: Colors.white,
-                        size: 20,
+                // Mic / Send Button
+                Container(
+                  margin: const EdgeInsets.only(bottom: 2),
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: widget.activeTheme.gradientColors == null ? widget.activeTheme.primaryColor : null,
+                    gradient: widget.activeTheme.gradientColors != null ? LinearGradient(colors: widget.activeTheme.gradientColors!) : null,
+                    boxShadow: [
+                      BoxShadow(
+                        color: (widget.activeTheme.primaryColor).withValues(alpha: 0.35),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
                       ),
-                      onPressed: () {
-                        if (_hasText) {
-                          _send();
-                        } else {
-                          _startRecording();
-                        }
-                      },
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
+                    ],
                   ),
+                  child: IconButton(
+                    icon: Icon(
+                      _hasText ? Icons.send_rounded : Icons.mic_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      if (_hasText) {
+                        _send();
+                      } else {
+                        _startRecording();
+                      }
+                    },
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                ),
               ],
             ),
           ),
