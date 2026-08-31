@@ -434,24 +434,27 @@ class _MessageBubbleState extends State<MessageBubble>
           start = index + query.length;
         }
 
-        textChild = Text.rich(TextSpan(children: spans));
+        textChild = Text.rich(
+          TextSpan(children: spans),
+          textAlign: TextAlign.left,
+        );
       } else {
-        textChild = Text(bodyText, style: baseStyle);
+        textChild = Text(
+          bodyText,
+          style: baseStyle,
+          textAlign: TextAlign.left,
+        );
       }
 
       return Padding(
         padding: hasMedia
             ? const EdgeInsets.fromLTRB(10, 6, 8, 4)
-            : const EdgeInsets.only(right: 4, bottom: 2),
+            : EdgeInsets.zero,
         child: Column(
-          crossAxisAlignment:
-              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: textChild,
-            ),
+            textChild,
             const SizedBox(height: 2),
             buildTimeRow(overlayMode: false),
           ],
@@ -505,7 +508,7 @@ class _MessageBubbleState extends State<MessageBubble>
                   duration: const Duration(milliseconds: 350),
                   padding: hasMedia
                       ? EdgeInsets.zero
-                      : const EdgeInsets.fromLTRB(12, 8, 8, 4),
+                      : const EdgeInsets.fromLTRB(12, 8, 10, 5),
                   decoration: BoxDecoration(
                     color: isMe
                         ? (activeTheme.gradientColors == null
