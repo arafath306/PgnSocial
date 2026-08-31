@@ -872,15 +872,6 @@ extension ChatScreenExtensions on _ChatScreenState {
   }
 
   void _showFullEmojiReactionPicker(String messageId, String? currentReaction) {
-    const allEmojis = [
-      '❤️', '🔥', '👍', '👎', '😂', '🤣', '😍', '🥰',
-      '😘', '🥺', '😢', '😭', '😮', '😱', '🤯', '🥳',
-      '😎', '👏', '🙏', '🙌', '💯', '✨', '🎉', '💖',
-      '💔', '🤝', '💪', '🤔', '😴', '🙄', '🤫', '🫡',
-      '🤩', '😜', '😇', '💩', '💀', '👀', '⚡', '🌟',
-      '💫', '🎈', '🎁', '🏆', '🥇', '🌸', '☕', '🚀',
-    ];
-
     showModalBottomSheet(
       context: context,
       backgroundColor: context.cardBg,
@@ -890,68 +881,49 @@ extension ChatScreenExtensions on _ChatScreenState {
       isScrollControlled: true,
       builder: (ctx) {
         return SafeArea(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.45,
-            ),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.48,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
                   width: 36,
                   height: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
+                  margin: const EdgeInsets.only(top: 10, bottom: 8),
                   decoration: BoxDecoration(
                     color: context.border,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                Text(
-                  'React with Emoji',
-                  style: GoogleFonts.inter(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: context.textPrimary,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'React with any Emoji',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: context.textPrimary,
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.close_rounded,
+                            size: 20, color: context.textSecondary),
+                        onPressed: () => Navigator.pop(ctx),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 12),
+                const Divider(height: 1),
                 Expanded(
-                  child: GridView.builder(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 6,
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                    ),
-                    itemCount: allEmojis.length,
-                    itemBuilder: (context, index) {
-                      final emoji = allEmojis[index];
-                      final isSelected = currentReaction == emoji;
-                      return InkWell(
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          _toggleMessageReaction(messageId, emoji);
-                        },
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isSelected
-                                ? context.primaryAccent.withValues(alpha: 0.2)
-                                : Colors.transparent,
-                            border: isSelected
-                                ? Border.all(
-                                    color: context.primaryAccent, width: 1.5)
-                                : null,
-                          ),
-                          child: Text(
-                            emoji,
-                            style: const TextStyle(fontSize: 24),
-                          ),
-                        ),
-                      );
+                  child: AppEmojiPicker(
+                    onEmojiSelected: (emoji) {
+                      Navigator.pop(ctx);
+                      _toggleMessageReaction(messageId, emoji);
                     },
                   ),
                 ),

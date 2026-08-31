@@ -15,6 +15,7 @@ import '../../utils/app_theme.dart';
 import '../../utils/chat_themes.dart';
 import '../../utils/media_saver_utility.dart';
 
+import '../../widgets/shared/app_emoji_picker.dart';
 import 'widgets/message_list.dart';
 import 'widgets/chat_composer.dart';
 import 'widgets/blocked_banner.dart';
