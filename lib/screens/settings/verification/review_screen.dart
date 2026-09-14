@@ -11,6 +11,7 @@ import '../../../models/verification_plan_pricing.dart';
 import '../../../utils/app_theme.dart';
 import '../../../widgets/verification/pigeon_primary_button.dart';
 import '../../../widgets/verification/step_progress_bar.dart';
+import '../../../widgets/verification/badge_app_bar_title.dart';
 import 'payment_screen.dart';
 
 class ReviewScreen extends StatefulWidget {
@@ -39,16 +40,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.textPrimary, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          request.isBusiness
-              ? "Apply for Gold Badge 👑"
-              : (request.isGovernment ? "Apply for Gray Badge 🏛️" : "Apply for Blue Badge 🔵"),
-          style: GoogleFonts.inter(
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-            color: context.textPrimary,
-            letterSpacing: -0.3,
-          ),
+        title: BadgeAppBarTitle(
+          isBusiness: request.isBusiness,
+          isGovernment: request.isGovernment,
         ),
         centerTitle: true,
       ),

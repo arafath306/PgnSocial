@@ -8,6 +8,7 @@ import '../../../services/database_service.dart';
 import '../../../state/verification_controller.dart';
 import '../../../models/verification_plan_pricing.dart';
 import '../../../utils/app_theme.dart';
+import '../../../widgets/verification/badge_app_bar_title.dart';
 import '../../../widgets/verification/pigeon_primary_button.dart';
 import '../../../widgets/verification/pigeon_text_field.dart';
 import '../../../widgets/verification/step_progress_bar.dart';
@@ -130,16 +131,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          req.isBusiness
-              ? "Apply for Gold Badge 👑"
-              : (req.isGovernment ? "Apply for Gray Badge 🏛️" : "Apply for Blue Badge 🔵"),
-          style: GoogleFonts.inter(
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-            color: context.textPrimary,
-            letterSpacing: -0.3,
-          ),
+        title: BadgeAppBarTitle(
+          isBusiness: req.isBusiness,
+          isGovernment: req.isGovernment,
         ),
         centerTitle: true,
       ),

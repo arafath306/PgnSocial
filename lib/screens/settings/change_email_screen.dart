@@ -45,7 +45,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
         setState(() {
           _isLoading = false;
           _isSuccess = true;
-          _statusMessage = "A confirmation link has been sent to $newEmail. Please click the link in your email to complete the change.";
+          _statusMessage = "A confirmation link has been sent to $newEmail. Please click the link to confirm.";
         });
       }
     } catch (e) {
@@ -63,8 +63,8 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
     final bgColor = context.scaffoldBg;
-    final cardBg = isDark ? Colors.white.withAlpha(8) : Colors.black.withAlpha(5);
-    final cardBorder = isDark ? Colors.white.withAlpha(12) : Colors.black.withAlpha(10);
+    final cardBg = context.cardBg;
+    final border = context.border;
     final textPrimary = context.textPrimary;
     final textSecondary = context.textSecondary;
 
@@ -73,8 +73,9 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
       appBar: AppBar(
         backgroundColor: bgColor,
         elevation: 0,
+        surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: textPrimary),
+          icon: Icon(Icons.arrow_back, color: textPrimary, size: 22),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -82,8 +83,12 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
           style: GoogleFonts.inter(
             fontWeight: FontWeight.bold,
             color: textPrimary,
-            fontSize: 17,
+            fontSize: 18,
           ),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(color: border, height: 1.0),
         ),
       ),
       body: SingleChildScrollView(
@@ -91,55 +96,103 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                "Update your email address",
-                style: GoogleFonts.inter(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: textPrimary,
+              const SizedBox(height: 16),
+              // Header Icon
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE0E7FF),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isDark ? Colors.black : const Color(0xFFC7D2FE)).withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Enter your new email address below. A confirmation link will be sent to confirm this update.",
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: textSecondary,
-                  height: 1.4,
+                child: Icon(
+                  Icons.mark_email_read_rounded,
+                  size: 40,
+                  color: context.primaryAccent,
                 ),
               ),
               const SizedBox(height: 24),
+              Text(
+                "Update your email address",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: textPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                "Enter your new email address below. We'll send a confirmation link to verify the change.",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: textSecondary,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 32),
               
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: cardBg,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: cardBorder, width: 1),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      'New Email Address',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
-                      style: GoogleFonts.inter(color: textPrimary),
+                      style: GoogleFonts.inter(fontSize: 15, color: textPrimary),
                       decoration: InputDecoration(
-                        labelText: 'New Email Address',
-                        labelStyle: GoogleFonts.inter(color: textSecondary),
-                        hintText: 'enter new email',
-                        hintStyle: GoogleFonts.inter(color: textSecondary.withAlpha(100)),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF3F4F6),
+                        hintText: 'e.g., alex@example.com',
+                        hintStyle: GoogleFonts.inter(color: textSecondary.withValues(alpha: 0.5)),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: cardBorder),
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFF0085FF)),
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: context.primaryAccent, width: 2),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: Colors.redAccent, width: 2),
                         ),
                       ),
                       validator: (value) {
@@ -152,40 +205,68 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
                     
                     if (_statusMessage != null) ...[
-                      Text(
-                        _statusMessage!,
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: _isSuccess ? const Color(0xFF05D782) : Colors.red[400],
-                          height: 1.4,
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: _isSuccess 
+                              ? (isDark ? const Color(0xFF0C2517) : const Color(0xFFE6F4EA))
+                              : (isDark ? const Color(0xFF3F161A) : const Color(0xFFFCE8E6)),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _isSuccess ? const Color(0xFF0F9D58).withValues(alpha: 0.3) : Colors.redAccent.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _isSuccess ? Icons.check_circle_rounded : Icons.error_rounded,
+                              color: _isSuccess ? const Color(0xFF0F9D58) : Colors.redAccent,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _statusMessage!,
+                                style: GoogleFonts.inter(
+                                  fontSize: 13.5,
+                                  color: _isSuccess 
+                                      ? (isDark ? const Color(0xFF26B069) : const Color(0xFF0F9D58))
+                                      : Colors.redAccent,
+                                  height: 1.4,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 24),
                     ],
 
                     SizedBox(
                       width: double.infinity,
-                      height: 50,
+                      height: 52,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _updateEmail,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0085FF),
+                          backgroundColor: context.primaryAccent,
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor: const Color(0xFF0085FF).withAlpha(100),
+                          disabledBackgroundColor: context.primaryAccent.withValues(alpha: 0.5),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                           elevation: 0,
+                          shadowColor: context.primaryAccent.withValues(alpha: 0.3),
                         ),
                         child: _isLoading
                             ? const SizedBox(
-                                width: 20,
-                                height: 20,
+                                width: 24,
+                                height: 24,
                                 child: CircularProgressIndicator(
-                                  strokeWidth: 2,
+                                  strokeWidth: 2.5,
                                   color: Colors.white,
                                 ),
                               )
@@ -193,7 +274,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
                                 "Send Confirmation",
                                 style: GoogleFonts.inter(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                                  fontSize: 15,
                                 ),
                               ),
                       ),

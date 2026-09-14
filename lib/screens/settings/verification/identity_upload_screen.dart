@@ -10,6 +10,7 @@ import '../../../widgets/verification/id_upload_card.dart';
 import '../../../widgets/verification/pigeon_primary_button.dart';
 import '../../../widgets/verification/pigeon_text_field.dart';
 import '../../../widgets/verification/step_progress_bar.dart';
+import '../../../widgets/verification/badge_app_bar_title.dart';
 import 'face_verification_screen.dart';
 
 enum IdentityDocType {
@@ -131,12 +132,8 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isSelected ? context.primaryAccent.withValues(alpha: 0.08) : context.cardBg,
+                          color: isSelected ? context.primaryAccent.withValues(alpha: 0.08) : Colors.transparent,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSelected ? context.primaryAccent : context.border,
-                            width: isSelected ? 2 : 1,
-                          ),
                         ),
                         child: Row(
                           children: [
@@ -188,14 +185,14 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
                                 child: const Icon(Icons.check, size: 16, color: Colors.white),
                               )
                             else
-                              Container(
-                                width: 24,
-                                height: 24,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: context.border, width: 2),
+                                Container(
+                                  width: 24,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: context.border, width: 1.5),
+                                  ),
                                 ),
-                              ),
                           ],
                         ),
                       ),
@@ -405,14 +402,7 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.textPrimary, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          "Apply for Blue Badge 🔵",
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: context.textPrimary,
-          ),
-        ),
+        title: const BadgeAppBarTitle(),
         centerTitle: true,
       ),
       body: SafeArea(

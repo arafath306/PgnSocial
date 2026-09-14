@@ -47,31 +47,40 @@ Widget _buildSmallPlayButton(BuildContext context, MusicTrack track, String post
         final isPlaying = isCurrent && controller.isPlaying;
 
         return Positioned(
-          right: 8,
-          bottom: 8,
+          right: 12,
+          bottom: 12,
           child: GestureDetector(
             onTap: () {
               HapticFeedback.lightImpact();
               controller.play(track.trackId, track.previewUrl);
             },
-            child: ClipOval(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                child: Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.18),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.45),
-                      width: 1.0,
-                    ),
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black.withValues(alpha: 0.4),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
-                  child: Icon(
-                    isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    color: Colors.white,
-                    size: 20,
+                ],
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  width: 1.0,
+                ),
+              ),
+              child: ClipOval(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Center(
+                    child: Icon(
+                      isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                 ),
               ),

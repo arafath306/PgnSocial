@@ -177,9 +177,21 @@ class AuthService with ChangeNotifier {
 
   Future<sb.AuthMFAEnrollResponse?> enrollMfa() async {
     try {
-      final response = await _supabaseClient.auth.mfa.enroll(factorType: sb.FactorType.totp);
+      // First, unenroll any existing unverified factors to prevent conflicts
+      final factors = await _supabaseClient.auth.mfa.listFactors();
+      final unverifiedFactors = factors.all.where((f) => f.status == sb.FactorStatus.unverified);
+      for (final f in unverifiedFactors) {
+        await _supabaseClient.auth.mfa.unenroll(f.id);
+      }
+
+      final response = await _supabaseClient.auth.mfa.enroll(
+        factorType: sb.FactorType.totp,
+        friendlyName: 'Dak Authenticator',
+      );
       return response;
     } catch (e) {
+      _errorMessage = e is sb.AuthException ? e.message : e.toString().replaceAll(RegExp(r'\[.*?\]'), '').trim();
+      notifyListeners();
       debugPrint('Error enrolling MFA: $e');
       return null;
     }

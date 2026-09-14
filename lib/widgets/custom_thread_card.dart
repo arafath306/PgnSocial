@@ -272,6 +272,8 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
           child: RepaintBoundary(
             child: InkWell(
             hoverColor: Colors.transparent,
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
             onTap: () {
               final targetPost = (post.isRepost && (post.quoteText == null || post.quoteText!.isEmpty)) 
                   ? post.repostedPost! 

@@ -23,6 +23,13 @@ class ThreadActions extends StatelessWidget {
     required this.onShare,
   });
 
+  String _formatCount(int count) {
+    if (count < 1000) return count.toString();
+    if (count < 1000000) return '${(count / 1000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')}K';
+    if (count < 1000000000) return '${(count / 1000000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')}M';
+    return '${(count / 1000000000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')}B';
+  }
+
   Widget _buildActionItem({
     required BuildContext context,
     required IconData icon,
@@ -44,7 +51,7 @@ class ThreadActions extends StatelessWidget {
           if (count > 0) ...[
             const SizedBox(width: 2),
             Text(
-              '$count',
+              _formatCount(count),
               style: GoogleFonts.inter(fontSize: 13, color: context.textPrimary.withValues(alpha: 0.75)),
             ),
           ]
@@ -95,34 +102,48 @@ class ThreadActions extends StatelessWidget {
         ),
         _buildActionItem(
           context: context,
-          icon: isSaved ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark,
-          color: isSaved ? const Color(0xFF1E824C) : context.textPrimary,
-          isActive: isSaved,
-          count: targetPost.savesCount,
-          onTap: () {
-            dbService.toggleSaveThread(targetPost.id);
-            ScaffoldMessenger.of(context).clearSnackBars();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  isSaved ? "Removed from bookmarks" : "Post saved to bookmarks",
-                  style: GoogleFonts.inter(),
-                ),
-                duration: const Duration(seconds: 2),
-                backgroundColor: isSaved ? Colors.grey[700] : const Color(0xFF1E824C),
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            );
-          },
-        ),
-        _buildActionItem(
-          context: context,
-          icon: CupertinoIcons.arrowshape_turn_up_right,
+          icon: CupertinoIcons.chart_bar_alt_fill,
           color: context.textPrimary,
           isActive: false,
-          count: targetPost.sharesCount,
-          onTap: onShare,
+          count: targetPost.viewsCount,
+          onTap: () {}, // Views don't have an action on tap for now
+        ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildActionItem(
+              context: context,
+              icon: isSaved ? CupertinoIcons.bookmark_fill : CupertinoIcons.bookmark,
+              color: isSaved ? const Color(0xFF1E824C) : context.textPrimary,
+              isActive: isSaved,
+              count: targetPost.savesCount,
+              onTap: () {
+                dbService.toggleSaveThread(targetPost.id);
+                ScaffoldMessenger.of(context).clearSnackBars();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      isSaved ? "Removed from bookmarks" : "Post saved to bookmarks",
+                      style: GoogleFonts.inter(),
+                    ),
+                    duration: const Duration(seconds: 2),
+                    backgroundColor: isSaved ? Colors.grey[700] : const Color(0xFF1E824C),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 8),
+            _buildActionItem(
+              context: context,
+              icon: CupertinoIcons.arrowshape_turn_up_right,
+              color: context.textPrimary,
+              isActive: false,
+              count: targetPost.sharesCount,
+              onTap: onShare,
+            ),
+          ],
         ),
       ],
     );

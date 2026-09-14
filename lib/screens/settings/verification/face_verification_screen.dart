@@ -1,16 +1,19 @@
 import 'dart:async';
-import 'dart:typed_data';
+import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:dak/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
 import '../../../state/verification_controller.dart';
 import '../../../utils/app_theme.dart';
 import '../../../widgets/verification/pigeon_primary_button.dart';
 import '../../../widgets/verification/step_progress_bar.dart';
+import '../../../widgets/verification/badge_app_bar_title.dart';
 import 'review_screen.dart';
 
 class FaceVerificationScreen extends StatefulWidget {
@@ -34,37 +37,27 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnim;
 
-  int _currentStep = 0;
-  bool _isScanning = false;
-  double _scanProgress = 0.0;
-  Timer? _scanTimer;
-
-  List<_AiStep> get _aiSteps => [
-    _AiStep(
-      icon: Icons.face_retouching_natural_rounded,
-      label: 'Look Straight',
-      subLabel: 'Position your face inside the oval frame.',
-      color: const Color(0xFF6366F1),
-    ),
-    _AiStep(
-      icon: Icons.center_focus_strong_rounded,
-      label: 'Hold Still',
-      subLabel: 'Keep steady while live biometric scan completes.',
-      color: const Color(0xFF06B6D4),
-    ),
-    _AiStep(
-      icon: Icons.remove_red_eye_outlined,
-      label: 'Blink & Capture',
-      subLabel: 'Blink naturally for auto-capture.',
-      color: const Color(0xFF10B981),
-    ),
-  ];
+  // ML Kit Face Detection
+  late final FaceDetector _faceDetector;
+  bool _isProcessingImage = false;
+  int _alignedFramesCount = 0;
+  String _guidanceText = "Initializing camera...";
+  bool _isScanning = true;
+  Color _statusColor = const Color(0xFF06B6D4);
 
   @override
   void initState() {
     super.initState();
     final controller = Provider.of<VerificationController>(context, listen: false);
     _faceImage = controller.request.faceImage;
+
+    _faceDetector = FaceDetector(
+      options: FaceDetectorOptions(
+        enableContours: false,
+        enableLandmarks: false,
+        enableTracking: true,
+      ),
+    );
 
     _scannerController = AnimationController(
       vsync: this,
@@ -80,7 +73,11 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    _initLiveCamera();
+    if (_faceImage == null) {
+      _initLiveCamera();
+    } else {
+      _isScanning = false;
+    }
   }
 
   Future<void> _initLiveCamera() async {
@@ -96,6 +93,9 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
           frontCamera,
           ResolutionPreset.medium,
           enableAudio: false,
+          imageFormatGroup: Platform.isAndroid 
+              ? ImageFormatGroup.nv21 
+              : ImageFormatGroup.bgra8888,
         );
 
         _cameraController = controller;
@@ -105,12 +105,16 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
         setState(() {
           _isCameraInitialized = true;
           _isCameraError = false;
+          _guidanceText = "Align your face inside the frame";
+          _statusColor = const Color(0xFF6366F1);
         });
+        
+        _cameraController?.startImageStream(_processCameraImage);
       } else {
         if (mounted) setState(() => _isCameraError = true);
       }
     } catch (e) {
-      debugPrint("Live camera initialization error: $e");
+      debugPrint("Live camera initialization error: \$e");
       if (mounted) {
         setState(() {
           _isCameraInitialized = false;
@@ -120,77 +124,108 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
     }
   }
 
-  @override
-  void dispose() {
-    _scanTimer?.cancel();
-    _cameraController?.dispose();
-    _scannerController.dispose();
-    _pulseController.dispose();
-    super.dispose();
-  }
+  void _processCameraImage(CameraImage image) async {
+    if (_isProcessingImage || _faceImage != null || !mounted) return;
+    _isProcessingImage = true;
 
-  Future<void> _retryCameraOrPick() async {
-    setState(() {
-      _isCameraError = false;
-      _isCameraInitialized = false;
-    });
-    await _initLiveCamera();
-    if (!_isCameraInitialized && mounted) {
-      // If camera plugin fails or lacks permission, use ImagePicker which triggers OS permission dialog
-      await _fallbackManualCamera();
-    }
-  }
-
-  void _startLiveScan() async {
-    if (_isScanning) return;
-
-    if (!_isCameraInitialized) {
-      await _retryCameraOrPick();
-      if (!_isCameraInitialized && _faceImage == null) return;
-    }
-
-    if (_faceImage != null) return;
-
-    setState(() {
-      _isScanning = true;
-      _scanProgress = 0.0;
-      _currentStep = 0;
-    });
-
-    _scanTimer?.cancel();
-    _scanTimer = Timer.periodic(const Duration(milliseconds: 60), (timer) {
-      if (!mounted) {
-        timer.cancel();
+    try {
+      final inputImage = _inputImageFromCameraImage(image);
+      if (inputImage == null) {
+        _isProcessingImage = false;
         return;
       }
-      setState(() {
-        _scanProgress += 0.02;
-        if (_scanProgress >= 0.35 && _currentStep == 0) {
-          _currentStep = 1;
-        } else if (_scanProgress >= 0.70 && _currentStep == 1) {
-          _currentStep = 2;
+
+      final faces = await _faceDetector.processImage(inputImage);
+      
+      if (!mounted || _faceImage != null) return;
+
+      if (faces.isEmpty) {
+        _setGuidance("No face detected", Icons.face, const Color(0xFFEF4444));
+        _alignedFramesCount = 0;
+      } else if (faces.length > 1) {
+        _setGuidance("Multiple faces detected", Icons.group_off, const Color(0xFFEF4444));
+        _alignedFramesCount = 0;
+      } else {
+        final face = faces.first;
+        final double? rotY = face.headEulerAngleY; // Yaw
+        final double? rotX = face.headEulerAngleX; // Pitch
+
+        bool isLookingStraight = false;
+        if (rotY != null && rotX != null) {
+          if (rotY.abs() < 12 && rotX.abs() < 12) {
+            isLookingStraight = true;
+          }
         }
 
-        if (_scanProgress >= 1.0) {
-          _scanProgress = 1.0;
-          timer.cancel();
-          _autoCaptureFace();
+        if (isLookingStraight) {
+          _alignedFramesCount++;
+          if (_alignedFramesCount > 10) { 
+            _setGuidance("Capturing...", Icons.camera, const Color(0xFF10B981));
+            await _autoCaptureFace();
+          } else {
+            _setGuidance("Hold Still", Icons.center_focus_strong, const Color(0xFF10B981));
+          }
+        } else {
+          _setGuidance("Look Straight", Icons.straight, const Color(0xFFF59E0B));
+          _alignedFramesCount = 0;
         }
+      }
+    } catch (e) {
+      debugPrint("ML Kit error: \$e");
+    } finally {
+      if (mounted) {
+        _isProcessingImage = false;
+      }
+    }
+  }
+
+  void _setGuidance(String text, IconData icon, Color color) {
+    if (_guidanceText != text) {
+      setState(() {
+        _guidanceText = text;
+        _statusColor = color;
       });
-    });
+    }
+  }
+
+  InputImage? _inputImageFromCameraImage(CameraImage image) {
+    if (_cameraController == null) return null;
+    final camera = _cameraController!.description;
+    final sensorOrientation = camera.sensorOrientation;
+    final InputImageRotation? rotation = InputImageRotationValue.fromRawValue(sensorOrientation);
+    if (rotation == null) return null;
+
+    final InputImageFormat format = InputImageFormatValue.fromRawValue(image.format.raw) ??
+        (Platform.isAndroid ? InputImageFormat.nv21 : InputImageFormat.bgra8888);
+
+    if (image.planes.isEmpty) return null;
+
+    final WriteBuffer allBytes = WriteBuffer();
+    for (final Plane plane in image.planes) {
+      allBytes.putUint8List(plane.bytes);
+    }
+    final bytes = allBytes.done().buffer.asUint8List();
+
+    return InputImage.fromBytes(
+      bytes: bytes,
+      metadata: InputImageMetadata(
+        size: Size(image.width.toDouble(), image.height.toDouble()),
+        rotation: rotation,
+        format: format,
+        bytesPerRow: image.planes.first.bytesPerRow,
+      ),
+    );
   }
 
   Future<void> _autoCaptureFace() async {
     try {
+      if (_cameraController != null && _cameraController!.value.isStreamingImages) {
+        await _cameraController!.stopImageStream();
+      }
+      
       XFile? capturedFile;
       if (_isCameraInitialized && _cameraController != null && _cameraController!.value.isInitialized) {
         capturedFile = await _cameraController!.takePicture();
-      } else {
-        capturedFile = await _picker.pickImage(
-          source: ImageSource.camera,
-          imageQuality: 90,
-          preferredCameraDevice: CameraDevice.front,
-        );
       }
 
       if (capturedFile != null && mounted) {
@@ -198,17 +233,23 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
           _faceImage = capturedFile;
           _isScanning = false;
         });
-      } else if (mounted) {
-        setState(() => _isScanning = false);
       }
     } catch (e) {
-      debugPrint("Auto capture error: $e");
-      if (mounted) setState(() => _isScanning = false);
+      debugPrint("Auto capture error: \$e");
+      if (mounted) {
+        setState(() {
+          _isScanning = false;
+          _isCameraError = true;
+        });
+      }
     }
   }
 
   Future<void> _fallbackManualCamera() async {
     try {
+      if (_cameraController != null && _cameraController!.value.isStreamingImages) {
+        await _cameraController!.stopImageStream();
+      }
       final picked = await _picker.pickImage(
         source: ImageSource.camera,
         imageQuality: 90,
@@ -221,19 +262,21 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
         });
       }
     } catch (e) {
-      debugPrint("Manual camera picker error: $e");
+      debugPrint("Manual camera picker error: \$e");
     }
   }
 
   void _retakeScan() {
     setState(() {
       _faceImage = null;
-      _isScanning = false;
-      _scanProgress = 0.0;
-      _currentStep = 0;
+      _isScanning = true;
+      _alignedFramesCount = 0;
+      _guidanceText = "Initializing camera...";
     });
     if (!_isCameraInitialized && !_isCameraError) {
       _initLiveCamera();
+    } else if (_isCameraInitialized && _cameraController != null) {
+      _cameraController!.startImageStream(_processCameraImage);
     }
   }
 
@@ -257,9 +300,20 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
   }
 
   @override
+  void dispose() {
+    if (_cameraController != null && _cameraController!.value.isStreamingImages) {
+      _cameraController!.stopImageStream();
+    }
+    _cameraController?.dispose();
+    _faceDetector.close();
+    _scannerController.dispose();
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
-    final step = _aiSteps[_currentStep];
     final bool captured = _faceImage != null;
     final req = context.watch<VerificationController>().request;
     final steps = VerificationController.getSteps(req.category);
@@ -274,16 +328,9 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.textPrimary, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          req.isBusiness
-              ? "Apply for Gold Badge 👑"
-              : (req.isGovernment ? "Apply for Gray Badge 🏛️" : "Apply for Blue Badge 🔵"),
-          style: GoogleFonts.inter(
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-            color: context.textPrimary,
-            letterSpacing: -0.3,
-          ),
+        title: BadgeAppBarTitle(
+          isBusiness: req.isBusiness,
+          isGovernment: req.isGovernment,
         ),
         centerTitle: true,
       ),
@@ -298,7 +345,6 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Header Title
                     Text(
                       AppLocalizations.of(context)!.faceVerification,
                       style: GoogleFonts.inter(
@@ -322,19 +368,18 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
                     ),
                     const SizedBox(height: 24),
 
-                    // AI STATUS CHIP
                     AnimatedContainer(
-                      duration: const Duration(milliseconds: 400),
+                      duration: const Duration(milliseconds: 300),
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                       decoration: BoxDecoration(
                         color: captured
                             ? const Color(0xFF10B981).withValues(alpha: 0.12)
-                            : (_isScanning ? step.color.withValues(alpha: 0.15) : context.primaryAccent.withValues(alpha: 0.1)),
+                            : _statusColor.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(50),
                         border: Border.all(
                           color: captured
                               ? const Color(0xFF10B981).withValues(alpha: 0.4)
-                              : (_isScanning ? step.color.withValues(alpha: 0.4) : context.primaryAccent.withValues(alpha: 0.3)),
+                              : _statusColor.withValues(alpha: 0.4),
                         ),
                       ),
                       child: Row(
@@ -344,25 +389,17 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
                             width: 8,
                             height: 8,
                             decoration: BoxDecoration(
-                              color: captured
-                                  ? const Color(0xFF10B981)
-                                  : (_isScanning ? step.color : context.primaryAccent),
+                              color: captured ? const Color(0xFF10B981) : _statusColor,
                               shape: BoxShape.circle,
                             ),
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            captured
-                                ? '✓  Face Verified & Captured'
-                                : (_isScanning
-                                    ? 'Scanning (${(_scanProgress * 100).toInt()}%)'
-                                    : 'Live Camera Ready'),
+                            captured ? '✓ Face Captured' : _guidanceText,
                             style: GoogleFonts.inter(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
-                              color: captured
-                                  ? const Color(0xFF10B981)
-                                  : (_isScanning ? step.color : context.primaryAccent),
+                              color: captured ? const Color(0xFF10B981) : _statusColor,
                             ),
                           ),
                         ],
@@ -370,100 +407,81 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
                     ),
                     const SizedBox(height: 28),
 
-                    // LIVE BIOMETRIC CAMERA OVAL FRAME
                     ScaleTransition(
                       scale: _pulseAnim,
-                      child: GestureDetector(
-                        onTap: captured ? null : _retryCameraOrPick,
-                        child: SizedBox(
-                          width: 250,
-                          height: 250,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Animated Biometric Scanner Ring Brackets
-                              AnimatedBuilder(
-                                animation: _scannerController,
-                                builder: (ctx, _) => CustomPaint(
-                                  size: const Size(250, 250),
-                                  painter: BiometricScannerPainter(
-                                    color: captured
-                                        ? const Color(0xFF10B981)
-                                        : (_isScanning ? step.color : context.primaryAccent),
-                                    animationValue: _scannerController.value,
-                                  ),
+                      child: SizedBox(
+                        width: 250,
+                        height: 250,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            AnimatedBuilder(
+                              animation: _scannerController,
+                              builder: (ctx, _) => CustomPaint(
+                                size: const Size(250, 250),
+                                painter: BiometricScannerPainter(
+                                  color: captured ? const Color(0xFF10B981) : _statusColor,
+                                  animationValue: _scannerController.value,
                                 ),
                               ),
-
-                              // Oval Clip Frame for Live Camera Preview or Captured Image
-                              ClipOval(
-                                child: SizedBox(
-                                  width: 204,
-                                  height: 204,
-                                  child: captured
-                                      ? FutureBuilder<Uint8List>(
-                                          future: _faceImage!.readAsBytes(),
-                                          builder: (ctx, snap) {
-                                            if (!snap.hasData) {
-                                              return const Center(
-                                                child: CircularProgressIndicator(strokeWidth: 2.5),
-                                              );
-                                            }
-                                            return Image.memory(snap.data!, fit: BoxFit.cover);
-                                          },
+                            ),
+                            
+                            // Rigid 204x204 container for the camera to prevent bouncing
+                            Container(
+                              width: 204,
+                              height: 204,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: captured
+                                  ? FutureBuilder<Uint8List>(
+                                      future: _faceImage!.readAsBytes(),
+                                      builder: (ctx, snap) {
+                                        if (!snap.hasData) {
+                                          return const Center(child: CircularProgressIndicator(strokeWidth: 2.5));
+                                        }
+                                        return Image.memory(snap.data!, fit: BoxFit.cover);
+                                      },
+                                    )
+                                  : (_isCameraInitialized && _cameraController != null && _cameraController!.value.isInitialized)
+                                      ? FittedBox(
+                                          fit: BoxFit.cover,
+                                          alignment: Alignment.center,
+                                          child: SizedBox(
+                                            width: _cameraController!.value.previewSize?.height ?? 204,
+                                            height: _cameraController!.value.previewSize?.width ?? 204,
+                                            child: CameraPreview(_cameraController!),
+                                          ),
                                         )
-                                       : (_isCameraInitialized && _cameraController != null && _cameraController!.value.isInitialized)
-                                           ? OverflowBox(
-                                               alignment: Alignment.center,
-                                               child: FittedBox(
-                                                 fit: BoxFit.cover,
-                                                 child: SizedBox(
-                                                   width: 204,
-                                                   height: 204 / (_cameraController!.value.aspectRatio == 0 ? 1 : _cameraController!.value.aspectRatio),
-                                                   child: CameraPreview(_cameraController!),
-                                                 ),
-                                               ),
-                                             )
-                                          : Container(
-                                              color: isDark ? const Color(0xFF0F1123) : const Color(0xFFF1F5FF),
-                                              padding: const EdgeInsets.all(16),
-                                              child: Center(
-                                                child: Column(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    Icon(
-                                                      _isCameraError ? Icons.camera_enhance_rounded : Icons.videocam_rounded,
-                                                      size: 42,
-                                                      color: context.primaryAccent,
-                                                    ),
-                                                    const SizedBox(height: 8),
-                                                    Text(
-                                                      _isCameraError ? 'Tap to Enable Camera' : 'Initializing Live Cam...',
-                                                      textAlign: TextAlign.center,
-                                                      style: GoogleFonts.inter(
-                                                        fontSize: 12.5,
-                                                        color: context.textPrimary,
-                                                        fontWeight: FontWeight.w700,
-                                                      ),
-                                                    ),
-                                                    if (_isCameraError) ...[
-                                                      const SizedBox(height: 4),
-                                                      Text(
-                                                        'Grant camera permission',
-                                                        style: GoogleFonts.inter(
-                                                          fontSize: 11,
-                                                          color: context.textSecondary,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ],
+                                      : Container(
+                                          color: isDark ? const Color(0xFF0F1123) : const Color(0xFFF1F5FF),
+                                          padding: const EdgeInsets.all(16),
+                                          child: Center(
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  _isCameraError ? Icons.camera_enhance_rounded : Icons.videocam_rounded,
+                                                  size: 42,
+                                                  color: context.primaryAccent,
                                                 ),
-                                              ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  _isCameraError ? 'Tap to Enable Camera' : 'Initializing...',
+                                                  textAlign: TextAlign.center,
+                                                  style: GoogleFonts.inter(
+                                                    fontSize: 12.5,
+                                                    color: context.textPrimary,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                ),
-                              ),
+                                          ),
+                                        ),
+                            ),
 
-                            // Laser Scanner Sweep Animation line (When scanning)
                             if (_isScanning && !captured)
                               AnimatedBuilder(
                                 animation: _scannerController,
@@ -478,13 +496,13 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
                                         gradient: LinearGradient(
                                           colors: [
                                             Colors.transparent,
-                                            step.color,
+                                            _statusColor,
                                             Colors.transparent,
                                           ],
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: step.color.withValues(alpha: 0.8),
+                                            color: _statusColor.withValues(alpha: 0.8),
                                             blurRadius: 10,
                                             spreadRadius: 2,
                                           )
@@ -495,7 +513,6 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
                                 },
                               ),
 
-                            // Checkmark Pill on capture
                             if (captured)
                               Positioned(
                                 bottom: 14,
@@ -505,12 +522,7 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
                                   decoration: const BoxDecoration(
                                     color: Color(0xFF10B981),
                                     shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black26,
-                                        blurRadius: 6,
-                                      )
-                                    ],
+                                    boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 6)],
                                   ),
                                   child: const Icon(Icons.check_rounded, size: 20, color: Colors.white),
                                 ),
@@ -519,105 +531,21 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 28),
+                    const SizedBox(height: 28),
 
-                    // INSTRUCTION & ACTION SECTION
-                    if (!captured) ...[
-                      // Dynamic Guidance Card
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                        decoration: BoxDecoration(
-                          color: step.color.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: step.color.withValues(alpha: 0.25)),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: step.color.withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(step.icon, color: step.color, size: 22),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    step.label,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w800,
-                                      color: context.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    step.subLabel,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 12.5,
-                                      color: context.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                    if (_isCameraError && !captured) ...[
+                      const SizedBox(height: 12),
+                      TextButton.icon(
+                        onPressed: _fallbackManualCamera,
+                        icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                        label: Text(
+                          'Or Take Photo With Camera',
+                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                    ],
 
-                      // Start In-App Scan Button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: ElevatedButton.icon(
-                          onPressed: _isScanning ? null : _startLiveScan,
-                          icon: _isScanning
-                              ? SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Icon(Icons.camera_front_rounded, size: 20),
-                          label: Text(
-                            _isScanning ? 'Scanning Live Face...' : 'Start Live Verification',
-                            style: GoogleFonts.inter(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: step.color,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      if (_isCameraError) ...[
-                        const SizedBox(height: 12),
-                        TextButton.icon(
-                          onPressed: _fallbackManualCamera,
-                          icon: const Icon(Icons.camera_alt_outlined, size: 18),
-                          label: Text(
-                            'Or Take Photo With Camera',
-                            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                      ],
-                    ] else ...[
-                      // Retake button if captured
+                    if (captured) ...[
                       OutlinedButton.icon(
                         onPressed: _retakeScan,
                         icon: const Icon(Icons.refresh_rounded, size: 18),
@@ -640,7 +568,6 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
               ),
             ),
 
-            // Continue Button at bottom
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: PigeonPrimaryButton(
@@ -656,21 +583,6 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
   }
 }
 
-class _AiStep {
-  final IconData icon;
-  final String label;
-  final String subLabel;
-  final Color color;
-
-  const _AiStep({
-    required this.icon,
-    required this.label,
-    required this.subLabel,
-    required this.color,
-  });
-}
-
-// Biometric Scanner Ring Painter
 class BiometricScannerPainter extends CustomPainter {
   final Color color;
   final double animationValue;

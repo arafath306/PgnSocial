@@ -34,7 +34,7 @@ class _TwoFactorSetupScreenState extends State<TwoFactorSetupScreen> {
         _enrollResponse = response;
         _isLoading = false;
         if (response == null) {
-          _errorMsg = 'Failed to initiate 2FA enrollment.';
+          _errorMsg = authService.errorMessage ?? 'Failed to initiate 2FA enrollment.';
         }
       });
     }

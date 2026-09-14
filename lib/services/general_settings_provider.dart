@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:device_info_plus/device_info_plus.dart';
 class GeneralSettingsProvider with ChangeNotifier {
   final _supabase = Supabase.instance.client;
   String get _currentUid => _supabase.auth.currentUser?.id ?? '';
@@ -266,11 +266,7 @@ class GeneralSettingsProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  final List<Map<String, String>> _activeSessions = [
-    {'id': '1', 'device': 'Chrome (Windows 11)', 'location': 'Dhaka, Bangladesh', 'status': 'Active now'},
-    {'id': '2', 'device': 'iPhone 15 Pro', 'location': 'Chittagong, Bangladesh', 'status': 'Last active 2 hours ago'},
-    {'id': '3', 'device': 'Pixel 8 Pro', 'location': 'Sylhet, Bangladesh', 'status': 'Last active 1 day ago'},
-  ];
+  final List<Map<String, String>> _activeSessions = [];
   List<Map<String, String>> get activeSessions => _activeSessions;
 
   Future<void> fetchActiveSessions() async {
@@ -288,9 +284,23 @@ class GeneralSettingsProvider with ChangeNotifier {
       // Determine device name
       String deviceName = 'Web Client';
       if (!kIsWeb) {
-        deviceName = defaultTargetPlatform == TargetPlatform.android
-            ? 'Android Device'
-            : (defaultTargetPlatform == TargetPlatform.iOS ? 'iOS Device' : 'Desktop App');
+        final deviceInfo = DeviceInfoPlugin();
+        if (defaultTargetPlatform == TargetPlatform.android) {
+          final androidInfo = await deviceInfo.androidInfo;
+          deviceName = '${androidInfo.brand} ${androidInfo.model}';
+        } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+          final iosInfo = await deviceInfo.iosInfo;
+          deviceName = iosInfo.name;
+        } else if (defaultTargetPlatform == TargetPlatform.windows) {
+          deviceName = 'Windows PC';
+        } else if (defaultTargetPlatform == TargetPlatform.macOS) {
+          final macInfo = await deviceInfo.macOsInfo;
+          deviceName = 'Mac (${macInfo.model})';
+        } else if (defaultTargetPlatform == TargetPlatform.linux) {
+          deviceName = 'Linux PC';
+        } else {
+          deviceName = 'Desktop App';
+        }
       }
 
       // Sync/Upsert this session in database

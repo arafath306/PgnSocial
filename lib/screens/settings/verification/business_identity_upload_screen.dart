@@ -8,6 +8,7 @@ import '../../../utils/app_theme.dart';
 import '../../../widgets/verification/id_upload_card.dart';
 import '../../../widgets/verification/pigeon_primary_button.dart';
 import '../../../widgets/verification/step_progress_bar.dart';
+import '../../../widgets/verification/badge_app_bar_title.dart';
 import 'face_verification_screen.dart';
 
 class BusinessIdentityUploadScreen extends StatefulWidget {
@@ -139,15 +140,7 @@ class _BusinessIdentityUploadScreenState extends State<BusinessIdentityUploadScr
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.textPrimary, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          "Apply for Gold Badge 👑",
-          style: GoogleFonts.inter(
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-            color: context.textPrimary,
-            letterSpacing: -0.3,
-          ),
-        ),
+        title: const BadgeAppBarTitle(isBusiness: true),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -163,31 +156,6 @@ class _BusinessIdentityUploadScreenState extends State<BusinessIdentityUploadScr
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Badge Pill
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD97706).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFD97706).withValues(alpha: 0.3)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('👑', style: TextStyle(fontSize: 13)),
-                            const SizedBox(width: 6),
-                            Text(
-                              isPremium ? 'Business Premium (Corporate)' : 'Business Basic (Standard)',
-                              style: GoogleFonts.inter(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFFD97706),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
 
                       Text(
                         "Business Identity & Documents",

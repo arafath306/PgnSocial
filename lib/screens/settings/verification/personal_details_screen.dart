@@ -14,6 +14,7 @@ import '../../../widgets/verification/step_progress_bar.dart';
 import 'business_identity_upload_screen.dart';
 import 'government_identity_upload_screen.dart';
 import 'identity_upload_screen.dart';
+import '../../../widgets/verification/badge_app_bar_title.dart';
 
 class PersonalDetailsScreen extends StatefulWidget {
   const PersonalDetailsScreen({super.key});
@@ -175,16 +176,9 @@ class _PersonalDetailsScreenState extends State<PersonalDetailsScreen> {
           icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.textPrimary, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          req.isBusiness
-              ? "Apply for Gold Badge 👑"
-              : (req.isGovernment ? "Apply for Gray Badge 🏛️" : "Apply for Blue Badge 🔵"),
-          style: GoogleFonts.inter(
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-            color: context.textPrimary,
-            letterSpacing: -0.3,
-          ),
+        title: BadgeAppBarTitle(
+          isBusiness: req.isBusiness,
+          isGovernment: req.isGovernment,
         ),
         centerTitle: true,
       ),
