@@ -1,9 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:device_info_plus/device_info_plus.dart';
+import 'device_session_service.dart';
 class GeneralSettingsProvider with ChangeNotifier {
   final _supabase = Supabase.instance.client;
   String get _currentUid => _supabase.auth.currentUser?.id ?? '';
@@ -269,7 +268,63 @@ class GeneralSettingsProvider with ChangeNotifier {
   final List<Map<String, String>> _activeSessions = [];
   List<Map<String, String>> get activeSessions => _activeSessions;
 
-  Future<void> fetchActiveSessions() async {
+  RealtimeChannel? _sessionsChannel;
+
+  /// Starts real-time listening for session changes for the current user.
+  void startListeningToSessions() {
+    final uid = _currentUid;
+    if (uid.isEmpty) return;
+    if (_sessionsChannel != null) return;
+
+    try {
+      _sessionsChannel = _supabase
+          .channel('public:user_sessions:$uid')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'user_sessions',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'user_id',
+              value: uid,
+            ),
+            callback: (payload) async {
+              debugPrint('[Realtime] user_sessions change: ${payload.eventType}');
+              if (payload.eventType == PostgresChangeEvent.delete) {
+                final oldRecord = payload.oldRecord;
+                final deletedId = oldRecord['id'] as String?;
+                final prefs = await SharedPreferences.getInstance();
+                final currentId = prefs.getString('current_session_id');
+
+                // If this current device was revoked remotely by user from another session:
+                if (deletedId != null && deletedId == currentId) {
+                  debugPrint('[Realtime] Current device session was remotely revoked!');
+                  await _supabase.auth.signOut();
+                  return;
+                }
+              }
+              // Refresh active sessions on any change in real time
+              await fetchActiveSessions(isBackgroundSync: true);
+            },
+          )
+          .subscribe();
+      debugPrint('[Realtime] Subscribed to user_sessions channel for uid: $uid');
+    } catch (e) {
+      debugPrint('[Realtime] Failed to subscribe to user_sessions channel: $e');
+    }
+  }
+
+  /// Unsubscribes from real-time session updates.
+  void stopListeningToSessions() {
+    if (_sessionsChannel != null) {
+      _supabase.removeChannel(_sessionsChannel!);
+      _sessionsChannel = null;
+    }
+  }
+
+  /// Fetches all active sessions and syncs the current device session.
+  /// Follows Google Play requirements: uses approximate location via IP (no GPS permission needed).
+  Future<void> fetchActiveSessions({bool isBackgroundSync = false}) async {
     final uid = _currentUid;
     if (uid.isEmpty) return;
 
@@ -281,55 +336,29 @@ class GeneralSettingsProvider with ChangeNotifier {
         await prefs.setString('current_session_id', cachedSessionId);
       }
 
-      // Determine device name
-      String deviceName = 'Web Client';
-      if (!kIsWeb) {
-        final deviceInfo = DeviceInfoPlugin();
-        if (defaultTargetPlatform == TargetPlatform.android) {
-          final androidInfo = await deviceInfo.androidInfo;
-          deviceName = '${androidInfo.brand} ${androidInfo.model}';
-        } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-          final iosInfo = await deviceInfo.iosInfo;
-          deviceName = iosInfo.name;
-        } else if (defaultTargetPlatform == TargetPlatform.windows) {
-          deviceName = 'Windows PC';
-        } else if (defaultTargetPlatform == TargetPlatform.macOS) {
-          final macInfo = await deviceInfo.macOsInfo;
-          deviceName = 'Mac (${macInfo.model})';
-        } else if (defaultTargetPlatform == TargetPlatform.linux) {
-          deviceName = 'Linux PC';
-        } else {
-          deviceName = 'Desktop App';
-        }
-      }
+      // Upsert current device session if not a pure background sync
+      if (!isBackgroundSync) {
+        final deviceDetails = await DeviceSessionService.getDeviceDetails();
+        final ipDetails = await DeviceSessionService.getIpAndLocation();
 
-      // Sync/Upsert this session in database
-      try {
-        final existing = await _supabase
-            .from('user_sessions')
-            .select('id')
-            .eq('id', cachedSessionId)
-            .maybeSingle();
-
-        if (existing == null) {
-          await _supabase.from('user_sessions').insert({
+        try {
+          await _supabase.from('user_sessions').upsert({
             'id': cachedSessionId,
             'user_id': uid,
-            'device_name': deviceName,
-            'location': 'Dhaka, Bangladesh',
+            'device_name': deviceDetails.deviceName,
+            'device_type': deviceDetails.deviceType,
+            'os_version': deviceDetails.osVersion,
+            'location': ipDetails.location,
+            'ip_address': ipDetails.ip.isNotEmpty ? ipDetails.ip : null,
             'status': 'Active now',
-          });
-        } else {
-          await _supabase.from('user_sessions').update({
             'last_active': DateTime.now().toUtc().toIso8601String(),
-            'status': 'Active now',
-          }).eq('id', cachedSessionId);
+          });
+        } catch (dbError) {
+          debugPrint('[GeneralSettings] Upsert current session to DB failed: $dbError');
         }
-      } catch (dbError) {
-        debugPrint('[GeneralSettings] Sync current session to DB failed (falling back): $dbError');
       }
 
-      // Fetch all sessions
+      // Fetch all user sessions ordered by last active
       final res = await _supabase
           .from('user_sessions')
           .select()
@@ -337,8 +366,8 @@ class GeneralSettingsProvider with ChangeNotifier {
           .order('last_active', ascending: false);
 
       final List<dynamic> data = res as List<dynamic>;
-      
-      // If we are logged in, but our current session is not in the fetched data, we were revoked!
+
+      // If logged in, but current session was revoked:
       final hasCurrentSession = data.any((item) => item['id'] == cachedSessionId);
       if (!hasCurrentSession && data.isNotEmpty) {
         debugPrint('[GeneralSettings] Current session was revoked!');
@@ -353,7 +382,10 @@ class GeneralSettingsProvider with ChangeNotifier {
         _activeSessions.add({
           'id': sessionId,
           'device': item['device_name'] as String? ?? 'Unknown Device',
+          'device_type': item['device_type'] as String? ?? 'phone',
+          'os_version': item['os_version'] as String? ?? '',
           'location': item['location'] as String? ?? 'Unknown Location',
+          'ip': item['ip_address'] as String? ?? '',
           'status': isCurrent ? 'Active now' : _formatLastActive(item['last_active'] as String?),
         });
       }
@@ -364,21 +396,21 @@ class GeneralSettingsProvider with ChangeNotifier {
   }
 
   String _formatLastActive(String? isoString) {
-    if (isoString == null) return 'Last active unknown';
+    if (isoString == null) return 'Active recently';
     try {
       final dt = DateTime.parse(isoString).toLocal();
       final diff = DateTime.now().difference(dt);
       if (diff.inMinutes < 1) {
-        return 'Last active just now';
+        return 'Active just now';
       } else if (diff.inMinutes < 60) {
-        return 'Last active ${diff.inMinutes}m ago';
+        return 'Active ${diff.inMinutes}m ago';
       } else if (diff.inHours < 24) {
-        return 'Last active ${diff.inHours}h ago';
+        return 'Active ${diff.inHours}h ago';
       } else {
-        return 'Last active ${diff.inDays}d ago';
+        return 'Active ${diff.inDays}d ago';
       }
     } catch (e) {
-      return 'Last active recently';
+      return 'Active recently';
     }
   }
 
@@ -395,6 +427,28 @@ class GeneralSettingsProvider with ChangeNotifier {
       }
     }
   }
+
+  Future<void> revokeAllOtherSessions() async {
+    final uid = _currentUid;
+    if (uid.isEmpty) return;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentSessionId = prefs.getString('current_session_id');
+
+      _activeSessions.removeWhere((session) => session['id'] != currentSessionId);
+      notifyListeners();
+
+      var query = _supabase.from('user_sessions').delete().eq('user_id', uid);
+      if (currentSessionId != null && currentSessionId.isNotEmpty) {
+        query = query.neq('id', currentSessionId);
+      }
+      await query;
+    } catch (e) {
+      debugPrint('[GeneralSettings] revokeAllOtherSessions error: $e');
+    }
+  }
+
 
   // Saved Threads State
   // Note: Real saved posts are fetched via DatabaseService.fetchSavedPosts()
