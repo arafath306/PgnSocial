@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:video_player/video_player.dart';
 import '../../services/auth_service.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -11,49 +11,41 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
-  late VideoPlayerController _videoController;
-  bool _isVideoInitialized = false;
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   bool _hasNavigated = false;
+  Timer? _navigationTimer;
+  late AnimationController _animController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
-    _initializeAndPlayVideo();
-  }
 
-  Future<void> _initializeAndPlayVideo() async {
-    _videoController = VideoPlayerController.asset('assets/splash_video.mp4');
-    try {
-      await _videoController.initialize();
-      await _videoController.setVolume(0.0); // Completely muted, no sound
-      if (!mounted) return;
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
 
-      setState(() {
-        _isVideoInitialized = true;
-      });
+    _fadeAnimation = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOut,
+    );
 
-      await _videoController.play();
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
 
-      _videoController.addListener(() {
-        if (_videoController.value.isInitialized &&
-            _videoController.value.position >= _videoController.value.duration &&
-            !_hasNavigated) {
-          _navigateToNextScreen();
-        }
-      });
+    _animController.forward();
 
-      // Safety timer in case listener misses end or video duration is long
-      final videoDuration = _videoController.value.duration;
-      Future.delayed(videoDuration + const Duration(milliseconds: 300), () {
-        if (!_hasNavigated) {
-          _navigateToNextScreen();
-        }
-      });
-    } catch (e) {
-      debugPrint('Error playing splash video: $e');
+    // Show splash for 1.8 seconds then navigate
+    _navigationTimer = Timer(const Duration(milliseconds: 1800), () {
       _navigateToNextScreen();
-    }
+    });
   }
 
   void _navigateToNextScreen() {
@@ -63,10 +55,13 @@ class _SplashScreenState extends State<SplashScreen> {
     final authService = Provider.of<AuthService>(context, listen: false);
     final isSignedIn = authService.isUserSignedIn;
     final isEmailVerified = authService.isEmailVerified;
+    final hasAcceptedTerms = authService.hasAcceptedTerms;
 
     if (isSignedIn) {
       if (!isEmailVerified) {
         context.go('/verify-email');
+      } else if (!hasAcceptedTerms) {
+        context.go('/terms-acceptance');
       } else {
         context.go('/home');
       }
@@ -77,34 +72,30 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   void dispose() {
-    _videoController.dispose();
+    _navigationTimer?.cancel();
+    _animController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    const splashBgColor = Color(0xFF0C2052);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0C1840),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Container(color: const Color(0xFF0C1840)),
-          if (_isVideoInitialized)
-            SizedBox.expand(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: _videoController.value.size.width > 0
-                      ? _videoController.value.size.width
-                      : 1080,
-                  height: _videoController.value.size.height > 0
-                      ? _videoController.value.size.height
-                      : 1920,
-                  child: VideoPlayer(_videoController),
-                ),
-              ),
+      backgroundColor: splashBgColor,
+      body: Center(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Image.asset(
+              'assets/splash.png',
+              fit: BoxFit.contain,
+              width: double.infinity,
+              height: double.infinity,
             ),
-        ],
+          ),
+        ),
       ),
     );
   }
