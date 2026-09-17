@@ -60,16 +60,38 @@ class _WhatsComingScreenState extends State<WhatsComingScreen>
   bool _isSubmitting = false;
 
   final SupabaseClient _supabase = Supabase.instance.client;
+  RealtimeChannel? _betaFeaturesChannel;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _initRoadmapData();
+    _subscribeToBetaFeatures();
+  }
+
+  void _subscribeToBetaFeatures() {
+    try {
+      _betaFeaturesChannel = _supabase
+          .channel('public:beta_features_changes')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'beta_features',
+            callback: (payload) {
+              debugPrint('[Realtime] beta_features updated from admin: ${payload.eventType}');
+              _loadDataFromDatabase();
+            },
+          )
+          .subscribe();
+    } catch (e) {
+      debugPrint('[Realtime] Failed to subscribe to beta_features: $e');
+    }
   }
 
   @override
   void dispose() {
+    _betaFeaturesChannel?.unsubscribe();
     _tabController.dispose();
     super.dispose();
   }
@@ -297,13 +319,24 @@ class _WhatsComingScreenState extends State<WhatsComingScreen>
 
           final realVotes = netVoteCounts[id] ?? 0;
 
+          // Map database status to appropriate stage
+          RoadmapStage stage;
+          final sLower = status.toLowerCase();
+          if (sLower == 'shipped' || sLower == 'implemented' || sLower == 'fixed') {
+            stage = RoadmapStage.completed;
+          } else if (sLower == 'in progress' || sLower == 'fixing') {
+            stage = RoadmapStage.inProgress;
+          } else {
+            stage = RoadmapStage.comingSoon;
+          }
+
           final item = RoadmapItem(
             id: id,
             title: title,
             subtitle: 'Requested by @$authorName',
             description: desc,
             icon: Icons.lightbulb_outline_rounded,
-            stage: RoadmapStage.comingSoon,
+            stage: stage,
             eta: status,
             category: category,
             authorName: authorName,
@@ -956,19 +989,40 @@ class _WhatsComingScreenState extends State<WhatsComingScreen>
   Widget _buildRoadmapCard(RoadmapItem item) {
     Color stageColor;
     String stageText;
-    switch (item.stage) {
-      case RoadmapStage.completed:
-        stageColor = const Color(0xFF10B981);
-        stageText = 'Shipped';
-        break;
-      case RoadmapStage.inProgress:
-        stageColor = const Color(0xFFF59E0B);
-        stageText = 'In Progress';
-        break;
-      case RoadmapStage.comingSoon:
-        stageColor = const Color(0xFF3B82F6);
-        stageText = 'Planned';
-        break;
+    final sLower = item.eta.toLowerCase();
+    if (sLower == 'shipped' || sLower == 'implemented' || sLower == 'fixed') {
+      stageColor = const Color(0xFF10B981); // Emerald
+      stageText = 'Shipped';
+    } else if (sLower == 'in progress' || sLower == 'fixing') {
+      stageColor = const Color(0xFFF59E0B); // Amber
+      stageText = 'In Progress';
+    } else if (sLower == 'coming soon') {
+      stageColor = const Color(0xFF3B82F6); // Blue
+      stageText = 'Coming Soon';
+    } else if (sLower == 'planning' || sLower == 'planned') {
+      stageColor = const Color(0xFF8B5CF6); // Purple
+      stageText = 'Planning';
+    } else if (sLower == 'under review') {
+      stageColor = const Color(0xFF6366F1); // Indigo
+      stageText = 'Under Review';
+    } else if (sLower == 'received') {
+      stageColor = const Color(0xFF64748B); // Slate
+      stageText = 'Received';
+    } else {
+      switch (item.stage) {
+        case RoadmapStage.completed:
+          stageColor = const Color(0xFF10B981);
+          stageText = 'Shipped';
+          break;
+        case RoadmapStage.inProgress:
+          stageColor = const Color(0xFFF59E0B);
+          stageText = 'In Progress';
+          break;
+        case RoadmapStage.comingSoon:
+          stageColor = const Color(0xFF3B82F6);
+          stageText = 'Planned';
+          break;
+      }
     }
 
     return Container(

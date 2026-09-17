@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS public.beta_features (
 -- 2. Relax status check constraint so both 'Received' and 'Pending' are accepted
 ALTER TABLE public.beta_features DROP CONSTRAINT IF EXISTS beta_features_status_check;
 ALTER TABLE public.beta_features ADD CONSTRAINT beta_features_status_check 
-    CHECK (status IN ('Received', 'Pending', 'Under Review', 'In Progress', 'Fixed', 'Closed'));
+    CHECK (status IN ('Received', 'Pending', 'Under Review', 'Planning', 'Planned', 'Coming Soon', 'In Progress', 'Shipped', 'Implemented', 'Fixed', 'Closed', 'Rejected'));
 
 -- 3. Enable RLS
 ALTER TABLE public.beta_features ENABLE ROW LEVEL SECURITY;
