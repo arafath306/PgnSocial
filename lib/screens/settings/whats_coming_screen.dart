@@ -116,6 +116,18 @@ class _WhatsComingScreenState extends State<WhatsComingScreen>
 
       // 2. Coming Soon (পরবর্তীতে আসবে)
       RoadmapItem(
+        id: 'account_deletion_system',
+        title: 'Account Deletion System',
+        subtitle: 'অ্যাকাউন্ট পার্মানেন্টলি ডিলিট করার সুবিধা',
+        description:
+            'ইউজাররা যেকোনো সময় নিজস্ব অ্যাকাউন্ট, প্রোফাইল ও সমস্ত ব্যক্তিগত ডেটা স্থায়ীভাবে মুছে ফেলার পূর্ণ সুবিধা পাবেন। খুব শীঘ্রই উন্মুক্ত করা হচ্ছে।',
+        icon: Icons.delete_forever_outlined,
+        stage: RoadmapStage.comingSoon,
+        eta: 'Coming Soon',
+        category: 'Security & Privacy',
+        votes: 0,
+      ),
+      RoadmapItem(
         id: 'encrypted_calls',
         title: 'P2P Encrypted Voice & Video Calls',
         subtitle: 'এইচডি ভয়েস ও ভিডিও কলিং সুবিধা',
@@ -588,8 +600,10 @@ class _WhatsComingScreenState extends State<WhatsComingScreen>
 
                                     await _loadDataFromDatabase();
 
+                                    if (modalCtx.mounted) {
+                                      Navigator.pop(modalCtx);
+                                    }
                                     if (mounted) {
-                                      Navigator.pop(ctx);
                                       _tabController.animateTo(1);
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(

@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../services/database_service.dart';
 import '../../utils/app_theme.dart';
 import 'deactivate_confirm_screen.dart';
+import 'whats_coming_screen.dart';
 
 class DeactivateIntroScreen extends StatefulWidget {
   const DeactivateIntroScreen({super.key});
@@ -363,7 +364,18 @@ class _DeactivateIntroScreenState extends State<DeactivateIntroScreen> {
                   InkWell(
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Delete account page coming soon...')),
+                        SnackBar(
+                          content: const Text('Account Deletion System is coming soon in the next update!'),
+                          action: SnackBarAction(
+                            label: "View Roadmap",
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const WhatsComingScreen()),
+                              );
+                            },
+                          ),
+                        ),
                       );
                     },
                     borderRadius: BorderRadius.circular(24),
@@ -378,7 +390,7 @@ class _DeactivateIntroScreenState extends State<DeactivateIntroScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Delete your account instead',
+                            'Delete your account instead (Coming Soon)',
                             style: GoogleFonts.inter(
                               color: context.primaryAccent,
                               fontSize: 13,
@@ -499,7 +511,7 @@ class _DeactivateIntroScreenState extends State<DeactivateIntroScreen> {
                 Text(title, style: GoogleFonts.inter(fontSize: 14, color: Colors.white)),
                 const SizedBox(height: 4),
                 Text(description, style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[400], height: 1.5)),
-                if (bottomWidget != null) bottomWidget,
+                ?bottomWidget,
                 if (!isLast) const SizedBox(height: 16),
               ],
             ),
