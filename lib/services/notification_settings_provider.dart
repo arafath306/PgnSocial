@@ -182,4 +182,61 @@ class NotificationSettingsProvider with ChangeNotifier {
       }
     }
   }
+
+  /// Determines whether a notification should be presented to the user
+  /// based on their personalized in-app / push and sender preferences.
+  bool shouldNotify({
+    required String type,
+    required bool isPush,
+    String? actorId,
+    List<String>? followingIds,
+  }) {
+    String settingKey;
+    switch (type.toLowerCase()) {
+      case 'like':
+        settingKey = 'likes';
+        break;
+      case 'follow':
+        settingKey = 'new_followers';
+        break;
+      case 'comment':
+      case 'reply':
+        settingKey = 'replies';
+        break;
+      case 'mention':
+        settingKey = 'mentions';
+        break;
+      case 'repost':
+        settingKey = 'reposts';
+        break;
+      case 'quote':
+        settingKey = 'quotes';
+        break;
+      case 'message':
+        return true; // Direct messages are handled with dedicated active chat & privacy rules
+      default:
+        settingKey = 'activity_from_others';
+    }
+
+    final item = _settings[settingKey];
+    if (item == null) return true;
+
+    // Master switch / off check
+    if (item.hasFromOption && item.from == 'off') {
+      return false;
+    }
+
+    // Toggle check
+    if (isPush && !item.push) return false;
+    if (!isPush && !item.inApp) return false;
+
+    // Social graph restriction: 'people_you_follow'
+    if (item.hasFromOption && item.from == 'people_you_follow' && actorId != null) {
+      if (followingIds != null && !followingIds.contains(actorId)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
 }

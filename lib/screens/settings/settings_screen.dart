@@ -17,6 +17,7 @@ import 'blocked_accounts_screen.dart';
 import 'muted_accounts_screen.dart';
 import 'help_center_screen.dart';
 import 'about_settings_screen.dart';
+import 'whats_coming_screen.dart';
 import 'system_log_screen.dart';
 import 'verification/verification_intro_screen.dart';
 import 'verification/pending_screen.dart';
@@ -510,7 +511,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       if (monetization.isEnabledGlobally ||
                           myProfile?.canMonetize == true)
                         _SettingsTileItem(
-                          icon: Icons.monetization_on_outlined,
+                          icon: Icons.stars_rounded,
                           title: AppLocalizations.of(
                             context,
                           )!.creatorMonetization,
@@ -761,6 +762,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             context,
                             MaterialPageRoute(
                               builder: (_) => const SystemLogScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _SettingsTileItem(
+                        icon: Icons.rocket_launch_rounded,
+                        title: "What's Coming (Roadmap)",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const WhatsComingScreen(),
                             ),
                           );
                         },
@@ -1055,7 +1068,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       if (monetization.isEnabledGlobally || myProfile?.canMonetize == true)
         _SettingsTileItem(
-          icon: Icons.monetization_on_outlined,
+          icon: Icons.stars_rounded,
           title: AppLocalizations.of(context)!.creatorMonetization,
           onTap: () {
             Navigator.push(
@@ -1144,6 +1157,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const SystemLogScreen()),
+          );
+        },
+      ),
+      _SettingsTileItem(
+        icon: Icons.rocket_launch_rounded,
+        title: "What's Coming (Roadmap)",
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const WhatsComingScreen()),
           );
         },
       ),

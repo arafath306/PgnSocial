@@ -63,6 +63,48 @@ class MonetizationController extends ChangeNotifier {
   double get totalLifetimeNet => totalGrossRevenue * (1 - platformFeeRate);
   double get totalLifetimeFee => totalGrossRevenue * platformFeeRate;
 
+  /// Sum of all pending and approved/paid payout requests
+  double get totalRequestedOrPaid {
+    double sum = 0.0;
+    for (final req in payoutRequests) {
+      final status = req['status'] as String? ?? 'pending';
+      if (status != 'rejected') {
+        sum += (req['amount'] as num?)?.toDouble() ?? 0.0;
+      }
+    }
+    return sum;
+  }
+
+  /// Total amount in pending payout review
+  double get pendingPayoutAmount {
+    double sum = 0.0;
+    for (final req in payoutRequests) {
+      final status = req['status'] as String? ?? 'pending';
+      if (status == 'pending') {
+        sum += (req['amount'] as num?)?.toDouble() ?? 0.0;
+      }
+    }
+    return sum;
+  }
+
+  /// Total amount successfully paid out to creator
+  double get paidPayoutAmount {
+    double sum = 0.0;
+    for (final req in payoutRequests) {
+      final status = req['status'] as String? ?? '';
+      if (status == 'paid' || status == 'approved' || status == 'completed') {
+        sum += (req['amount'] as num?)?.toDouble() ?? 0.0;
+      }
+    }
+    return sum;
+  }
+
+  /// Net balance ready for withdrawal (lifetime net earnings minus requested/paid payouts)
+  double get availableBalance {
+    final balance = totalLifetimeNet - totalRequestedOrPaid;
+    return balance > 0.0 ? balance : 0.0;
+  }
+
   Future<void> fetchCreatorDashboard(String userId) async {
     isLoadingDashboard = true;
     notifyListeners();
@@ -166,6 +208,13 @@ class MonetizationController extends ChangeNotifier {
     required String method,
     required String accountDetails,
   }) async {
+    if (amount < 50.0) {
+      throw Exception('Minimum payout amount is ৳50.00');
+    }
+    if (totalLifetimeNet > 0 && amount > availableBalance) {
+      throw Exception('Requested amount exceeds your available balance of ৳${availableBalance.toStringAsFixed(2)}');
+    }
+
     try {
       await _supabase.from('payout_requests').insert({
         'user_id': userId,

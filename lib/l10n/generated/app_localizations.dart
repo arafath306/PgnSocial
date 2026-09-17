@@ -495,7 +495,7 @@ abstract class AppLocalizations {
   /// No description provided for @creatorMonetization.
   ///
   /// In en, this message translates to:
-  /// **'Creator Monetization'**
+  /// **'Creator Studio'**
   String get creatorMonetization;
 
   /// No description provided for @dashboard.

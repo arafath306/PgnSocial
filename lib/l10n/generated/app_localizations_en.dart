@@ -111,7 +111,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileVerification => 'Profile Verification';
 
   @override
-  String get creatorMonetization => 'Creator Monetization';
+  String get creatorMonetization => 'Creator Studio';
 
   @override
   String get dashboard => 'Dashboard';

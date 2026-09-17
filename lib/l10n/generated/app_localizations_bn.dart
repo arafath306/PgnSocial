@@ -111,7 +111,7 @@ class AppLocalizationsBn extends AppLocalizations {
   String get profileVerification => 'প্রোফাইল ভেরিফিকেশন';
 
   @override
-  String get creatorMonetization => 'ক্রিয়েটর মনিটাইজেশন';
+  String get creatorMonetization => 'ক্রিয়েটর স্টুডিও';
 
   @override
   String get dashboard => 'ড্যাশবোর্ড';

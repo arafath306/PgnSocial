@@ -1033,7 +1033,7 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
       powerLevelLabel = '85% Authenticated Creator Score & Boosted Reach';
       powerPercent = 0.85;
       benefits = [
-        '🎨 Full creator monetization features & exclusive options.',
+        '🎨 Full Creator Studio features & exclusive subscriber options.',
         '🚀 Pigeon Feed algorithm visibility boost in all posts.',
         '💬 Comment priority in popular threads & auto-moderation.',
         '🌟 Exclusive verified-only custom profile badges & tabs.'

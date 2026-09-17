@@ -99,9 +99,25 @@ extension UnreadExtension on DatabaseService {
   }
 
   void _handleIncomingNotification(Map<String, dynamic> notif) async {
-    final actorProfile = await fetchProfile(notif['actor_id'] as String);
-    final actorName = actorProfile?.fullName ?? "Someone";
     final type = (notif['type'] as String? ?? '').toLowerCase();
+    final actorId = notif['actor_id'] as String?;
+
+    // Anti-Spam & User Preferences Check: Respect user's settings for this notification type
+    final notifSettings = NotificationSettingsProvider();
+    final shouldShow = notifSettings.shouldNotify(
+      type: type,
+      isPush: false,
+      actorId: actorId,
+      followingIds: _followingIds.toList(),
+    );
+
+    if (!shouldShow) {
+      debugPrint('[unread_ext] Suppressed in-app notification for type "$type" per user settings.');
+      return;
+    }
+
+    final actorProfile = actorId != null ? await fetchProfile(actorId) : null;
+    final actorName = actorProfile?.fullName ?? "Someone";
     final content = notif['content'] as String? ?? '';
     final threadId = notif['thread_id'] as String?;
 

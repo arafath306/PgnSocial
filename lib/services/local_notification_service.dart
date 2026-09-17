@@ -346,6 +346,26 @@ class LocalNotificationService {
 
   // ── Private helpers ────────────────────────────────────────────────────────
 
+  static final Map<String, DateTime> _recentNotificationCache = {};
+
+  /// Checks if a notification with identical title and body was rendered within the last 10 seconds.
+  /// Prevents duplicate alerts when FCM and Realtime WebSocket deliver simultaneously.
+  static bool shouldSuppressDuplicate(String title, String body) {
+    final now = DateTime.now();
+    _recentNotificationCache.removeWhere(
+      (_, timestamp) => now.difference(timestamp).inSeconds > 10,
+    );
+
+    final key = '${title.trim()}|||${body.trim()}';
+    if (_recentNotificationCache.containsKey(key)) {
+      debugPrint('[LocalNotificationService] Suppressed duplicate notification: "$title"');
+      return true;
+    }
+
+    _recentNotificationCache[key] = now;
+    return false;
+  }
+
   static Future<void> _show({
     required int id,
     required String title,
@@ -353,6 +373,10 @@ class LocalNotificationService {
     required NotificationDetails details,
     String? payload,
   }) async {
+    if (shouldSuppressDuplicate(title, body)) {
+      return;
+    }
+
     try {
       await _plugin.show(
         id: id,

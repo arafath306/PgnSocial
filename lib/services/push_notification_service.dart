@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:io' show Platform;
 import 'local_notification_service.dart';
 import 'database_service.dart';
+import 'notification_settings_provider.dart';
 
 // Helper to route notification display based on notification type
 Future<void> _displayNotification({
@@ -61,15 +62,27 @@ Future<void> _displayNotification({
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint("Handling a background message: ${message.messageId}");
   final notification = message.notification;
-  if (notification != null) {
-    await LocalNotificationService.initialize();
-    await _displayNotification(
-      id: message.hashCode,
-      title: notification.title ?? 'New Notification',
-      body: notification.body ?? '',
-      type: message.data['type'] ?? 'activity',
-      payload: message.data['payload'],
-    );
+
+  // IMPORTANT: When message.notification is NOT null, Google Play Services / Android OS
+  // AUTOMATICALLY displays the notification in the tray when the app is in the background or killed!
+  // Calling LocalNotificationService._displayNotification here was creating a DUPLICATE notification!
+  // We ONLY need to manually display a notification if this is a DATA-ONLY message (notification == null).
+  if (notification == null && message.data.isNotEmpty) {
+    final title = message.data['title'] ?? 'Dak Notification';
+    final body = message.data['body'] ?? '';
+    final channelId = message.data['channel_id'] as String?;
+    final type = message.data['type'] ?? (channelId == 'pigeon_messages' ? 'message' : 'activity');
+
+    if (body.isNotEmpty) {
+      await LocalNotificationService.initialize();
+      await _displayNotification(
+        id: message.hashCode,
+        title: title,
+        body: body,
+        type: type,
+        payload: message.data['payload'],
+      );
+    }
   }
 }
 
@@ -115,19 +128,33 @@ class PushNotificationService {
       final type = message.data['type'] ?? (channelId == 'pigeon_messages' ? 'message' : 'activity');
 
       // Check if user is actively chatting with the sender
+      final senderId = message.data['sender_id'] ??
+          message.data['senderId'] ??
+          message.data['actor_id'] ??
+          message.data['tag'] ??
+          message.data['userId'];
+
       final activeChatId = DatabaseService.activeChatUserId;
       if (activeChatId != null && activeChatId.isNotEmpty) {
-        final senderId = message.data['sender_id'] ??
-            message.data['senderId'] ??
-            message.data['tag'] ??
-            message.data['userId'];
-
         if (type == 'message' || channelId == 'pigeon_messages') {
           if (senderId != null && senderId.toString() == activeChatId) {
             debugPrint('[PushNotificationService] Suppressed notification for active chat user: $senderId');
             return; // Suppress notification since user is inside this exact chat!
           }
         }
+      }
+
+      // Respect User Preferences (NotificationSettingsProvider Push toggle & anti-spam)
+      final notifSettings = NotificationSettingsProvider();
+      final shouldShow = notifSettings.shouldNotify(
+        type: type,
+        isPush: true,
+        actorId: senderId?.toString(),
+      );
+
+      if (!shouldShow) {
+        debugPrint('[PushNotificationService] Suppressed push notification for "$type" based on user settings.');
+        return;
       }
 
       if (body.isNotEmpty || notification != null) {
