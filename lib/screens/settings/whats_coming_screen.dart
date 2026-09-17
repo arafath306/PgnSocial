@@ -584,18 +584,22 @@ class _WhatsComingScreenState extends State<WhatsComingScreen>
                                       'title': title,
                                       'description': desc.isNotEmpty ? desc : 'Requested by community member.',
                                       'expected_benefit': selectedCategory,
-                                      'status': 'Pending',
+                                      'status': 'Received',
                                     }).select().single();
 
                                     final newFeatureId = insertRes['id']?.toString();
 
                                     if (newFeatureId != null && newFeatureId.isNotEmpty) {
-                                      await _supabase.from('audit_logs').insert({
-                                        'admin_id': currentUid,
-                                        'action': 'vote:$newFeatureId',
-                                        'details': 'upvote',
-                                        'ip_address': 'client_app',
-                                      });
+                                      try {
+                                        await _supabase.from('audit_logs').insert({
+                                          'admin_id': currentUid,
+                                          'action': 'vote:$newFeatureId',
+                                          'details': 'upvote',
+                                          'ip_address': 'client_app',
+                                        });
+                                      } catch (voteErr) {
+                                        debugPrint('Vote audit log note: $voteErr');
+                                      }
                                     }
 
                                     await _loadDataFromDatabase();
@@ -833,6 +837,21 @@ class _WhatsComingScreenState extends State<WhatsComingScreen>
                   'পিজিয়নে কোন ফিচার দেখতে চান? প্রথম প্রস্তাবটি আপনি দিন!',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(fontSize: 12, color: context.textSecondary),
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: context.primaryAccent,
+                    side: BorderSide(color: context.primaryAccent),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                  icon: const Icon(Icons.add, size: 16),
+                  label: Text(
+                    'প্রস্তাব দিন',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                  onPressed: _openRequestFeatureModal,
                 ),
               ],
             ),
