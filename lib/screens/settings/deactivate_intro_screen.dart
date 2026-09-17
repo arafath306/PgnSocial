@@ -381,7 +381,7 @@ class _DeactivateIntroScreenState extends State<DeactivateIntroScreen> {
                     borderRadius: BorderRadius.circular(24),
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                       decoration: BoxDecoration(
                         color: context.primaryAccent.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(24),
@@ -389,15 +389,20 @@ class _DeactivateIntroScreenState extends State<DeactivateIntroScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            'Delete your account instead (Coming Soon)',
-                            style: GoogleFonts.inter(
-                              color: context.primaryAccent,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
+                          Flexible(
+                            child: Text(
+                              'Delete account instead (Coming Soon)',
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                color: context.primaryAccent,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           Icon(Icons.arrow_forward_rounded, color: context.primaryAccent, size: 16),
                         ],
                       ),
