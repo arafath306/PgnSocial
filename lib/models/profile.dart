@@ -107,7 +107,12 @@ class Profile {
       autoplayVideos: json['autoplay_videos'] as bool? ?? true,
       isShadowbanned: json['is_shadowbanned'] as bool? ?? false,
       verificationRequested: json['verification_requested'] as bool? ?? false,
-      canMonetize: json['can_monetize'] as bool? ?? isVer,
+      canMonetize: isVer &&
+          (json['verified_expires_at'] == null ||
+              (DateTime.tryParse(json['verified_expires_at'] as String)
+                      ?.isAfter(DateTime.now()) ??
+                  true)) &&
+          (json['can_monetize'] as bool? ?? true),
       isActiveStatusEnabled: json['is_active_status_enabled'] as bool? ?? true,
       lastSeen: _parseUtcTime(json['last_seen'] as String?),
       publicKey: json['public_key'] as String?,
@@ -159,6 +164,11 @@ class Profile {
       if (deactivatedUntil != null) 'deactivated_until': deactivatedUntil!.toIso8601String(),
     };
   }
+
+  /// True if user has an active, non-expired verification badge
+  bool get isBadgeActive =>
+      isVerified &&
+      (verifiedExpiresAt == null || DateTime.now().isBefore(verifiedExpiresAt!));
 
   /// True if user is verified on any Premium plan (General Premium, Business Premium, Government Premium)
   bool get isPremium => isVerified && (verifiedTier?.toLowerCase() == 'premium' || verifiedTier == 'Premium');

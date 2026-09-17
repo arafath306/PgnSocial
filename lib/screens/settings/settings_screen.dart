@@ -263,10 +263,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      final myProf = Provider.of<DatabaseService>(context, listen: false).myProfile;
       Provider.of<MonetizationController>(
         context,
         listen: false,
-      ).fetchGlobalStatus();
+      ).fetchGlobalStatus(
+        uid: myProf?.id,
+        badgeType: myProf?.badgeType,
+      );
     });
   }
 
@@ -508,8 +512,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           });
                         },
                       ),
-                      if (monetization.isEnabledGlobally ||
-                          myProfile?.canMonetize == true)
+                      if (myProfile?.canMonetize == true)
                         _SettingsTileItem(
                           icon: Icons.stars_rounded,
                           title: AppLocalizations.of(
@@ -1066,7 +1069,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           });
         },
       ),
-      if (monetization.isEnabledGlobally || myProfile?.canMonetize == true)
+      if (myProfile?.canMonetize == true)
         _SettingsTileItem(
           icon: Icons.stars_rounded,
           title: AppLocalizations.of(context)!.creatorMonetization,

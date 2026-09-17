@@ -83,7 +83,11 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
         PresenceService().initialize(currentUser.id);
         PresenceService().updatePage('/home');
         Provider.of<MonetizationController>(context, listen: false).fetchMySubscriptions(currentUser.id);
-        Provider.of<MonetizationController>(context, listen: false).fetchGlobalStatus();
+        final myProf = dbService.myProfile;
+        Provider.of<MonetizationController>(context, listen: false).fetchGlobalStatus(
+          uid: currentUser.id,
+          badgeType: myProf?.badgeType,
+        );
         Provider.of<GeneralSettingsProvider>(context, listen: false).fetchSettings();
       }
 

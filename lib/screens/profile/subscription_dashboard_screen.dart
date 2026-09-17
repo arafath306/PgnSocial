@@ -8,6 +8,7 @@ import '../../services/database_service.dart';
 import '../../state/monetization_controller.dart';
 import '../../utils/app_theme.dart';
 import '../create_thread_screen.dart';
+import '../settings/verification/verification_intro_screen.dart';
 
 /// Creator Studio screen for managing subscriptions, audience earnings,
 /// payouts, and subscriber-only content.
@@ -625,9 +626,107 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
 
   @override
   Widget build(BuildContext context) {
+    final db = Provider.of<DatabaseService>(context);
+    final myProfile = db.myProfile;
+    final primaryAccent = context.primaryAccent;
+
+    // Strict gate: Only verified badge holders can access Creator Studio
+    if (myProfile != null && !myProfile.canMonetize) {
+      return Scaffold(
+        backgroundColor: context.scaffoldBg,
+        appBar: AppBar(
+          backgroundColor: context.scaffoldBg,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.textPrimary, size: 18),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
+            'Creator Studio',
+            style: GoogleFonts.inter(
+              color: context.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0095F6).withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.verified_rounded,
+                    color: Color(0xFF0095F6),
+                    size: 56,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Verified Badge Required',
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: context.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Creator Studio and monetization features are exclusively available to verified badge holders. Get verified to unlock subscriptions, earn revenue from your audience, and post subscriber-only threads.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: context.textSecondary,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const VerificationIntroScreen(),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.primaryAccent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Get Verified Badge',
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final mc = Provider.of<MonetizationController>(context);
     final isLoading = mc.isLoadingDashboard || mc.isLoadingHistory;
-    final primaryAccent = context.primaryAccent;
 
     return Scaffold(
       backgroundColor: context.scaffoldBg,
