@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
@@ -5,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../utils/app_theme.dart';
 
@@ -224,6 +226,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _villageCtrl;
   late TextEditingController _zipCtrl;
 
+  late final String _initialName;
+  late final String _initialUsername;
+  late final String _initialBio;
+  late final String _initialPhone;
+  late final String _initialCity;
+  late final String _initialVillage;
+  late final String _initialZip;
+  late final String? _initialCountry;
+  late final String? _initialDivision;
+  late final String? _initialGender;
+  late final String? _initialBirthdate;
+
+  Timer? _debounceUsernameTimer;
+  bool _isCheckingUsername = false;
+  bool? _isUsernameAvailable;
+  String? _usernameError;
+
   String? _selectedCountry;
   String? _selectedDivision;
   String? _selectedGender;
@@ -336,19 +355,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _nameCtrl = TextEditingController(text: widget.profile['full_name']?.toString() ?? '');
-    _usernameCtrl = TextEditingController(text: widget.profile['username']?.toString() ?? '');
-    _bioCtrl = TextEditingController(text: widget.profile['bio']?.toString() ?? '');
-    _phoneCtrl = TextEditingController(text: widget.profile['phone']?.toString() ?? '');
-    _cityCtrl = TextEditingController(text: widget.profile['city']?.toString() ?? '');
-    _villageCtrl = TextEditingController(text: widget.profile['village']?.toString() ?? '');
-    _zipCtrl = TextEditingController(text: widget.profile['zip']?.toString() ?? '');
+    _initialName = widget.profile['full_name']?.toString() ?? '';
+    _initialUsername = widget.profile['username']?.toString() ?? '';
+    _initialBio = widget.profile['bio']?.toString() ?? '';
+    _initialPhone = widget.profile['phone']?.toString() ?? '';
+    _initialCity = widget.profile['city']?.toString() ?? '';
+    _initialVillage = widget.profile['village']?.toString() ?? '';
+    _initialZip = widget.profile['zip']?.toString() ?? '';
+
+    _nameCtrl = TextEditingController(text: _initialName);
+    _usernameCtrl = TextEditingController(text: _initialUsername);
+    _bioCtrl = TextEditingController(text: _initialBio);
+    _phoneCtrl = TextEditingController(text: _initialPhone);
+    _cityCtrl = TextEditingController(text: _initialCity);
+    _villageCtrl = TextEditingController(text: _initialVillage);
+    _zipCtrl = TextEditingController(text: _initialZip);
 
     _selectedCountry = widget.profile['country']?.toString();
     if (_selectedCountry != null && _selectedCountry!.isEmpty) _selectedCountry = null;
+    _initialCountry = _selectedCountry;
 
     _selectedDivision = widget.profile['division']?.toString();
     if (_selectedDivision != null && _selectedDivision!.isEmpty) _selectedDivision = null;
+    _initialDivision = _selectedDivision;
 
     _selectedGender = widget.profile['gender']?.toString();
     if (_selectedGender != null) {
@@ -362,11 +391,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _selectedGender = null;
       }
     }
+    _initialGender = _selectedGender;
     _birthdateString = widget.profile['birthdate']?.toString();
+    _initialBirthdate = _birthdateString;
   }
 
   @override
   void dispose() {
+    _debounceUsernameTimer?.cancel();
     _nameCtrl.dispose();
     _usernameCtrl.dispose();
     _bioCtrl.dispose();
@@ -375,6 +407,112 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _villageCtrl.dispose();
     _zipCtrl.dispose();
     super.dispose();
+  }
+
+  bool get _hasUnsavedChanges {
+    return _nameCtrl.text.trim() != _initialName.trim() ||
+        _usernameCtrl.text.trim().toLowerCase() != _initialUsername.trim().toLowerCase() ||
+        _bioCtrl.text.trim() != _initialBio.trim() ||
+        _phoneCtrl.text.trim() != _initialPhone.trim() ||
+        _cityCtrl.text.trim() != _initialCity.trim() ||
+        _villageCtrl.text.trim() != _initialVillage.trim() ||
+        _zipCtrl.text.trim() != _initialZip.trim() ||
+        _selectedCountry != _initialCountry ||
+        _selectedDivision != _initialDivision ||
+        _selectedGender != _initialGender ||
+        _birthdateString != _initialBirthdate;
+  }
+
+  Future<bool> _confirmDiscard() async {
+    if (!_hasUnsavedChanges) return true;
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.cardBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Discard changes?',
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.textPrimary),
+        ),
+        content: Text(
+          'You have unsaved changes. If you leave now, your changes will be discarded.',
+          style: GoogleFonts.inter(color: context.textSecondary, fontSize: 13.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'Keep Editing',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: context.primaryAccent),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'Discard',
+              style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+    return discard ?? false;
+  }
+
+  void _onUsernameChanged(String val) {
+    _debounceUsernameTimer?.cancel();
+    final trimmed = val.trim().toLowerCase();
+
+    if (trimmed == _initialUsername.toLowerCase()) {
+      setState(() {
+        _isCheckingUsername = false;
+        _isUsernameAvailable = null;
+        _usernameError = null;
+      });
+      return;
+    }
+
+    if (trimmed.isEmpty) {
+      setState(() {
+        _isCheckingUsername = false;
+        _isUsernameAvailable = false;
+        _usernameError = "Username cannot be empty";
+      });
+      return;
+    }
+
+    final reg = RegExp(r'^[a-zA-Z0-9_]{3,30}$');
+    if (!reg.hasMatch(trimmed)) {
+      setState(() {
+        _isCheckingUsername = false;
+        _isUsernameAvailable = false;
+        _usernameError = "3-30 characters (letters, numbers, _ only)";
+      });
+      return;
+    }
+
+    setState(() {
+      _isCheckingUsername = true;
+      _usernameError = null;
+    });
+
+    _debounceUsernameTimer = Timer(const Duration(milliseconds: 350), () async {
+      try {
+        final authService = Provider.of<AuthService>(context, listen: false);
+        final taken = await authService.isUsernameTaken(trimmed);
+        if (!mounted) return;
+        setState(() {
+          _isCheckingUsername = false;
+          _isUsernameAvailable = !taken;
+          _usernameError = taken ? "This username is already taken" : null;
+        });
+      } catch (e) {
+        if (!mounted) return;
+        setState(() {
+          _isCheckingUsername = false;
+        });
+      }
+    });
   }
 
   // ── Country picker ─────────────────────────────────────────
@@ -435,11 +573,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
     }
 
+    final now = DateTime.now();
+    final lastAllowedDate = DateTime(now.year - 13, now.month, now.day);
+    if (initialDate.isAfter(lastAllowedDate)) {
+      initialDate = lastAllowedDate;
+    }
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
       firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
+      lastDate: lastAllowedDate,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -468,10 +612,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
-    if (_nameCtrl.text.trim().isEmpty || _usernameCtrl.text.trim().isEmpty) {
+    final trimmedName = _nameCtrl.text.trim();
+    final trimmedUser = _usernameCtrl.text.trim().toLowerCase();
+
+    if (trimmedName.isEmpty || trimmedUser.isEmpty) {
       setState(() => _errorMsg = 'Name and username are required.');
       return;
     }
+
+    if (_isUsernameAvailable == false) {
+      setState(() => _errorMsg = _usernameError ?? 'Please choose an available username.');
+      return;
+    }
+
     setState(() {
       _isSaving = true;
       _errorMsg = null;
@@ -479,8 +632,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     final db = Provider.of<DatabaseService>(context, listen: false);
     final success = await db.updateProfile(
-      fullName: _nameCtrl.text.trim(),
-      username: _usernameCtrl.text.trim().toLowerCase(),
+      fullName: trimmedName,
+      username: trimmedUser,
       bio: _bioCtrl.text.trim(),
       phone: _phoneCtrl.text.trim(),
       country: _selectedCountry ?? '',
@@ -494,6 +647,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (!mounted) return;
     if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Profile updated successfully!',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.white),
+          ),
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
       Navigator.pop(context);
     } else {
       setState(() {
@@ -507,42 +671,90 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     final fieldBg = context.isDarkMode ? const Color(0xFF0F111E) : Colors.white;
 
-    return Scaffold(
-      backgroundColor: context.scaffoldBg,
-      appBar: AppBar(
+    Widget? usernameSuffix;
+    if (_isCheckingUsername) {
+      usernameSuffix = const Padding(
+        padding: EdgeInsets.all(12),
+        child: SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0085FF)),
+        ),
+      );
+    } else if (_isUsernameAvailable == true) {
+      usernameSuffix = const Icon(Icons.check_circle_rounded, color: Colors.green, size: 20);
+    } else if (_isUsernameAvailable == false) {
+      usernameSuffix = const Icon(Icons.cancel_rounded, color: Colors.redAccent, size: 20);
+    }
+
+    String? usernameHelper;
+    Color? usernameHelperColor;
+    if (_usernameError != null) {
+      usernameHelper = _usernameError;
+      usernameHelperColor = Colors.redAccent;
+    } else if (_isUsernameAvailable == true) {
+      usernameHelper = 'Username is available';
+      usernameHelperColor = Colors.green;
+    }
+
+    final bool isUsernameBlocked = _isUsernameAvailable == false;
+    final bool canSave = !_isSaving &&
+        !_isCheckingUsername &&
+        !isUsernameBlocked &&
+        _nameCtrl.text.trim().isNotEmpty &&
+        _usernameCtrl.text.trim().isNotEmpty;
+
+    return PopScope(
+      canPop: !_hasUnsavedChanges,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (!didPop) {
+          final discard = await _confirmDiscard();
+          if (discard && context.mounted) {
+            Navigator.pop(context);
+          }
+        }
+      },
+      child: Scaffold(
         backgroundColor: context.scaffoldBg,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          icon: Icon(Icons.close, color: context.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Edit Profile',
-          style: GoogleFonts.inter(
-              fontWeight: FontWeight.bold, color: context.textPrimary, fontSize: 17),
-        ),
-        actions: [
-          TextButton(
-            onPressed: _isSaving ? null : _saveProfile,
-            child: _isSaving
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Color(0xFF0085FF)),
-                  )
-                : Text(
-                    'Save',
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF0085FF),
-                    ),
-                  ),
+        appBar: AppBar(
+          backgroundColor: context.scaffoldBg,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+          leading: IconButton(
+            icon: Icon(Icons.close, color: context.textPrimary),
+            onPressed: () async {
+              final discard = await _confirmDiscard();
+              if (discard && context.mounted) {
+                Navigator.pop(context);
+              }
+            },
           ),
-          const SizedBox(width: 8),
-        ],
+          title: Text(
+            'Edit Profile',
+            style: GoogleFonts.inter(
+                fontWeight: FontWeight.bold, color: context.textPrimary, fontSize: 17),
+          ),
+          actions: [
+            TextButton(
+              onPressed: canSave ? _saveProfile : null,
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Color(0xFF0085FF)),
+                    )
+                  : Text(
+                      'Save',
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: canSave ? const Color(0xFF0085FF) : context.textMuted,
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 8),
+          ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(color: context.border, height: 1),
@@ -675,14 +887,31 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   style: const TextStyle(color: Colors.red, fontSize: 13)),
             ),
 
-          _field('Display Name', _nameCtrl, fieldBg),
+          _field('Display Name', _nameCtrl, fieldBg, maxLength: 50),
           const SizedBox(height: 14),
-          _field('Username', _usernameCtrl, fieldBg, prefix: '@'),
+          _field(
+            'Username',
+            _usernameCtrl,
+            fieldBg,
+            prefix: '@',
+            maxLength: 30,
+            suffixIcon: usernameSuffix,
+            helperText: usernameHelper,
+            helperColor: usernameHelperColor,
+            onChanged: _onUsernameChanged,
+          ),
           const SizedBox(height: 14),
-          _field('Bio', _bioCtrl, fieldBg,
-              maxLines: 4, hint: 'Write something about yourself...'),
+          _field(
+            'Bio',
+            _bioCtrl,
+            fieldBg,
+            maxLines: 4,
+            maxLength: 160,
+            hint: 'Write something about yourself...',
+          ),
           const SizedBox(height: 14),
-          _field('Phone', _phoneCtrl, fieldBg, hint: '+880XXXXXXXXXX'),
+          _field('Phone', _phoneCtrl, fieldBg,
+              hint: '+880XXXXXXXXXX', keyboardType: TextInputType.phone),
           const SizedBox(height: 14),
 
           // ── Country ──────────────────────────────────────────
@@ -720,11 +949,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           const SizedBox(height: 14),
 
-          _field('City / Town', _cityCtrl, fieldBg, hint: 'e.g. Mirpur, Dhaka'),
+          _field('City / Town', _cityCtrl, fieldBg, hint: 'e.g. Mirpur, Dhaka', maxLength: 50),
           const SizedBox(height: 14),
-          _field('Village / Street', _villageCtrl, fieldBg, hint: 'e.g. Road 5, Block D'),
+          _field('Village / Street', _villageCtrl, fieldBg, hint: 'e.g. Road 5, Block D', maxLength: 100),
           const SizedBox(height: 14),
-          _field('ZIP Code', _zipCtrl, fieldBg, hint: 'e.g. 1216'),
+          _field('ZIP Code', _zipCtrl, fieldBg, hint: 'e.g. 1216', maxLength: 10),
           const SizedBox(height: 14),
 
           // ── Gender ───────────────────────────────────────────
@@ -781,17 +1010,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   Icon(Icons.calendar_today_rounded,
                       size: 16, color: context.textSecondary),
                   const SizedBox(width: 10),
-                  Text(
-                    _birthdateString != null && _birthdateString!.isNotEmpty
-                        ? _birthdateString!
-                        : 'Select Birth Date',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: _birthdateString != null && _birthdateString!.isNotEmpty
-                          ? context.textPrimary
-                          : context.textMuted,
+                  Expanded(
+                    child: Text(
+                      _birthdateString != null && _birthdateString!.isNotEmpty
+                          ? _birthdateString!
+                          : 'Select Birth Date',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: _birthdateString != null && _birthdateString!.isNotEmpty
+                            ? context.textPrimary
+                            : context.textMuted,
+                      ),
                     ),
                   ),
+                  if (_birthdateString != null && _birthdateString!.isNotEmpty)
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => setState(() => _birthdateString = null),
+                      child: Icon(Icons.close_rounded, size: 18, color: context.textMuted),
+                    )
+                  else
+                    Icon(Icons.keyboard_arrow_down_rounded,
+                        size: 20, color: context.textSecondary),
                 ],
               ),
             ),
@@ -799,8 +1039,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           const SizedBox(height: 24),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _pickerTile({
     required Color fieldBg,
@@ -854,33 +1095,77 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     String? prefix,
     String? hint,
     int maxLines = 1,
+    int? maxLength,
+    Widget? suffixIcon,
+    String? helperText,
+    Color? helperColor,
+    TextInputType? keyboardType,
+    ValueChanged<String>? onChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _label(label),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _label(label),
+            if (maxLength != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 2, bottom: 4),
+                child: Text(
+                  '${ctrl.text.length}/$maxLength',
+                  style: GoogleFonts.inter(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                    color: ctrl.text.length > maxLength ? Colors.redAccent : context.textMuted,
+                  ),
+                ),
+              ),
+          ],
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: ctrl,
           maxLines: maxLines,
+          maxLength: maxLength,
+          keyboardType: keyboardType,
+          buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
+          onChanged: (val) {
+            setState(() {});
+            onChanged?.call(val);
+          },
           decoration: InputDecoration(
             prefixText: prefix,
-            prefixStyle: GoogleFonts.inter(color: context.textSecondary),
+            prefixStyle: GoogleFonts.inter(color: context.textSecondary, fontWeight: FontWeight.w600),
             hintText: hint,
             hintStyle: GoogleFonts.inter(color: context.textMuted, fontSize: 13.5),
             filled: true,
             fillColor: bg,
+            suffixIcon: suffixIcon,
+            helperText: helperText,
+            helperStyle: GoogleFonts.inter(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w500,
+              color: helperColor ?? context.textMuted,
+            ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(
-                color: context.isDarkMode ? const Color(0xFF24273F) : const Color(0xFFE5E7EB),
+                color: helperColor != null && helperColor == Colors.redAccent
+                    ? Colors.redAccent.withAlpha(150)
+                    : (context.isDarkMode ? const Color(0xFF24273F) : const Color(0xFFE5E7EB)),
                 width: 1.2,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFF0085FF), width: 1.5),
+              borderSide: BorderSide(
+                color: helperColor != null && helperColor == Colors.redAccent
+                    ? Colors.redAccent
+                    : const Color(0xFF0085FF),
+                width: 1.5,
+              ),
             ),
           ),
           style: GoogleFonts.inter(fontSize: 14, color: context.textPrimary),
