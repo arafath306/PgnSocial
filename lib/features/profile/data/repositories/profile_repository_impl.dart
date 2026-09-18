@@ -84,6 +84,10 @@ class ProfileRepositoryImpl implements IProfileRepository {
     String? zip,
     String? gender,
     String? birthdate,
+    String? education,
+    String? bloodGroup,
+    String? occupation,
+    String? website,
   }) async {
     try {
       if (_currentUid.isEmpty) {
@@ -101,6 +105,10 @@ class ProfileRepositoryImpl implements IProfileRepository {
         'zip': zip,
         'gender': gender,
         'birthdate': birthdate,
+        'education': education,
+        'blood_group': bloodGroup,
+        'occupation': occupation,
+        'website': website,
       };
       final result = await remoteDataSource.updateProfile(_currentUid, profileData);
       return Right(result);

@@ -141,6 +141,10 @@ extension ProfileExtension on DatabaseService {
     String? zip,
     String? gender,
     String? birthdate,
+    String? education,
+    String? bloodGroup,
+    String? occupation,
+    String? website,
   }) async {
     if (_currentUid.isEmpty) return false;
     _isLoading = true;
@@ -159,6 +163,10 @@ extension ProfileExtension on DatabaseService {
         zip: zip,
         gender: gender,
         birthdate: birthdate,
+        education: education,
+        bloodGroup: bloodGroup,
+        occupation: occupation,
+        website: website,
       );
 
       final success = res.fold((l) => false, (r) => r);

@@ -18,6 +18,10 @@ class UpdateProfileUseCase {
     String? zip,
     String? gender,
     String? birthdate,
+    String? education,
+    String? bloodGroup,
+    String? occupation,
+    String? website,
   }) {
     return repository.updateProfile(
       fullName: fullName,
@@ -31,6 +35,10 @@ class UpdateProfileUseCase {
       zip: zip,
       gender: gender,
       birthdate: birthdate,
+      education: education,
+      bloodGroup: bloodGroup,
+      occupation: occupation,
+      website: website,
     );
   }
 }

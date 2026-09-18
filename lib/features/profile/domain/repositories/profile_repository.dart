@@ -24,6 +24,10 @@ abstract class IProfileRepository {
     String? zip,
     String? gender,
     String? birthdate,
+    String? education,
+    String? bloodGroup,
+    String? occupation,
+    String? website,
   });
   
   Future<Either<Failure, bool>> updateProfileImage(Uint8List bytes, bool isAvatar);
