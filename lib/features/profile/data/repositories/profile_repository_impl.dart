@@ -149,4 +149,100 @@ class ProfileRepositoryImpl implements IProfileRepository {
       return Left(ServerFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, List<Map<String, dynamic>>>> fetchUserExperiences(String userId) async {
+    try {
+      final res = await supabaseClient
+          .from('user_experiences')
+          .select('*')
+          .eq('user_id', userId)
+          .order('start_date', ascending: false);
+      return Right(List<Map<String, dynamic>>.from(res));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> saveUserExperience(Map<String, dynamic> data, {String? id}) async {
+    try {
+      if (id != null && id.isNotEmpty) {
+        final res = await supabaseClient
+            .from('user_experiences')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single();
+        return Right(Map<String, dynamic>.from(res));
+      } else {
+        final res = await supabaseClient
+            .from('user_experiences')
+            .insert(data)
+            .select()
+            .single();
+        return Right(Map<String, dynamic>.from(res));
+      }
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> deleteUserExperience(String experienceId) async {
+    try {
+      await supabaseClient.from('user_experiences').delete().eq('id', experienceId);
+      return const Right(true);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<Map<String, dynamic>>>> fetchUserEducations(String userId) async {
+    try {
+      final res = await supabaseClient
+          .from('user_educations')
+          .select('*')
+          .eq('user_id', userId)
+          .order('start_date', ascending: false);
+      return Right(List<Map<String, dynamic>>.from(res));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> saveUserEducation(Map<String, dynamic> data, {String? id}) async {
+    try {
+      if (id != null && id.isNotEmpty) {
+        final res = await supabaseClient
+            .from('user_educations')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single();
+        return Right(Map<String, dynamic>.from(res));
+      } else {
+        final res = await supabaseClient
+            .from('user_educations')
+            .insert(data)
+            .select()
+            .single();
+        return Right(Map<String, dynamic>.from(res));
+      }
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, bool>> deleteUserEducation(String educationId) async {
+    try {
+      await supabaseClient.from('user_educations').delete().eq('id', educationId);
+      return const Right(true);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
 }

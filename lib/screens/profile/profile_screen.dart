@@ -26,6 +26,10 @@ import '../create_thread_screen.dart';
 import '../messenger/chat_screen.dart';
 import '../../state/monetization_controller.dart';
 import '../../services/screenshot_protection_service.dart';
+import '../../models/user_experience.dart';
+import '../../models/user_education.dart';
+import '../../widgets/profile/experience_list_card.dart';
+import '../../widgets/profile/education_list_card.dart';
 
 
 class ProfileScreen extends StatefulWidget {
@@ -47,6 +51,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   List<ThreadPost> _replies = [];
   List<ThreadPost> _reposts = [];
   bool _isLoading = true;
+  List<UserExperience> _experiences = [];
+  List<UserEducation> _educations = [];
   
   double? _creatorPrice;
 
@@ -113,6 +119,13 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     _replies = await dbService.fetchUserRepliedThreads(targetId);
     _reposts = await dbService.fetchUserReposts(targetId);
+
+    // Fetch LinkedIn-style experiences and educations
+    final expFuture = dbService.fetchUserExperiences(targetId);
+    final eduFuture = dbService.fetchUserEducations(targetId);
+    final results = await Future.wait([expFuture, eduFuture]);
+    _experiences = results[0] as List<UserExperience>;
+    _educations = results[1] as List<UserEducation>;
 
     // Fetch monetization info if this is someone else and they can monetize
     if (!_isOwnProfile && _viewedProfile?.canMonetize == true) {
@@ -622,6 +635,104 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ),
         ],
+
+        // Website & Blood Group chips
+        () {
+          final website = profile?.website;
+          final bloodGroup = profile?.bloodGroup;
+          final hasWebsite = website != null && website.isNotEmpty;
+          final hasBloodGroup = bloodGroup != null && bloodGroup.isNotEmpty;
+
+          if (!hasWebsite && !hasBloodGroup) return const SizedBox.shrink();
+
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (hasWebsite)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.link_rounded, size: 14, color: Color(0xFF0085FF)),
+                      const SizedBox(width: 4),
+                      Text(
+                        website,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: const Color(0xFF0085FF),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                if (hasBloodGroup)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.water_drop_rounded, size: 12, color: Colors.redAccent),
+                        const SizedBox(width: 3),
+                        Text(
+                          'Blood: $bloodGroup',
+                          style: GoogleFonts.inter(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.redAccent,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          );
+        }(),
+
+        const SizedBox(height: 6),
+
+        // Work Experiences (LinkedIn style)
+        () {
+          final targetId = _isOwnProfile ? db.currentUid : (widget.userId ?? '');
+          final userExperiences = _isOwnProfile
+              ? db.myExperiences
+              : (_experiences.isNotEmpty ? _experiences : db.getExperiencesForUser(targetId));
+          final userEducations = _isOwnProfile
+              ? db.myEducations
+              : (_educations.isNotEmpty ? _educations : db.getEducationsForUser(targetId));
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (userExperiences.isNotEmpty || _isOwnProfile)
+                ExperienceListCard(
+                  experiences: userExperiences,
+                  isOwnProfile: _isOwnProfile,
+                  onRefresh: () async {
+                    final list = await db.fetchUserExperiences(targetId);
+                    if (mounted) setState(() => _experiences = list);
+                  },
+                ),
+              if (userEducations.isNotEmpty || _isOwnProfile)
+                EducationListCard(
+                  educations: userEducations,
+                  isOwnProfile: _isOwnProfile,
+                  onRefresh: () async {
+                    final list = await db.fetchUserEducations(targetId);
+                    if (mounted) setState(() => _educations = list);
+                  },
+                ),
+            ],
+          );
+        }(),
 
         const SizedBox(height: 4),
       ],

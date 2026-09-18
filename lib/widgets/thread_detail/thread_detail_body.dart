@@ -12,6 +12,7 @@ import '../poll_widget.dart';
 import '../voice_post_player.dart';
 import 'nested_original_post.dart';
 import 'thread_detail_music_player.dart';
+import '../thread_card_components/life_event_card.dart';
 
 class ThreadDetailBody extends StatelessWidget {
   final ThreadPost activePost;
@@ -38,14 +39,28 @@ class ThreadDetailBody extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            activePost.content,
-            style: GoogleFonts.hindSiliguri(
-              fontSize: 17.5,
-              color: context.textPrimary,
-              height: 1.45,
+          if (activePost.content.isNotEmpty)
+            Text(
+              activePost.content,
+              style: GoogleFonts.hindSiliguri(
+                fontSize: 17.5,
+                color: context.textPrimary,
+                height: 1.45,
+              ),
             ),
-          ),
+          if (activePost.lifeEvent != null) ...[
+            const SizedBox(height: 12),
+            LifeEventCard(
+              lifeEvent: activePost.lifeEvent!,
+              onCongratulate: () {
+                HapticFeedback.lightImpact();
+                if (!activePost.isLikedByMe) {
+                  SoundService.playLike();
+                }
+                dbService.toggleLike(activePost.id, !activePost.isLikedByMe);
+              },
+            ),
+          ],
           if (activePost.isRepost && activePost.repostedPost != null)
             NestedOriginalPost(
                 origPost: activePost.repostedPost!, dbService: dbService),

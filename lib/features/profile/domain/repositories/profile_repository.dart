@@ -35,4 +35,12 @@ abstract class IProfileRepository {
   Future<Either<Failure, List<Map<String, dynamic>>>> fetchVerificationPlans();
   
   Future<Either<Failure, bool>> updateVerificationPlanPrice(String planId, double price, {double? discountPrice});
+
+  Future<Either<Failure, List<Map<String, dynamic>>>> fetchUserExperiences(String userId);
+  Future<Either<Failure, Map<String, dynamic>>> saveUserExperience(Map<String, dynamic> data, {String? id});
+  Future<Either<Failure, bool>> deleteUserExperience(String experienceId);
+
+  Future<Either<Failure, List<Map<String, dynamic>>>> fetchUserEducations(String userId);
+  Future<Either<Failure, Map<String, dynamic>>> saveUserEducation(Map<String, dynamic> data, {String? id});
+  Future<Either<Failure, bool>> deleteUserEducation(String educationId);
 }

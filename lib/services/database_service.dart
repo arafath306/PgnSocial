@@ -8,6 +8,9 @@ import '../models/profile.dart';
 import '../models/thread_post.dart';
 import '../models/notification.dart';
 import '../models/verification_plan_pricing.dart';
+import '../models/user_experience.dart';
+import '../models/user_education.dart';
+import '../models/life_event.dart';
 import 'log_service.dart';
 
 import '../core/injection.dart';
@@ -37,6 +40,7 @@ import '../features/profile/domain/usecases/fetch_verification_plans_use_case.da
 import '../features/profile/domain/usecases/update_verification_plan_price_use_case.dart';
 import '../features/profile/domain/usecases/fetch_admin_verification_requests_use_case.dart';
 import '../features/profile/domain/usecases/update_verification_request_status_use_case.dart';
+import '../features/profile/domain/repositories/profile_repository.dart';
 import '../features/notifications/domain/usecases/show_notification_use_case.dart';
 import '../features/notifications/domain/usecases/play_sound_use_case.dart';
 import '../core/security/e2ee_service.dart';
@@ -104,12 +108,28 @@ class DatabaseService with ChangeNotifier {
       hasVotedPoll: entity.hasVotedPoll,
       votedOptionId: entity.votedOptionId,
       musicTrack: entity.musicTrack,
+      lifeEvent: entity.lifeEvent,
     );
   }
 
   // Cache variables
   Profile? _myProfile;
   Profile? get myProfile => _myProfile;
+
+  List<UserExperience> _myExperiences = [];
+  List<UserExperience> get myExperiences => _myExperiences;
+
+  List<UserEducation> _myEducations = [];
+  List<UserEducation> get myEducations => _myEducations;
+
+  final Map<String, List<UserExperience>> _userExperiencesCache = {};
+  final Map<String, List<UserEducation>> _userEducationsCache = {};
+
+  List<UserExperience> getExperiencesForUser(String userId) =>
+      userId == _currentUid ? _myExperiences : (_userExperiencesCache[userId] ?? []);
+
+  List<UserEducation> getEducationsForUser(String userId) =>
+      userId == _currentUid ? _myEducations : (_userEducationsCache[userId] ?? []);
 
   List<ThreadPost> _feed = [];
   List<ThreadPost> get feed => _feed;
@@ -422,6 +442,8 @@ class DatabaseService with ChangeNotifier {
   RealtimeChannel? _mutesChannel;
   RealtimeChannel? _pollVotesChannel;
   RealtimeChannel? _profilesChannel;
+  RealtimeChannel? _experiencesChannel;
+  RealtimeChannel? _educationsChannel;
   StreamSubscription<AuthState>? _supabaseAuthSub;
   Timer? _lastSeenTimer;
 
@@ -545,6 +567,10 @@ class DatabaseService with ChangeNotifier {
     _repostedThreadIds = {};
     _postsCache.clear();
     _deletedPostIds.clear();
+    _myExperiences = [];
+    _myEducations = [];
+    _userExperiencesCache.clear();
+    _userEducationsCache.clear();
     _lastSeenTimer?.cancel();
     unsubscribeRealtime();
     notifyListeners();
@@ -725,6 +751,38 @@ class DatabaseService with ChangeNotifier {
             })
         .subscribe();
 
+    _experiencesChannel = _supabase
+        .channel('public:user_experiences:$_currentUid')
+        .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'user_experiences',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'user_id',
+              value: _currentUid,
+            ),
+            callback: (payload) {
+              fetchUserExperiences(_currentUid);
+            })
+        .subscribe();
+
+    _educationsChannel = _supabase
+        .channel('public:user_educations:$_currentUid')
+        .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'user_educations',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'user_id',
+              value: _currentUid,
+            ),
+            callback: (payload) {
+              fetchUserEducations(_currentUid);
+            })
+        .subscribe();
+
     /*
     _pollVotesChannel = _supabase
         .channel('public:poll_votes')
@@ -764,6 +822,14 @@ class DatabaseService with ChangeNotifier {
     if (_profilesChannel != null) {
       _supabase.removeChannel(_profilesChannel!);
       _profilesChannel = null;
+    }
+    if (_experiencesChannel != null) {
+      _supabase.removeChannel(_experiencesChannel!);
+      _experiencesChannel = null;
+    }
+    if (_educationsChannel != null) {
+      _supabase.removeChannel(_educationsChannel!);
+      _educationsChannel = null;
     }
   }
   @override

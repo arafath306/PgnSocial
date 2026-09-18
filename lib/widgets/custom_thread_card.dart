@@ -29,6 +29,7 @@ import '../state/music_playback_controller.dart';
 import '../models/music_track.dart';
 import '../state/monetization_controller.dart';
 import 'expandable_post_text.dart';
+import 'thread_card_components/life_event_card.dart';
 
 import 'voice_post_player.dart';
 import 'thread_card_components/thread_actions.dart';
@@ -621,9 +622,19 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
             ),
           )
         else ...[
-          ExpandablePostText(
-            text: post.content,
-          ),
+          if (post.content.isNotEmpty)
+            ExpandablePostText(
+              text: post.content,
+            ),
+          if (post.lifeEvent != null) ...[
+            const SizedBox(height: 8),
+            LifeEventCard(
+              lifeEvent: post.lifeEvent!,
+              onCongratulate: () {
+                dbService.toggleLike(post.id, !post.isLikedByMe);
+              },
+            ),
+          ],
         if (post.isRepost && post.repostedPost != null)
           _buildNestedOriginalPost(context, dbService, post.repostedPost!),
         if (post.imageUrls != null && post.imageUrls!.isNotEmpty) ...[

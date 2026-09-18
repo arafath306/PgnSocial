@@ -3,6 +3,7 @@ import 'profile.dart';
 import 'poll_option.dart';
 import 'music_track.dart';
 import 'community.dart';
+import 'life_event.dart';
 
 class ThreadPost {
   final String id;
@@ -43,6 +44,9 @@ class ThreadPost {
   // Music Field
   final MusicTrack? musicTrack;
 
+  // Life Event Milestone Field
+  final LifeEvent? lifeEvent;
+
   ThreadPost({
     required this.id,
     required this.userId,
@@ -76,6 +80,7 @@ class ThreadPost {
     this.hasVotedPoll = false,
     this.votedOptionId,
     this.musicTrack,
+    this.lifeEvent,
   });
 
   int get totalPollVotes {
@@ -195,6 +200,24 @@ class ThreadPost {
       }
     }
 
+    // Parse Life Event from Content (supports 🎉DakLifeEvent🎉)
+    LifeEvent? parsedLifeEvent;
+    if (cleanContent.contains('DakLifeEvent')) {
+      final lifeEventRegExp = RegExp(r'(\uD83C\uDF89|🎉)?DakLifeEvent(\uD83C\uDF89|🎉)?');
+      final match = lifeEventRegExp.firstMatch(cleanContent);
+      if (match != null) {
+        final rawJsonStr = cleanContent.substring(match.end).trim();
+        cleanContent = cleanContent.substring(0, match.start).trim();
+        if (rawJsonStr.isNotEmpty) {
+          try {
+            parsedLifeEvent = LifeEvent.fromJson(rawJsonStr);
+          } catch (e) {
+            debugPrint("Error parsing life event from post JSON: $e");
+          }
+        }
+      }
+    }
+
     Community? parsedCommunity;
     if (json['communities'] != null) {
       parsedCommunity = Community.fromJson(json['communities'] as Map<String, dynamic>);
@@ -237,6 +260,7 @@ class ThreadPost {
       hasVotedPoll: isVoted,
       votedOptionId: votedOptId,
       musicTrack: parsedMusicTrack,
+      lifeEvent: parsedLifeEvent,
     );
   }
 
@@ -271,6 +295,7 @@ class ThreadPost {
       'thread_hides': isHiddenFromMe ? [{'user_id': userId}] : null,
       'poll_votes': hasVotedPoll && votedOptionId != null ? [{'user_id': userId, 'poll_option_id': votedOptionId}] : null,
       if (musicTrack != null) 'content': '$content🎵DakMusic🎵${musicTrack!.toJson()}', // Restore original payload for music
+      if (lifeEvent != null) 'content': '$content🎉DakLifeEvent🎉${lifeEvent!.toJson()}',
     };
   }
 
@@ -305,6 +330,7 @@ class ThreadPost {
     bool? hasVotedPoll,
     String? votedOptionId,
     MusicTrack? musicTrack,
+    LifeEvent? lifeEvent,
     List<String>? commenterAvatars,
   }) {
     return ThreadPost(
@@ -339,6 +365,7 @@ class ThreadPost {
       hasVotedPoll: hasVotedPoll ?? this.hasVotedPoll,
       votedOptionId: votedOptionId ?? this.votedOptionId,
       musicTrack: musicTrack ?? this.musicTrack,
+      lifeEvent: lifeEvent ?? this.lifeEvent,
     );
   }
 }

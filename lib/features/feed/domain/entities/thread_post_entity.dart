@@ -1,6 +1,7 @@
 import '../../../../models/profile.dart';
 import '../../../../models/poll_option.dart';
 import '../../../../models/music_track.dart';
+import '../../../../models/life_event.dart';
 
 class ThreadPostEntity {
   final String id;
@@ -38,6 +39,9 @@ class ThreadPostEntity {
   // Music Field
   final MusicTrack? musicTrack;
 
+  // Life Event Milestone Field
+  final LifeEvent? lifeEvent;
+
   ThreadPostEntity({
     required this.id,
     required this.userId,
@@ -68,6 +72,7 @@ class ThreadPostEntity {
     this.hasVotedPoll = false,
     this.votedOptionId,
     this.musicTrack,
+    this.lifeEvent,
   });
 
   ThreadPostEntity copyWith({
@@ -100,6 +105,7 @@ class ThreadPostEntity {
     bool? hasVotedPoll,
     String? votedOptionId,
     MusicTrack? musicTrack,
+    LifeEvent? lifeEvent,
   }) {
     return ThreadPostEntity(
       id: id ?? this.id,
@@ -131,6 +137,7 @@ class ThreadPostEntity {
       hasVotedPoll: hasVotedPoll ?? this.hasVotedPoll,
       votedOptionId: votedOptionId ?? this.votedOptionId,
       musicTrack: musicTrack ?? this.musicTrack,
+      lifeEvent: lifeEvent ?? this.lifeEvent,
     );
   }
 }

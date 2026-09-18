@@ -9,6 +9,8 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/database_service.dart';
 import '../../utils/app_theme.dart';
+import '../../widgets/profile/experience_editor_sheet.dart';
+import '../../widgets/profile/education_editor_sheet.dart';
 
 // ─────────────────────────────────────────────────────────────────
 // Full list of world countries + ISO flags
@@ -469,6 +471,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     _birthdateString = widget.profile['birthdate']?.toString();
     _initialBirthdate = _birthdateString;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final db = Provider.of<DatabaseService>(context, listen: false);
+      db.fetchUserExperiences(db.currentUid);
+      db.fetchUserEducations(db.currentUid);
+    });
   }
 
   @override
@@ -954,6 +962,121 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 hint: 'e.g. https://yourwebsite.com',
                 prefixIcon: Icons.link_rounded,
                 keyboardType: TextInputType.url,
+              ),
+              const SizedBox(height: 16),
+              Divider(height: 1, color: context.border),
+              const SizedBox(height: 14),
+
+              // Manage Experiences
+              Consumer<DatabaseService>(
+                builder: (ctx, db, _) {
+                  final expCount = db.myExperiences.length;
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => ExperienceEditorSheet.show(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6366F1).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.25)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF6366F1).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.business_center_outlined, size: 18, color: Color(0xFF6366F1)),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Manage Experience',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: context.textPrimary,
+                                  ),
+                                ),
+                                Text(
+                                  expCount == 0 ? 'Add detailed career history' : '$expCount positions added',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: context.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded, size: 20, color: Color(0xFF6366F1)),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 10),
+
+              // Manage Education
+              Consumer<DatabaseService>(
+                builder: (ctx, db, _) {
+                  final eduCount = db.myEducations.length;
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => EducationEditorSheet.show(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.25)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.school_outlined, size: 18, color: Color(0xFF10B981)),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Manage Education',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: context.textPrimary,
+                                  ),
+                                ),
+                                Text(
+                                  eduCount == 0 ? 'Add degrees & institutions' : '$eduCount degrees added',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: context.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right_rounded, size: 20, color: Color(0xFF10B981)),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),

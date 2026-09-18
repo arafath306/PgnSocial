@@ -22,6 +22,10 @@ class FakeProfileRepository implements IProfileRepository {
     String? zip,
     String? gender,
     String? birthdate,
+    String? bloodGroup,
+    String? occupation,
+    String? education,
+    String? website,
   }) async {
     return updateProfileResult!;
   }

@@ -33,6 +33,10 @@ class Profile {
   final DateTime? createdAt;
   final String? role;
   final DateTime? deactivatedUntil;
+  final String? occupation;
+  final String? education;
+  final String? bloodGroup;
+  final String? website;
 
   Profile({
     required this.id,
@@ -69,6 +73,10 @@ class Profile {
     this.createdAt,
     this.role,
     this.deactivatedUntil,
+    this.occupation,
+    this.education,
+    this.bloodGroup,
+    this.website,
   });
 
   factory Profile.fromJson(Map<String, dynamic> json) {
@@ -123,6 +131,10 @@ class Profile {
       deactivatedUntil: json['deactivated_until'] != null
           ? DateTime.tryParse(json['deactivated_until'] as String)
           : null,
+      occupation: json['occupation'] as String?,
+      education: json['education'] as String?,
+      bloodGroup: json['blood_group'] as String?,
+      website: json['website'] as String?,
     );
   }
 
@@ -162,6 +174,10 @@ class Profile {
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
       if (role != null) 'role': role,
       if (deactivatedUntil != null) 'deactivated_until': deactivatedUntil!.toIso8601String(),
+      if (occupation != null) 'occupation': occupation,
+      if (education != null) 'education': education,
+      if (bloodGroup != null) 'blood_group': bloodGroup,
+      if (website != null) 'website': website,
     };
   }
 
