@@ -218,25 +218,25 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  late TextEditingController _nameCtrl;
-  late TextEditingController _usernameCtrl;
-  late TextEditingController _bioCtrl;
-  late TextEditingController _phoneCtrl;
-  late TextEditingController _cityCtrl;
-  late TextEditingController _villageCtrl;
-  late TextEditingController _zipCtrl;
+  TextEditingController _nameCtrl = TextEditingController();
+  TextEditingController _usernameCtrl = TextEditingController();
+  TextEditingController _bioCtrl = TextEditingController();
+  TextEditingController _phoneCtrl = TextEditingController();
+  TextEditingController _cityCtrl = TextEditingController();
+  TextEditingController _villageCtrl = TextEditingController();
+  TextEditingController _zipCtrl = TextEditingController();
 
-  late final String _initialName;
-  late final String _initialUsername;
-  late final String _initialBio;
-  late final String _initialPhone;
-  late final String _initialCity;
-  late final String _initialVillage;
-  late final String _initialZip;
-  late final String? _initialCountry;
-  late final String? _initialDivision;
-  late final String? _initialGender;
-  late final String? _initialBirthdate;
+  String _initialName = '';
+  String _initialUsername = '';
+  String _initialBio = '';
+  String _initialPhone = '';
+  String _initialCity = '';
+  String _initialVillage = '';
+  String _initialZip = '';
+  String? _initialCountry;
+  String? _initialDivision;
+  String? _initialGender;
+  String? _initialBirthdate;
 
   Timer? _debounceUsernameTimer;
   bool _isCheckingUsername = false;
@@ -410,17 +410,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   bool get _hasUnsavedChanges {
-    return _nameCtrl.text.trim() != _initialName.trim() ||
-        _usernameCtrl.text.trim().toLowerCase() != _initialUsername.trim().toLowerCase() ||
-        _bioCtrl.text.trim() != _initialBio.trim() ||
-        _phoneCtrl.text.trim() != _initialPhone.trim() ||
-        _cityCtrl.text.trim() != _initialCity.trim() ||
-        _villageCtrl.text.trim() != _initialVillage.trim() ||
-        _zipCtrl.text.trim() != _initialZip.trim() ||
-        _selectedCountry != _initialCountry ||
-        _selectedDivision != _initialDivision ||
-        _selectedGender != _initialGender ||
-        _birthdateString != _initialBirthdate;
+    try {
+      return _nameCtrl.text.trim() != _initialName.trim() ||
+          _usernameCtrl.text.trim().toLowerCase() != _initialUsername.trim().toLowerCase() ||
+          _bioCtrl.text.trim() != _initialBio.trim() ||
+          _phoneCtrl.text.trim() != _initialPhone.trim() ||
+          _cityCtrl.text.trim() != _initialCity.trim() ||
+          _villageCtrl.text.trim() != _initialVillage.trim() ||
+          _zipCtrl.text.trim() != _initialZip.trim() ||
+          _selectedCountry != _initialCountry ||
+          _selectedDivision != _initialDivision ||
+          _selectedGender != _initialGender ||
+          _birthdateString != _initialBirthdate;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<bool> _confirmDiscard() async {
