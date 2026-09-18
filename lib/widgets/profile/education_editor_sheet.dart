@@ -207,7 +207,7 @@ class _EducationEditorSheetState extends State<EducationEditorSheet> {
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
     final isEditing = widget.education != null;
-    final fieldBg = isDark ? const Color(0xFF1E2130) : const Color(0xFFF9FAFB);
+    final fieldBg = isDark ? const Color(0xFF0C101D) : const Color(0xFFF8FAFC);
 
     return Container(
       decoration: BoxDecoration(
@@ -246,10 +246,10 @@ class _EducationEditorSheetState extends State<EducationEditorSheet> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                        color: context.primaryAccent.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.school_outlined, color: Color(0xFF10B981), size: 20),
+                      child: Icon(Icons.school_outlined, color: context.primaryAccent, size: 20),
                     ),
                     const SizedBox(width: 10),
                     Text(
@@ -323,7 +323,7 @@ class _EducationEditorSheetState extends State<EducationEditorSheet> {
                   children: [
                     Checkbox(
                       value: _isCurrent,
-                      activeColor: const Color(0xFF10B981),
+                      activeColor: context.primaryAccent,
                       onChanged: (val) {
                         setState(() => _isCurrent = val ?? false);
                       },
@@ -405,15 +405,11 @@ class _EducationEditorSheetState extends State<EducationEditorSheet> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isDark
-                          ? [const Color(0xFF064E3B), const Color(0xFF0F172A)]
-                          : [const Color(0xFFECFDF5), const Color(0xFFD1FAE5)],
-                    ),
+                    color: isDark ? const Color(0xFF0C101D) : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.3),
-                      width: 1.2,
+                      color: context.border,
+                      width: 1.0,
                     ),
                   ),
                   child: Column(
@@ -450,7 +446,7 @@ class _EducationEditorSheetState extends State<EducationEditorSheet> {
                           ),
                           Switch.adaptive(
                             value: _shareAsMilestone,
-                            activeTrackColor: const Color(0xFF10B981),
+                            activeTrackColor: context.primaryAccent,
                             onChanged: (val) => setState(() => _shareAsMilestone = val),
                           ),
                         ],
@@ -494,7 +490,7 @@ class _EducationEditorSheetState extends State<EducationEditorSheet> {
                       child: ElevatedButton(
                         onPressed: _isSaving ? null : _handleSave,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0085FF),
+                          backgroundColor: context.primaryAccent,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -564,7 +560,7 @@ class _EducationEditorSheetState extends State<EducationEditorSheet> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFF10B981), width: 1.5),
+              borderSide: BorderSide(color: context.primaryAccent, width: 1.5),
             ),
           ),
         ),

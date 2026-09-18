@@ -299,8 +299,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: const Color(0xFF0085FF).withAlpha(25), shape: BoxShape.circle),
-                  child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF0085FF), size: 20),
+                  decoration: BoxDecoration(color: context.primaryAccent.withValues(alpha: 0.1), shape: BoxShape.circle),
+                  child: Icon(Icons.camera_alt_rounded, color: context.primaryAccent, size: 20),
                 ),
                 title: Text('Take a Photo', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: context.textPrimary)),
                 onTap: () {
@@ -311,8 +311,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.purple.withAlpha(25), shape: BoxShape.circle),
-                  child: const Icon(Icons.photo_library_rounded, color: Colors.purple, size: 20),
+                  decoration: BoxDecoration(color: context.primaryAccent.withValues(alpha: 0.1), shape: BoxShape.circle),
+                  child: Icon(Icons.photo_library_rounded, color: context.primaryAccent, size: 20),
                 ),
                 title: Text('Choose from Gallery', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: context.textPrimary)),
                 onTap: () {
@@ -682,16 +682,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: context.isDarkMode
-                ? const ColorScheme.dark(
-                    primary: Color(0xFF0085FF),
+                ? ColorScheme.dark(
+                    primary: context.primaryAccent,
                     onPrimary: Colors.white,
-                    surface: Color(0xFF0D0F1A),
+                    surface: context.cardBg,
                     onSurface: Colors.white,
                   )
-                : const ColorScheme.light(
-                    primary: Color(0xFF0085FF),
+                : ColorScheme.light(
+                    primary: context.primaryAccent,
                     onPrimary: Colors.white,
-                    onSurface: Colors.black87,
+                    surface: Colors.white,
+                    onSurface: context.textPrimary,
                   ),
           ),
           child: child!,
@@ -751,7 +752,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             'Profile updated successfully!',
             style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: Colors.white),
           ),
-          backgroundColor: const Color(0xFF10B981),
+          backgroundColor: context.primaryAccent,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
@@ -767,20 +768,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final fieldBg = context.isDarkMode ? const Color(0xFF0F111E) : Colors.white;
+    final fieldBg = context.isDarkMode ? const Color(0xFF0C101D) : const Color(0xFFF8FAFC);
 
     Widget? usernameSuffix;
     if (_isCheckingUsername) {
-      usernameSuffix = const Padding(
-        padding: EdgeInsets.all(12),
+      usernameSuffix = Padding(
+        padding: const EdgeInsets.all(12),
         child: SizedBox(
           width: 16,
           height: 16,
-          child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0085FF)),
+          child: CircularProgressIndicator(strokeWidth: 2, color: context.primaryAccent),
         ),
       );
     } else if (_isUsernameAvailable == true) {
-      usernameSuffix = const Icon(Icons.check_circle_rounded, color: Colors.green, size: 20);
+      usernameSuffix = Icon(Icons.check_circle_rounded, color: context.primaryAccent, size: 20);
     } else if (_isUsernameAvailable == false) {
       usernameSuffix = const Icon(Icons.cancel_rounded, color: Colors.redAccent, size: 20);
     }
@@ -792,7 +793,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       usernameHelperColor = Colors.redAccent;
     } else if (_isUsernameAvailable == true) {
       usernameHelper = 'Username is available';
-      usernameHelperColor = Colors.green;
+      usernameHelperColor = context.primaryAccent;
     }
 
     final bool isUsernameBlocked = _isUsernameAvailable == false;
@@ -819,7 +820,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           elevation: 0,
           surfaceTintColor: Colors.transparent,
           leading: IconButton(
-            icon: Icon(Icons.close, color: context.textPrimary),
+            icon: Icon(Icons.close_rounded, color: context.textPrimary),
             onPressed: () async {
               final discard = await _confirmDiscard();
               if (discard && context.mounted) {
@@ -830,506 +831,558 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           title: Text(
             'Edit Profile',
             style: GoogleFonts.inter(
-                fontWeight: FontWeight.bold, color: context.textPrimary, fontSize: 17),
+              fontWeight: FontWeight.bold,
+              color: context.textPrimary,
+              fontSize: 17.5,
+            ),
           ),
           actions: [
-            TextButton(
-              onPressed: canSave ? _saveProfile : null,
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Color(0xFF0085FF)),
-                    )
-                  : Text(
-                      'Save',
-                      style: GoogleFonts.inter(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: canSave ? const Color(0xFF0085FF) : context.textMuted,
-                      ),
-                    ),
-            ),
-            const SizedBox(width: 8),
-          ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: context.border, height: 1),
-        ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        children: [
-          Consumer<DatabaseService>(
-            builder: (context, db, _) {
-              final coverUrl = _coverUrl ?? widget.profile['cover_url'];
-              final avatarUrl = _avatarUrl ?? widget.profile['avatar_url'];
-              return _buildMediaHeader(db, coverUrl, avatarUrl);
-            },
-          ),
-          const SizedBox(height: 18),
-
-          if (_errorMsg != null)
-            Container(
-              padding: const EdgeInsets.all(12),
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                  color: const Color(0xFFFDEDEC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.red.withAlpha(50))),
-              child: Row(
-                children: [
-                  const Icon(Icons.error_outline_rounded, color: Colors.red, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(_errorMsg!,
-                        style: const TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w500)),
-                  ),
-                ],
-              ),
-            ),
-
-          // ── SECTION 1: PUBLIC IDENTITY ───────────────────────
-          _sectionCard(
-            title: 'Public Profile',
-            icon: Icons.person_outline_rounded,
-            badgeText: 'Public',
-            badgeColor: const Color(0xFF10B981),
-            children: [
-              _field(
-                'Display Name',
-                _nameCtrl,
-                fieldBg,
-                maxLength: 50,
-                hint: 'e.g. Arafath Hossain',
-                prefixIcon: Icons.badge_outlined,
-              ),
-              const SizedBox(height: 14),
-              _field(
-                'Username',
-                _usernameCtrl,
-                fieldBg,
-                prefix: '@',
-                maxLength: 30,
-                suffixIcon: usernameSuffix,
-                helperText: usernameHelper,
-                helperColor: usernameHelperColor,
-                onChanged: _onUsernameChanged,
-              ),
-              const SizedBox(height: 14),
-              _field(
-                'Bio',
-                _bioCtrl,
-                fieldBg,
-                maxLines: 4,
-                maxLength: 160,
-                hint: 'Write something authentic about yourself...',
-              ),
-            ],
-          ),
-
-          // ── SECTION 2: WORK & EDUCATION ──────────────────────
-          _sectionCard(
-            title: 'Work & Education',
-            icon: Icons.school_outlined,
-            badgeText: 'Career',
-            badgeColor: const Color(0xFF8B5CF6),
-            children: [
-              _field(
-                'Occupation / Profession',
-                _occupationCtrl,
-                fieldBg,
-                maxLength: 60,
-                hint: 'e.g. Software Engineer, Designer, Student',
-                prefixIcon: Icons.work_outline_rounded,
-              ),
-              const SizedBox(height: 14),
-              _field(
-                'Education / Institute',
-                _educationCtrl,
-                fieldBg,
-                maxLength: 80,
-                hint: 'e.g. University of Dhaka, BUET, College',
-                prefixIcon: Icons.school_outlined,
-              ),
-              const SizedBox(height: 14),
-              _field(
-                'Website / Portfolio Link',
-                _websiteCtrl,
-                fieldBg,
-                maxLength: 100,
-                hint: 'e.g. https://yourwebsite.com',
-                prefixIcon: Icons.link_rounded,
-                keyboardType: TextInputType.url,
-              ),
-              const SizedBox(height: 16),
-              Divider(height: 1, color: context.border),
-              const SizedBox(height: 14),
-
-              // Manage Experiences
-              Consumer<DatabaseService>(
-                builder: (ctx, db, _) {
-                  final expCount = db.myExperiences.length;
-                  return InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => ExperienceEditorSheet.show(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6366F1).withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.25)),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF6366F1).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(Icons.business_center_outlined, size: 18, color: Color(0xFF6366F1)),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Manage Experience',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: context.textPrimary,
-                                  ),
-                                ),
-                                Text(
-                                  expCount == 0 ? 'Add detailed career history' : '$expCount positions added',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    color: context.textMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(Icons.chevron_right_rounded, size: 20, color: Color(0xFF6366F1)),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 10),
-
-              // Manage Education
-              Consumer<DatabaseService>(
-                builder: (ctx, db, _) {
-                  final eduCount = db.myEducations.length;
-                  return InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => EducationEditorSheet.show(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.25)),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(Icons.school_outlined, size: 18, color: Color(0xFF10B981)),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Manage Education',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: context.textPrimary,
-                                  ),
-                                ),
-                                Text(
-                                  eduCount == 0 ? 'Add degrees & institutions' : '$eduCount degrees added',
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    color: context.textMuted,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(Icons.chevron_right_rounded, size: 20, color: Color(0xFF10B981)),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-
-          // ── SECTION 3: LOCATION & RESIDENCE ──────────────────
-          _sectionCard(
-            title: 'Location & Residence',
-            icon: Icons.location_on_outlined,
-            badgeText: 'Location',
-            badgeColor: const Color(0xFF0085FF),
-            children: [
-              _label('Country'),
-              const SizedBox(height: 6),
-              _pickerTile(
-                fieldBg: fieldBg,
-                value: _selectedCountry != null
-                    ? _kCountries
-                        .where((c) => c['name'] == _selectedCountry)
-                        .map((c) => '${c['flag']}  $_selectedCountry')
-                        .firstOrNull
-                    : null,
-                hint: 'Select your country',
-                icon: Icons.public_rounded,
-                onTap: _showCountryPicker,
-                onClear: _selectedCountry != null
-                    ? () => setState(() => _selectedCountry = null)
-                    : null,
-              ),
-              const SizedBox(height: 14),
-              _label('State / Division / Region'),
-              const SizedBox(height: 6),
-              _pickerTile(
-                fieldBg: fieldBg,
-                value: _selectedDivision,
-                hint: 'Search or type any region...',
-                icon: Icons.location_city_rounded,
-                onTap: _showDivisionPicker,
-                onClear: _selectedDivision != null
-                    ? () => setState(() => _selectedDivision = null)
-                    : null,
-              ),
-              const SizedBox(height: 14),
-              _field(
-                'City / Town',
-                _cityCtrl,
-                fieldBg,
-                hint: 'e.g. Mirpur, Dhaka',
-                maxLength: 50,
-                prefixIcon: Icons.apartment_rounded,
-              ),
-              const SizedBox(height: 14),
-              _field(
-                'Village / Street / Area',
-                _villageCtrl,
-                fieldBg,
-                hint: 'e.g. Road 5, Block D',
-                maxLength: 100,
-                prefixIcon: Icons.signpost_outlined,
-              ),
-              const SizedBox(height: 14),
-              _field(
-                'ZIP / Postal Code',
-                _zipCtrl,
-                fieldBg,
-                hint: 'e.g. 1216',
-                maxLength: 10,
-                keyboardType: TextInputType.number,
-                prefixIcon: Icons.pin_drop_outlined,
-              ),
-            ],
-          ),
-
-          // ── SECTION 4: PRIVATE & HEALTH DETAILS ──────────────
-          _sectionCard(
-            title: 'Private & Health Details',
-            icon: Icons.lock_outline_rounded,
-            badgeText: '🔒 Private',
-            badgeColor: const Color(0xFF6366F1),
-            children: [
-              _buildPrivacyTrustBanner(),
-              _field(
-                'Phone Number',
-                _phoneCtrl,
-                fieldBg,
-                hint: '+880XXXXXXXXXX',
-                keyboardType: TextInputType.phone,
-                prefixIcon: Icons.phone_outlined,
-              ),
-              const SizedBox(height: 16),
-              _buildGenderSelector(),
-              const SizedBox(height: 16),
-              _buildBloodGroupSelector(),
-              const SizedBox(height: 16),
-              _label('Birth Date'),
-              const SizedBox(height: 6),
-              GestureDetector(
-                onTap: () => _selectBirthdate(context),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-                  decoration: BoxDecoration(
-                    color: fieldBg,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: context.isDarkMode ? const Color(0xFF24273F) : const Color(0xFFE5E7EB),
-                      width: 1.2,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.calendar_today_rounded,
-                          size: 16, color: context.textSecondary),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          _birthdateString != null && _birthdateString!.isNotEmpty
-                              ? _birthdateString!
-                              : 'Select Birth Date',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: _birthdateString != null && _birthdateString!.isNotEmpty
-                                ? context.textPrimary
-                                : context.textMuted,
-                          ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              child: FilledButton(
+                onPressed: canSave ? _saveProfile : null,
+                style: FilledButton.styleFrom(
+                  backgroundColor: context.primaryAccent,
+                  disabledBackgroundColor: context.primaryAccent.withValues(alpha: 0.35),
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  minimumSize: const Size(0, 34),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                  elevation: 0,
+                ),
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Text(
+                        'Save',
+                        style: GoogleFonts.inter(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
                         ),
                       ),
-                      if (_birthdateString != null && _birthdateString!.isNotEmpty)
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => setState(() => _birthdateString = null),
-                          child: Icon(Icons.close_rounded, size: 18, color: context.textMuted),
-                        )
-                      else
-                        Icon(Icons.keyboard_arrow_down_rounded,
-                            size: 20, color: context.textSecondary),
-                    ],
-                  ),
+              ),
+            ),
+          ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1),
+            child: Container(color: context.border, height: 1),
+          ),
+        ),
+        body: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          children: [
+            Consumer<DatabaseService>(
+              builder: (context, db, _) {
+                final coverUrl = _coverUrl ?? widget.profile['cover_url'];
+                final avatarUrl = _avatarUrl ?? widget.profile['avatar_url'];
+                return _buildMediaHeader(db, coverUrl, avatarUrl);
+              },
+            ),
+            const SizedBox(height: 18),
+
+            if (_errorMsg != null)
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _errorMsg!,
+                        style: const TextStyle(color: Colors.redAccent, fontSize: 13, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 24),
-        ],
+
+            // ── SECTION 1: PUBLIC PROFILE ────────────────────────
+            _sectionCard(
+              title: 'Public Profile',
+              icon: Icons.person_outline_rounded,
+              children: [
+                _field(
+                  'Display Name',
+                  _nameCtrl,
+                  fieldBg,
+                  maxLength: 50,
+                  hint: 'e.g. Arafath Hossain',
+                  prefixIcon: Icons.badge_outlined,
+                ),
+                const SizedBox(height: 14),
+                _field(
+                  'Username',
+                  _usernameCtrl,
+                  fieldBg,
+                  prefix: '@',
+                  maxLength: 30,
+                  suffixIcon: usernameSuffix,
+                  helperText: usernameHelper,
+                  helperColor: usernameHelperColor,
+                  onChanged: _onUsernameChanged,
+                ),
+                const SizedBox(height: 14),
+                _field(
+                  'Bio',
+                  _bioCtrl,
+                  fieldBg,
+                  maxLines: 4,
+                  maxLength: 160,
+                  hint: 'Write something authentic about yourself...',
+                ),
+              ],
+            ),
+
+            // ── SECTION 2: WORK & EDUCATION ──────────────────────
+            _sectionCard(
+              title: 'Work & Education',
+              icon: Icons.school_outlined,
+              children: [
+                _field(
+                  'Occupation / Profession',
+                  _occupationCtrl,
+                  fieldBg,
+                  maxLength: 60,
+                  hint: 'e.g. Software Engineer, Designer, Student',
+                  prefixIcon: Icons.work_outline_rounded,
+                ),
+                const SizedBox(height: 14),
+                _field(
+                  'Education / Institute',
+                  _educationCtrl,
+                  fieldBg,
+                  maxLength: 80,
+                  hint: 'e.g. University of Dhaka, BUET, College',
+                  prefixIcon: Icons.school_outlined,
+                ),
+                const SizedBox(height: 14),
+                _field(
+                  'Website / Portfolio Link',
+                  _websiteCtrl,
+                  fieldBg,
+                  maxLength: 100,
+                  hint: 'e.g. https://yourwebsite.com',
+                  prefixIcon: Icons.link_rounded,
+                  keyboardType: TextInputType.url,
+                ),
+                const SizedBox(height: 16),
+                Divider(height: 1, color: context.border),
+                const SizedBox(height: 14),
+
+                // Manage Experiences (LinkedIn-style list tile)
+                Consumer<DatabaseService>(
+                  builder: (ctx, db, _) {
+                    final expCount = db.myExperiences.length;
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => ExperienceEditorSheet.show(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: fieldBg,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: context.border, width: 1),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: context.primaryAccent.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(Icons.business_center_outlined, size: 18, color: context.primaryAccent),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Manage Experience',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: context.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    expCount == 0 ? 'Add positions & career history' : '$expCount positions added',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      color: context.textMuted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.chevron_right_rounded, size: 20, color: context.textMuted),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 10),
+
+                // Manage Education (LinkedIn-style list tile)
+                Consumer<DatabaseService>(
+                  builder: (ctx, db, _) {
+                    final eduCount = db.myEducations.length;
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => EducationEditorSheet.show(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: fieldBg,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: context.border, width: 1),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: context.primaryAccent.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(Icons.school_outlined, size: 18, color: context.primaryAccent),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Manage Education',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: context.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    eduCount == 0 ? 'Add degrees & institutions' : '$eduCount degrees added',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      color: context.textMuted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.chevron_right_rounded, size: 20, color: context.textMuted),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+
+            // ── SECTION 3: LOCATION & RESIDENCE ──────────────────
+            _sectionCard(
+              title: 'Location & Residence',
+              icon: Icons.location_on_outlined,
+              children: [
+                _label('Country'),
+                const SizedBox(height: 6),
+                _pickerTile(
+                  fieldBg: fieldBg,
+                  value: _selectedCountry != null
+                      ? _kCountries
+                          .where((c) => c['name'] == _selectedCountry)
+                          .map((c) => '${c['flag']}  $_selectedCountry')
+                          .firstOrNull
+                      : null,
+                  hint: 'Select your country',
+                  icon: Icons.public_rounded,
+                  onTap: _showCountryPicker,
+                  onClear: _selectedCountry != null
+                      ? () => setState(() => _selectedCountry = null)
+                      : null,
+                ),
+                const SizedBox(height: 14),
+                _label('State / Division / Region'),
+                const SizedBox(height: 6),
+                _pickerTile(
+                  fieldBg: fieldBg,
+                  value: _selectedDivision,
+                  hint: 'Search or type any region...',
+                  icon: Icons.location_city_rounded,
+                  onTap: _showDivisionPicker,
+                  onClear: _selectedDivision != null
+                      ? () => setState(() => _selectedDivision = null)
+                      : null,
+                ),
+                const SizedBox(height: 14),
+                _field(
+                  'City / Town',
+                  _cityCtrl,
+                  fieldBg,
+                  hint: 'e.g. Mirpur, Dhaka',
+                  maxLength: 50,
+                  prefixIcon: Icons.apartment_rounded,
+                ),
+                const SizedBox(height: 14),
+                _field(
+                  'Village / Street / Area',
+                  _villageCtrl,
+                  fieldBg,
+                  hint: 'e.g. Road 5, Block D',
+                  maxLength: 100,
+                  prefixIcon: Icons.signpost_outlined,
+                ),
+                const SizedBox(height: 14),
+                _field(
+                  'ZIP / Postal Code',
+                  _zipCtrl,
+                  fieldBg,
+                  hint: 'e.g. 1216',
+                  maxLength: 10,
+                  keyboardType: TextInputType.number,
+                  prefixIcon: Icons.pin_drop_outlined,
+                ),
+              ],
+            ),
+
+            // ── SECTION 4: PRIVATE DETAILS ───────────────────────
+            _sectionCard(
+              title: 'Private Details',
+              icon: Icons.lock_outline_rounded,
+              children: [
+                _buildPrivacyTrustBanner(),
+                _field(
+                  'Phone Number',
+                  _phoneCtrl,
+                  fieldBg,
+                  hint: '+880XXXXXXXXXX',
+                  keyboardType: TextInputType.phone,
+                  prefixIcon: Icons.phone_outlined,
+                ),
+                const SizedBox(height: 16),
+                _buildGenderSelector(),
+                const SizedBox(height: 16),
+                _buildBloodGroupSelector(),
+                const SizedBox(height: 16),
+                _label('Birth Date'),
+                const SizedBox(height: 6),
+                GestureDetector(
+                  onTap: () => _selectBirthdate(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                    decoration: BoxDecoration(
+                      color: fieldBg,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: context.border,
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.calendar_today_rounded,
+                            size: 16, color: context.textSecondary),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _birthdateString != null && _birthdateString!.isNotEmpty
+                                ? _birthdateString!
+                                : 'Select Birth Date',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: _birthdateString != null && _birthdateString!.isNotEmpty
+                                  ? context.textPrimary
+                                  : context.textMuted,
+                            ),
+                          ),
+                        ),
+                        if (_birthdateString != null && _birthdateString!.isNotEmpty)
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => setState(() => _birthdateString = null),
+                            child: Icon(Icons.close_rounded, size: 18, color: context.textMuted),
+                          )
+                        else
+                          Icon(Icons.keyboard_arrow_down_rounded,
+                              size: 20, color: context.textSecondary),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildMediaHeader(DatabaseService db, String? coverUrl, String? avatarUrl) {
+    final hasCover = coverUrl != null && coverUrl.isNotEmpty;
+    final hasAvatar = avatarUrl != null && avatarUrl.isNotEmpty;
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: 185,
+          height: 190,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
+              // Cover Photo Container
               Positioned(
                 top: 0,
                 left: 0,
                 right: 0,
-                height: 145,
+                height: 148,
                 child: GestureDetector(
                   onTap: _isUploadingPhoto ? null : () => _showPhotoSourceBottomSheet(db, false),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: context.isDarkMode ? const Color(0xFF1E2438) : Colors.grey[200],
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(color: context.border, width: 1),
+                      gradient: hasCover
+                          ? null
+                          : LinearGradient(
+                              colors: context.isDarkMode
+                                  ? [const Color(0xFF111827), const Color(0xFF0A0F1D)]
+                                  : [const Color(0xFFF1F5F9), const Color(0xFFE2E8F0)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        coverUrl != null && coverUrl.isNotEmpty
-                            ? CachedNetworkImage(
-                                imageUrl: coverUrl,
-                                fit: BoxFit.cover,
-                              )
-                            : Container(
-                                color: context.isDarkMode ? const Color(0xFF131726) : Colors.blue.shade50,
-                                child: Center(
-                                  child: Icon(Icons.add_a_photo_outlined, color: Colors.blue.shade300, size: 28),
+                        if (hasCover)
+                          CachedNetworkImage(
+                            imageUrl: coverUrl,
+                            fit: BoxFit.cover,
+                          )
+                        else
+                          Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: (context.isDarkMode ? Colors.black : Colors.white).withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: context.border.withValues(alpha: 0.8),
+                                  width: 1,
                                 ),
                               ),
-                        Positioned(
-                          top: 10,
-                          right: 10,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withAlpha(160),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white24, width: 1),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.camera_alt_rounded, size: 13, color: Colors.white),
-                                SizedBox(width: 5),
-                                Text(
-                                  'Edit Cover',
-                                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                                ),
-                              ],
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.add_a_photo_outlined, size: 16, color: context.textPrimary),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Add Cover Photo',
+                                    style: GoogleFonts.inter(
+                                      color: context.textPrimary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
+                        if (hasCover)
+                          Positioned(
+                            top: 10,
+                            right: 10,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.white24, width: 1),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.camera_alt_rounded, size: 13, color: Colors.white),
+                                  SizedBox(width: 5),
+                                  Text(
+                                    'Edit',
+                                    style: TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
                 ),
               ),
+
+              // Profile Avatar Container
               Positioned(
                 bottom: 2,
-                left: 20,
+                left: 16,
                 child: GestureDetector(
                   onTap: _isUploadingPhoto ? null : () => _showPhotoSourceBottomSheet(db, true),
                   behavior: HitTestBehavior.translucent,
                   child: Stack(
                     children: [
                       Container(
-                        width: 86,
-                        height: 86,
+                        width: 84,
+                        height: 84,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: context.cardBg,
                           border: Border.all(color: context.scaffoldBg, width: 3.5),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withAlpha(30),
-                              blurRadius: 8,
+                              color: Colors.black.withValues(alpha: context.isDarkMode ? 0.4 : 0.1),
+                              blurRadius: 10,
                               offset: const Offset(0, 3),
                             ),
                           ],
                         ),
                         child: ClipOval(
-                          child: avatarUrl != null && avatarUrl.isNotEmpty
+                          child: hasAvatar
                               ? CachedNetworkImage(
                                   imageUrl: avatarUrl,
                                   fit: BoxFit.cover,
                                 )
-                              : Icon(Icons.person, size: 44, color: Colors.grey[400]),
+                              : Container(
+                                  color: context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                                  child: Icon(Icons.person, size: 44, color: context.textMuted),
+                                ),
                         ),
                       ),
                       Positioned(
-                        bottom: 2,
-                        right: 2,
+                        bottom: 0,
+                        right: 0,
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0085FF),
+                            color: context.primaryAccent,
                             shape: BoxShape.circle,
                             border: Border.all(color: context.scaffoldBg, width: 2),
                           ),
-                          child: const Icon(Icons.camera_alt_rounded, size: 14, color: Colors.white),
+                          child: const Icon(Icons.camera_alt_rounded, size: 13, color: Colors.white),
                         ),
                       ),
                     ],
@@ -1340,11 +1393,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ),
         if (_isUploadingPhoto)
-          const Padding(
-            padding: EdgeInsets.only(top: 12.0, bottom: 4.0),
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
             child: LinearProgressIndicator(
-              color: Color(0xFF0085FF),
-              borderRadius: BorderRadius.all(Radius.circular(4)),
+              color: context.primaryAccent,
+              backgroundColor: context.border,
+              borderRadius: const BorderRadius.all(Radius.circular(4)),
             ),
           ),
       ],
@@ -1354,8 +1408,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget _sectionCard({
     required String title,
     required IconData icon,
-    required String badgeText,
-    required Color badgeColor,
     required List<Widget> children,
   }) {
     return Container(
@@ -1364,8 +1416,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         color: context.cardBg,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: context.isDarkMode ? const Color(0xFF1E2438) : const Color(0xFFE5E7EB),
-          width: 1.2,
+          color: context.border,
+          width: 1.0,
         ),
       ),
       child: Column(
@@ -1374,36 +1426,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(icon, size: 16, color: const Color(0xFF0085FF)),
-                    const SizedBox(width: 8),
-                    Text(
-                      title.toUpperCase(),
-                      style: GoogleFonts.inter(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.1,
-                        color: context.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: badgeColor.withAlpha(context.isDarkMode ? 35 : 20),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    badgeText,
-                    style: GoogleFonts.inter(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.bold,
-                      color: badgeColor,
-                    ),
+                Icon(icon, size: 16, color: context.primaryAccent),
+                const SizedBox(width: 8),
+                Text(
+                  title.toUpperCase(),
+                  style: GoogleFonts.inter(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.1,
+                    color: context.textPrimary,
                   ),
                 ),
               ],
@@ -1411,7 +1443,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           Divider(
             height: 1,
-            color: context.isDarkMode ? const Color(0xFF1E2438) : const Color(0xFFF1F3F5),
+            color: context.border,
           ),
           Padding(
             padding: const EdgeInsets.all(16),
@@ -1428,24 +1460,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget _buildPrivacyTrustBanner() {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF0085FF).withAlpha(context.isDarkMode ? 25 : 15),
+        color: context.isDarkMode ? const Color(0xFF0C101D) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF0085FF).withAlpha(60)),
+        border: Border.all(color: context.border, width: 1.0),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.lock_outline_rounded, size: 18, color: Color(0xFF0085FF)),
-          const SizedBox(width: 10),
+          Icon(Icons.lock_outline_rounded, size: 15, color: context.textMuted),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Private & Emergency Info: Your phone number, gender, exact birthdate, and blood group are stored securely and never shown on your public profile.',
+              'Personal info below is private and only visible to you.',
               style: GoogleFonts.inter(
                 fontSize: 12,
-                height: 1.4,
-                color: context.isDarkMode ? const Color(0xFF93C5FD) : const Color(0xFF1E40AF),
+                color: context.textMuted,
+                height: 1.35,
               ),
             ),
           ),
@@ -1487,14 +1518,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           padding: const EdgeInsets.symmetric(vertical: 11),
           decoration: BoxDecoration(
             color: isSelected
-                ? const Color(0xFF0085FF).withAlpha(context.isDarkMode ? 45 : 25)
-                : (context.isDarkMode ? const Color(0xFF0F111E) : const Color(0xFFF9FAFB)),
+                ? context.primaryAccent.withValues(alpha: context.isDarkMode ? 0.16 : 0.08)
+                : (context.isDarkMode ? const Color(0xFF0C101D) : const Color(0xFFF8FAFC)),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected
-                  ? const Color(0xFF0085FF)
-                  : (context.isDarkMode ? const Color(0xFF24273F) : const Color(0xFFE5E7EB)),
-              width: isSelected ? 1.8 : 1.2,
+              color: isSelected ? context.primaryAccent : context.border,
+              width: isSelected ? 1.5 : 1.0,
             ),
           ),
           child: Row(
@@ -1503,15 +1532,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               Icon(
                 icon,
                 size: 16,
-                color: isSelected ? const Color(0xFF0085FF) : context.textSecondary,
+                color: isSelected ? context.primaryAccent : context.textSecondary,
               ),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: GoogleFonts.inter(
                   fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  color: isSelected ? const Color(0xFF0085FF) : context.textPrimary,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? context.primaryAccent : context.textPrimary,
                 ),
               ),
             ],
@@ -1534,7 +1563,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 onTap: () => setState(() => _selectedBloodGroup = null),
                 child: Text(
                   'Clear',
-                  style: GoogleFonts.inter(fontSize: 11, color: Colors.redAccent, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.inter(
+                    fontSize: 11.5,
+                    color: context.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
           ],
@@ -1556,31 +1589,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.redAccent.withAlpha(context.isDarkMode ? 45 : 25)
-                      : (context.isDarkMode ? const Color(0xFF0F111E) : const Color(0xFFF9FAFB)),
+                      ? context.primaryAccent.withValues(alpha: context.isDarkMode ? 0.16 : 0.08)
+                      : (context.isDarkMode ? const Color(0xFF0C101D) : const Color(0xFFF8FAFC)),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: isSelected
-                        ? Colors.redAccent
-                        : (context.isDarkMode ? const Color(0xFF24273F) : const Color(0xFFE5E7EB)),
-                    width: isSelected ? 1.8 : 1.2,
+                    color: isSelected ? context.primaryAccent : context.border,
+                    width: isSelected ? 1.5 : 1.0,
                   ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.bloodtype_rounded,
-                      size: 14,
-                      color: isSelected ? Colors.redAccent : Colors.redAccent.withAlpha(150),
+                      Icons.water_drop_rounded,
+                      size: 13,
+                      color: isSelected ? context.primaryAccent : context.textMuted,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 5),
                     Text(
                       bg,
                       style: GoogleFonts.inter(
                         fontSize: 12.5,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                        color: isSelected ? Colors.redAccent : context.textPrimary,
+                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        color: isSelected ? context.primaryAccent : context.textPrimary,
                       ),
                     ),
                   ],
@@ -1601,7 +1632,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required VoidCallback onTap,
     VoidCallback? onClear,
   }) {
-    final borderCol = context.isDarkMode ? const Color(0xFF24273F) : const Color(0xFFE5E7EB);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1609,7 +1639,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         decoration: BoxDecoration(
           color: fieldBg,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: borderCol, width: 1.2),
+          border: Border.all(color: context.border, width: 1.0),
         ),
         child: Row(
           children: [
@@ -1693,8 +1723,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   )
                 : null,
             prefixIconConstraints: prefixIcon != null
-                ? const BoxConstraints(minWidth: 42, minHeight: 24)
-                : null,
+              ? const BoxConstraints(minWidth: 42, minHeight: 24)
+              : null,
             prefixText: prefix,
             prefixStyle: GoogleFonts.inter(color: context.textSecondary, fontWeight: FontWeight.w600),
             hintText: hint,
@@ -1713,9 +1743,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide(
                 color: helperColor != null && helperColor == Colors.redAccent
-                    ? Colors.redAccent.withAlpha(150)
-                    : (context.isDarkMode ? const Color(0xFF24273F) : const Color(0xFFE5E7EB)),
-                width: 1.2,
+                    ? Colors.redAccent.withValues(alpha: 0.6)
+                    : context.border,
+                width: 1.0,
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -1723,7 +1753,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               borderSide: BorderSide(
                 color: helperColor != null && helperColor == Colors.redAccent
                     ? Colors.redAccent
-                    : const Color(0xFF0085FF),
+                    : context.primaryAccent,
                 width: 1.5,
               ),
             ),
@@ -1742,7 +1772,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             fontSize: 10.5,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.1,
-            color: context.textSecondary.withAlpha(191),
+            color: context.textSecondary.withValues(alpha: 0.75),
           ),
         ),
       );
@@ -1801,8 +1831,8 @@ class _SearchablePickerSheetState extends State<_SearchablePickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final sheetBg = context.isDarkMode ? const Color(0xFF0D0F1A) : Colors.white;
-    final inputBg = context.isDarkMode ? const Color(0xFF1A1D2E) : const Color(0xFFF3F5F8);
+    final sheetBg = context.cardBg;
+    final inputBg = context.isDarkMode ? const Color(0xFF0C101D) : const Color(0xFFF8FAFC);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.88,
@@ -1818,7 +1848,7 @@ class _SearchablePickerSheetState extends State<_SearchablePickerSheet> {
             // Handle bar
             const SizedBox(height: 10),
             Container(
-              width: 40,
+              width: 36,
               height: 4,
               decoration: BoxDecoration(
                 color: context.border,
@@ -1862,9 +1892,13 @@ class _SearchablePickerSheetState extends State<_SearchablePickerSheet> {
                       : null,
                   filled: true,
                   fillColor: inputBg,
-                  border: OutlineInputBorder(
+                  enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
+                    borderSide: BorderSide(color: context.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: context.primaryAccent, width: 1.5),
                   ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
@@ -1879,13 +1913,13 @@ class _SearchablePickerSheetState extends State<_SearchablePickerSheet> {
                     item.toLowerCase() == _searchCtrl.text.trim().toLowerCase()))
               ListTile(
                 leading: Icon(Icons.add_circle_outline_rounded,
-                    color: const Color(0xFF0085FF), size: 22),
+                    color: context.primaryAccent, size: 22),
                 title: Text(
                   'Use "${_searchCtrl.text.trim()}"',
                   style: GoogleFonts.inter(
                       fontSize: 14,
-                      color: const Color(0xFF0085FF),
-                      fontWeight: FontWeight.w500),
+                      color: context.primaryAccent,
+                      fontWeight: FontWeight.w600),
                 ),
                 onTap: () {
                   widget.onSelected(_searchCtrl.text.trim());
@@ -1911,15 +1945,15 @@ class _SearchablePickerSheetState extends State<_SearchablePickerSheet> {
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         color: isSelected
-                            ? const Color(0xFF0085FF)
+                            ? context.primaryAccent
                             : context.textPrimary,
                         fontWeight:
                             isSelected ? FontWeight.w600 : FontWeight.normal,
                       ),
                     ),
                     trailing: isSelected
-                        ? const Icon(Icons.check_rounded,
-                            color: Color(0xFF0085FF), size: 18)
+                        ? Icon(Icons.check_rounded,
+                            color: context.primaryAccent, size: 18)
                         : null,
                     onTap: () {
                       widget.onSelected(item);

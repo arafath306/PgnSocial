@@ -208,7 +208,7 @@ class _ExperienceEditorSheetState extends State<ExperienceEditorSheet> {
   Widget build(BuildContext context) {
     final isDark = context.isDarkMode;
     final isEditing = widget.experience != null;
-    final fieldBg = isDark ? const Color(0xFF1E2130) : const Color(0xFFF9FAFB);
+    final fieldBg = isDark ? const Color(0xFF0C101D) : const Color(0xFFF8FAFC);
 
     return Container(
       decoration: BoxDecoration(
@@ -247,10 +247,10 @@ class _ExperienceEditorSheetState extends State<ExperienceEditorSheet> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6366F1).withValues(alpha: 0.15),
+                        color: context.primaryAccent.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.work_outline_rounded, color: Color(0xFF6366F1), size: 20),
+                      child: Icon(Icons.work_outline_rounded, color: context.primaryAccent, size: 20),
                     ),
                     const SizedBox(width: 10),
                     Text(
@@ -309,12 +309,12 @@ class _ExperienceEditorSheetState extends State<ExperienceEditorSheet> {
                         fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
                         color: isSel ? Colors.white : context.textPrimary,
                       ),
-                      selectedColor: const Color(0xFF6366F1),
+                      selectedColor: context.primaryAccent,
                       backgroundColor: fieldBg,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),
                         side: BorderSide(
-                          color: isSel ? const Color(0xFF6366F1) : context.border,
+                          color: isSel ? context.primaryAccent : context.border,
                         ),
                       ),
                     );
@@ -375,7 +375,7 @@ class _ExperienceEditorSheetState extends State<ExperienceEditorSheet> {
                   children: [
                     Checkbox(
                       value: _isCurrent,
-                      activeColor: const Color(0xFF6366F1),
+                      activeColor: context.primaryAccent,
                       onChanged: (val) {
                         setState(() => _isCurrent = val ?? true);
                       },
@@ -431,15 +431,11 @@ class _ExperienceEditorSheetState extends State<ExperienceEditorSheet> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isDark
-                          ? [const Color(0xFF1E1B4B), const Color(0xFF0F172A)]
-                          : [const Color(0xFFEEF2FF), const Color(0xFFE0E7FF)],
-                    ),
+                    color: isDark ? const Color(0xFF0C101D) : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: const Color(0xFF6366F1).withValues(alpha: 0.3),
-                      width: 1.2,
+                      color: context.border,
+                      width: 1.0,
                     ),
                   ),
                   child: Column(
@@ -476,7 +472,7 @@ class _ExperienceEditorSheetState extends State<ExperienceEditorSheet> {
                           ),
                           Switch.adaptive(
                             value: _shareAsMilestone,
-                            activeTrackColor: const Color(0xFF6366F1),
+                            activeTrackColor: context.primaryAccent,
                             onChanged: (val) => setState(() => _shareAsMilestone = val),
                           ),
                         ],
@@ -520,7 +516,7 @@ class _ExperienceEditorSheetState extends State<ExperienceEditorSheet> {
                       child: ElevatedButton(
                         onPressed: _isSaving ? null : _handleSave,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF0085FF),
+                          backgroundColor: context.primaryAccent,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -590,7 +586,7 @@ class _ExperienceEditorSheetState extends State<ExperienceEditorSheet> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFF6366F1), width: 1.5),
+              borderSide: BorderSide(color: context.primaryAccent, width: 1.5),
             ),
           ),
         ),
