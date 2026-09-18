@@ -78,6 +78,8 @@ extension MessagingExtension on DatabaseService {
             'last_message_time': chat['lastMessageTime'],
             'unread_count': chat['unreadCount'],
             'timestamp': DateTime.parse(chat['timeRaw'] as String),
+            'is_me': chat['is_me'] ?? false,
+            'is_read': chat['is_read'] ?? false,
           });
         }
         list.sort((a, b) => (b['timestamp'] as DateTime).compareTo(a['timestamp'] as DateTime));

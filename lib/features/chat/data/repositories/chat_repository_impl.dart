@@ -171,6 +171,8 @@ class ChatRepositoryImpl implements IChatRepository {
                 ? 1
                 : 0,
             'timeRaw': json['created_at'] as String,
+            'is_me': isMeSender,
+            'is_read': json['is_read'] == true,
           };
         } else {
           if (json['is_read'] == false && json['receiver_id'] == _currentUid) {

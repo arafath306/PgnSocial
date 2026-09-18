@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dak/models/profile.dart';
 import 'package:dak/screens/profile/profile_screen.dart';
 import 'package:dak/utils/app_theme.dart';
+import '../../../core/injection.dart';
+import '../../../core/security/e2ee_service.dart';
+import '../../../services/screenshot_protection_service.dart';
 import '../../../widgets/verification_badge.dart';
+import 'safety_number_dialog.dart';
 
 class MessengerProfileSheet extends StatefulWidget {
   final Profile otherUser;
@@ -34,11 +40,115 @@ class MessengerProfileSheet extends StatefulWidget {
 
 class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
   late bool _muted;
+  bool _isVerified = false;
+  bool _screenshotProtected = false;
+  bool _isChatLocked = false;
+  String? _myPublicKey;
+  String? _peerPublicKey;
 
   @override
   void initState() {
     super.initState();
     _muted = widget.isMuted;
+    _loadSecurityState();
+  }
+
+  Future<void> _loadSecurityState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final verified = prefs.getBool('e2ee_verified_${widget.otherUser.id}') ?? false;
+      final protected = prefs.getBool('screenshot_protected_${widget.otherUser.id}') ?? false;
+      final locked = prefs.getBool('chat_locked_${widget.otherUser.id}') ?? false;
+
+      String? myKey;
+      try {
+        myKey = await sl<E2EEService>().getMyPublicKeyBase64();
+      } catch (_) {}
+
+      String? peerKey = widget.otherUser.publicKey;
+      if (peerKey == null || peerKey.isEmpty) {
+        try {
+          final res = await Supabase.instance.client
+              .from('profiles')
+              .select('public_key')
+              .eq('id', widget.otherUser.id)
+              .maybeSingle();
+          peerKey = res?['public_key'] as String?;
+        } catch (_) {}
+      }
+
+      if (mounted) {
+        setState(() {
+          _isVerified = verified;
+          _screenshotProtected = protected;
+          _isChatLocked = locked;
+          _myPublicKey = myKey;
+          _peerPublicKey = peerKey;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _openSafetyNumberDialog() async {
+    await showDialog(
+      context: context,
+      builder: (_) => SafetyNumberDialog(
+        peerId: widget.otherUser.id,
+        peerName: widget.otherUser.fullName,
+        peerPublicKeyBase64: _peerPublicKey,
+        myPublicKeyBase64: _myPublicKey,
+      ),
+    );
+    if (mounted) {
+      _loadSecurityState();
+    }
+  }
+
+  Future<void> _toggleScreenshotProtection(bool val) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('screenshot_protected_${widget.otherUser.id}', val);
+      setState(() => _screenshotProtected = val);
+      if (val) {
+        await ScreenshotProtectionService.enableProtection();
+      } else {
+        await ScreenshotProtectionService.disableProtection();
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              val
+                  ? 'Screenshot protection enabled for this chat'
+                  : 'Screenshot protection disabled',
+              style: GoogleFonts.inter(),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _toggleChatLock(bool val) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('chat_locked_${widget.otherUser.id}', val);
+      setState(() => _isChatLocked = val);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              val
+                  ? 'Chat locked with biometric security'
+                  : 'Chat lock disabled',
+              style: GoogleFonts.inter(),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (_) {}
   }
 
   String _formatCount(int count) {
@@ -325,6 +435,67 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
                       ),
                       const SizedBox(height: 32),
 
+                      // ── Security & Encryption ──
+                      _buildSectionHeader(context, 'Security & Encryption'),
+                      _buildCorporateListTile(
+                        context: context,
+                        icon: _isVerified ? Icons.verified_user_rounded : Icons.lock_outline_rounded,
+                        title: 'Verify Safety Number',
+                        subtitle: _isVerified ? 'Cryptographically verified' : 'End-to-End Encrypted (AES-256-GCM)',
+                        trailing: _isVerified
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF10B981)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Verified',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF10B981),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : Icon(Icons.chevron_right_rounded, size: 20, color: context.textMuted),
+                        onTap: _openSafetyNumberDialog,
+                      ),
+                      Divider(height: 1, color: context.border),
+                      _buildCorporateListTile(
+                        context: context,
+                        icon: Icons.no_photography_outlined,
+                        title: 'Screenshot Protection',
+                        subtitle: 'Blocks screenshots and screen recording',
+                        trailing: Switch.adaptive(
+                          value: _screenshotProtected,
+                          activeTrackColor: primaryColor,
+                          onChanged: _toggleScreenshotProtection,
+                        ),
+                        onTap: () => _toggleScreenshotProtection(!_screenshotProtected),
+                      ),
+                      Divider(height: 1, color: context.border),
+                      _buildCorporateListTile(
+                        context: context,
+                        icon: Icons.fingerprint_rounded,
+                        title: 'Lock This Chat',
+                        subtitle: 'Require biometric security to open',
+                        trailing: Switch.adaptive(
+                          value: _isChatLocked,
+                          activeTrackColor: primaryColor,
+                          onChanged: _toggleChatLock,
+                        ),
+                        onTap: () => _toggleChatLock(!_isChatLocked),
+                      ),
+                      const SizedBox(height: 24),
+
                       // ── 5. Options (List style, very professional) ──
                       _buildSectionHeader(context, 'Chat Options'),
                       _buildCorporateListTile(
@@ -575,6 +746,7 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
     required BuildContext context,
     required IconData icon,
     required String title,
+    String? subtitle,
     Widget? trailing,
     bool isDestructive = false,
     VoidCallback? onTap,
@@ -590,13 +762,29 @@ class _MessengerProfileSheetState extends State<MessengerProfileSheet> {
             Icon(icon, size: 20, color: color),
             const SizedBox(width: 16),
             Expanded(
-              child: Text(
-                title,
-                style: GoogleFonts.inter(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: color,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: color,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: context.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             ?trailing,

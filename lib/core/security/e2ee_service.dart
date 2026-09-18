@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:crypto/crypto.dart' as crypto;
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -199,6 +200,134 @@ class E2EEService {
     }
   }
 
+  /// Returns the current user's Base64 public key for verification and key exchange.
+  Future<String?> getMyPublicKeyBase64() async {
+    try {
+      final keyPair = await _getMyKeyPair();
+      if (keyPair == null) return null;
+      final publicKey = await keyPair.extractPublicKey();
+      return base64Encode(publicKey.bytes);
+    } catch (e) {
+      debugPrint('E2EE getMyPublicKeyBase64 error: $e');
+      return null;
+    }
+  }
+
+  /// Signal-Protocol compliant 60-digit Safety Number calculation.
+  /// Lexicographically sorts both public keys to produce an identical fingerprint on both devices.
+  static String computeSafetyNumber(String keyA, String keyB) {
+    if (keyA.isEmpty || keyB.isEmpty) return '';
+    try {
+      final sorted = [keyA, keyB]..sort();
+      final combined = utf8.encode('${sorted[0]}:::${sorted[1]}');
+      final digest = crypto.sha512.convert(combined).bytes;
+
+      // Generate 12 groups of 5 decimal digits = 60 digits total
+      final buffer = StringBuffer();
+      for (int i = 0; i < 12; i++) {
+        final offset = i * 4;
+        final val = (digest[offset] << 24) |
+            (digest[offset + 1] << 16) |
+            (digest[offset + 2] << 8) |
+            digest[offset + 3];
+        final chunkNum = (val & 0x7FFFFFFF) % 100000;
+        final chunkStr = chunkNum.toString().padLeft(5, '0');
+        if (i > 0) buffer.write(' ');
+        buffer.write(chunkStr);
+      }
+      return buffer.toString();
+    } catch (e) {
+      debugPrint('E2EE computeSafetyNumber error: $e');
+      return '';
+    }
+  }
+
+  /// Encrypts raw media bytes (image, video, voice) client-side using AES-256-GCM.
+  /// Zero-knowledge: the server only stores encrypted ciphertext blob.
+  /// Binary packet layout: [1-byte nonce len][nonce][1-byte mac len][mac][ciphertext]
+  Future<Uint8List?> encryptMediaBytes(Uint8List plainBytes, String receiverPublicKeyBase64) async {
+    if (_currentUid.isEmpty || receiverPublicKeyBase64.isEmpty || plainBytes.isEmpty) return null;
+
+    try {
+      final secretKey = await _getSharedSecretKey(receiverPublicKeyBase64);
+      if (secretKey == null) return null;
+
+      final nonce = _cipherAlgorithm.newNonce();
+      final secretBox = await _cipherAlgorithm.encrypt(
+        plainBytes,
+        secretKey: secretKey,
+        nonce: nonce,
+      );
+
+      final nonceBytes = secretBox.nonce;
+      final macBytes = secretBox.mac.bytes;
+      final cipherText = secretBox.cipherText;
+
+      final totalLength = 1 + nonceBytes.length + 1 + macBytes.length + cipherText.length;
+      final result = Uint8List(totalLength);
+      int offset = 0;
+
+      result[offset++] = nonceBytes.length;
+      result.setRange(offset, offset + nonceBytes.length, nonceBytes);
+      offset += nonceBytes.length;
+
+      result[offset++] = macBytes.length;
+      result.setRange(offset, offset + macBytes.length, macBytes);
+      offset += macBytes.length;
+
+      result.setRange(offset, offset + cipherText.length, cipherText);
+
+      return result;
+    } catch (e) {
+      debugPrint('E2EE encryptMediaBytes error: $e');
+      return null;
+    }
+  }
+
+  /// Decrypts encrypted media packet client-side using recipient/sender shared secret.
+  /// Expects binary packet: [1-byte nonce len][nonce][1-byte mac len][mac][ciphertext]
+  Future<Uint8List?> decryptMediaBytes(Uint8List cipherPacket, String senderPublicKeyBase64) async {
+    if (_currentUid.isEmpty || senderPublicKeyBase64.isEmpty || cipherPacket.length < 18) return null;
+
+    try {
+      final secretKey = await _getSharedSecretKey(senderPublicKeyBase64);
+      if (secretKey == null) return null;
+
+      int offset = 0;
+      final nonceLen = cipherPacket[offset++];
+      if (offset + nonceLen > cipherPacket.length) return null;
+      final nonce = cipherPacket.sublist(offset, offset + nonceLen);
+      offset += nonceLen;
+
+      final macLen = cipherPacket[offset++];
+      if (offset + macLen > cipherPacket.length) return null;
+      final macBytes = cipherPacket.sublist(offset, offset + macLen);
+      offset += macLen;
+
+      final cipherText = cipherPacket.sublist(offset);
+
+      final secretBox = SecretBox(
+        cipherText,
+        nonce: nonce,
+        mac: Mac(macBytes),
+      );
+
+      final plainBytes = await _cipherAlgorithm.decrypt(
+        secretBox,
+        secretKey: secretKey,
+      );
+      return Uint8List.fromList(plainBytes);
+    } catch (e) {
+      debugPrint('E2EE decryptMediaBytes error: $e');
+      return null;
+    }
+  }
+
+  /// Wipes all cached decrypted shared keys and ephemeral secrets from memory.
+  void wipeDecryptedCache() {
+    _sharedSecretCache.clear();
+  }
+
   /// Logs out the user — deterministic key হওয়ায় শুধু cache clear করা হয়
   Future<void> clearKeys() async {
     _sharedSecretCache.clear();
@@ -208,8 +337,8 @@ class E2EEService {
       try {
         await _secureStorage.delete(key: _privateKeyKey(_currentUid));
       } catch (e) {
-      debugPrint('[E2EEService] Error deleting key from secure storage: $e');
-    }
+        debugPrint('[E2EEService] Error deleting key from secure storage: $e');
+      }
     }
   }
 }

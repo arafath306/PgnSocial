@@ -10,11 +10,15 @@ import '../../../utils/app_theme.dart';
 class UserActionsSheet extends StatelessWidget {
   final Profile profile;
   final VoidCallback onChatRemoved;
+  final bool isPinned;
+  final VoidCallback? onTogglePin;
 
   const UserActionsSheet({
     super.key,
     required this.profile,
     required this.onChatRemoved,
+    this.isPinned = false,
+    this.onTogglePin,
   });
 
   @override
@@ -73,6 +77,19 @@ class UserActionsSheet extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Divider(color: context.border, height: 1),
+
+            // 0. Pin / Unpin Conversation
+            if (onTogglePin != null)
+              _actionTile(
+                context: context,
+                icon: isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+                color: isPinned ? const Color(0xFF10B981) : context.textPrimary,
+                label: isPinned ? 'Unpin Conversation' : 'Pin to Top',
+                onTap: () {
+                  Navigator.pop(context);
+                  onTogglePin!();
+                },
+              ),
 
             // 1. Delete Conversation (chat + history)
             _actionTile(
