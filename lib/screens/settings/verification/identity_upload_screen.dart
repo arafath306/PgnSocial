@@ -581,6 +581,7 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
                     subtitle: 'Tap to capture or upload',
                     file: _front,
                     onTap: () => _pickImage(isFront: true),
+                    onClear: _front != null ? () => setState(() => _front = null) : null,
                   ),
                   const SizedBox(height: 16),
                   
@@ -590,6 +591,7 @@ class _IdentityUploadScreenState extends State<IdentityUploadScreen> {
                     subtitle: 'Tap to capture or upload',
                     file: _back,
                     onTap: () => _pickImage(isFront: false),
+                    onClear: _back != null ? () => setState(() => _back = null) : null,
                   ),
 
                   const SizedBox(height: 36),

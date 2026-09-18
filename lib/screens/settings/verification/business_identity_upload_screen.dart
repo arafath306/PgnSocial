@@ -1,3 +1,4 @@
+import 'package:dak/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -44,8 +45,69 @@ class _BusinessIdentityUploadScreenState extends State<BusinessIdentityUploadScr
   }
 
   Future<void> _pickDocumentImage(Function(XFile) onPicked) async {
+    final l10n = AppLocalizations.of(context);
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: context.cardBg,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: SafeArea(
+          child: Wrap(
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: context.textMuted.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD97706).withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.camera_alt_rounded, color: Color(0xFFD97706), size: 22),
+                ),
+                title: Text(
+                  l10n?.takeAPhoto ?? 'Take a Photo',
+                  style: GoogleFonts.inter(color: context.textPrimary, fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD97706).withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.photo_library_rounded, color: Color(0xFFD97706), size: 22),
+                ),
+                title: Text(
+                  l10n?.chooseFromGallery ?? 'Choose from Gallery',
+                  style: GoogleFonts.inter(color: context.textPrimary, fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (source == null) return;
     final image = await _picker.pickImage(
-      source: ImageSource.gallery,
+      source: source,
       imageQuality: 85,
     );
     if (image != null) {
@@ -196,6 +258,7 @@ class _BusinessIdentityUploadScreenState extends State<BusinessIdentityUploadScr
                         subtitle: "Government issued Trade License photo",
                         file: req.tradeLicenseImage,
                         onTap: () => _pickDocumentImage((img) => req.tradeLicenseImage = img),
+                        onClear: req.tradeLicenseImage != null ? () => setState(() => req.tradeLicenseImage = null) : null,
                       ),
                       const SizedBox(height: 14),
 
@@ -207,6 +270,7 @@ class _BusinessIdentityUploadScreenState extends State<BusinessIdentityUploadScr
                             : "Upload TIN certificate if available",
                         file: req.tinCertificateImage,
                         onTap: () => _pickDocumentImage((img) => req.tinCertificateImage = img),
+                        onClear: req.tinCertificateImage != null ? () => setState(() => req.tinCertificateImage = null) : null,
                       ),
                       const SizedBox(height: 14),
 
@@ -217,6 +281,7 @@ class _BusinessIdentityUploadScreenState extends State<BusinessIdentityUploadScr
                           subtitle: "Certificate of Incorporation / Partnership Deed",
                           file: req.companyRegCertificateImage,
                           onTap: () => _pickDocumentImage((img) => req.companyRegCertificateImage = img),
+                          onClear: req.companyRegCertificateImage != null ? () => setState(() => req.companyRegCertificateImage = null) : null,
                         ),
                         const SizedBox(height: 14),
 
@@ -285,6 +350,7 @@ class _BusinessIdentityUploadScreenState extends State<BusinessIdentityUploadScr
                               subtitle: "Front side photo",
                               file: req.nidFront,
                               onTap: () => _pickDocumentImage((img) => req.nidFront = img),
+                              onClear: req.nidFront != null ? () => setState(() => req.nidFront = null) : null,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -294,6 +360,7 @@ class _BusinessIdentityUploadScreenState extends State<BusinessIdentityUploadScr
                               subtitle: "Back side photo",
                               file: req.nidBack,
                               onTap: () => _pickDocumentImage((img) => req.nidBack = img),
+                              onClear: req.nidBack != null ? () => setState(() => req.nidBack = null) : null,
                             ),
                           ),
                         ],
