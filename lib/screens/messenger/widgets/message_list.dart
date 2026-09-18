@@ -14,9 +14,9 @@ class MessageList extends StatefulWidget {
   final ScrollController scrollController;
   final void Function(List<Map<String, dynamic>>) onAllMessagesUpdated;
   final VoidCallback onScrollToBottom;
-  final void Function(Map<String, dynamic>) onMessageAction;
+  final void Function(Map<String, dynamic> msg, [Rect? bubbleRect]) onMessageAction;
   final void Function(Map<String, dynamic>) onReply;
-  final void Function(String) onOpenMedia;
+  final void Function(dynamic media, {int initialIndex, List<dynamic>? mediaList}) onOpenMedia;
   final void Function(Map<String, dynamic> msg, String emoji)? onToggleReaction;
   final String? currentUserId;
   final String? highlightedMessageId;
@@ -107,7 +107,111 @@ class MessageListState extends State<MessageList> {
           );
         }
 
-        final List<Map<String, dynamic>> reversedDisplay = display.reversed.toList();
+        bool isImageMessage(Map<String, dynamic> m) {
+          final mediaType = m['media_type'] as String? ?? '';
+          final mediaUrl = m['media_url'] as String? ?? '';
+          final localBytes = m['local_media_bytes'];
+          if (mediaType == 'audio' ||
+              mediaType == 'theme_change' ||
+              mediaType == 'wallpaper_change') {
+            return false;
+          }
+          return mediaType == 'image' ||
+              localBytes != null ||
+              (mediaUrl.isNotEmpty && mediaType != 'video');
+        }
+
+        List<Map<String, dynamic>> groupConsecutiveImageMessages(
+            List<Map<String, dynamic>> msgs) {
+          if (msgs.length <= 1) return msgs;
+
+          final List<Map<String, dynamic>> result = [];
+          int i = 0;
+
+          while (i < msgs.length) {
+            final current = msgs[i];
+            if (!isImageMessage(current)) {
+              result.add(current);
+              i++;
+              continue;
+            }
+
+            final List<Map<String, dynamic>> group = [current];
+            int j = i + 1;
+
+            while (j < msgs.length) {
+              final next = msgs[j];
+              if (!isImageMessage(next)) break;
+              if (next['isMe'] != current['isMe']) break;
+
+              final gCurrent = current['group_id'] as String?;
+              final gNext = next['group_id'] as String?;
+
+              bool shouldGroup = false;
+
+              if (gCurrent != null && gNext != null) {
+                shouldGroup = (gCurrent == gNext);
+              } else {
+                final curText = (current['text'] as String? ?? '').trim();
+                if (curText.isEmpty) {
+                  final dt1 = ChatDateFormatter.parseMessageDateTime(current);
+                  final dt2 = ChatDateFormatter.parseMessageDateTime(next);
+                  final diffSec = dt2.difference(dt1).abs().inSeconds;
+                  if (diffSec <= 90 &&
+                      current['reply_to_id'] == next['reply_to_id']) {
+                    shouldGroup = true;
+                  }
+                }
+              }
+
+              if (shouldGroup) {
+                group.add(next);
+                j++;
+                final nextText = (next['text'] as String? ?? '').trim();
+                if (nextText.isNotEmpty) {
+                  break;
+                }
+              } else {
+                break;
+              }
+            }
+
+            if (group.length > 1) {
+              final first = group.first;
+              final lastWithText = group.reversed.firstWhere(
+                (m) => (m['text'] as String? ?? '').trim().isNotEmpty,
+                orElse: () => const {},
+              );
+
+              final mergedGroup = <String, dynamic>{
+                'id': first['id'],
+                'is_group': true,
+                'group_messages': group,
+                'isMe': first['isMe'],
+                'time': first['time'],
+                'created_at': first['created_at'],
+                'is_read': group.every((m) => m['is_read'] == true),
+                'is_sending': group.any((m) => m['is_sending'] == true),
+                'is_pinned': group.any((m) => m['is_pinned'] == true),
+                'reactions': first['reactions'],
+                'reply_to_id': first['reply_to_id'],
+                'reply_to_text': first['reply_to_text'],
+                'reply_to_sender': first['reply_to_sender'],
+                'text': lastWithText['text'] ?? '',
+              };
+              result.add(mergedGroup);
+              i = j;
+            } else {
+              result.add(current);
+              i++;
+            }
+          }
+
+          return result;
+        }
+
+        final List<Map<String, dynamic>> reversedDisplay =
+            groupConsecutiveImageMessages(display).reversed.toList();
 
         return ListView.builder(
           reverse: true,
@@ -154,7 +258,7 @@ class MessageListState extends State<MessageList> {
                     key: ValueKey(msg['id']),
                     msg: msg,
                     activeTheme: widget.activeTheme,
-                    onTap: () => widget.onMessageAction(msg),
+                    onTap: (bubbleRect) => widget.onMessageAction(msg, bubbleRect),
                     onReply: () => widget.onReply(msg),
                     onOpenMedia: widget.onOpenMedia,
                     onToggleReaction: widget.onToggleReaction != null

@@ -89,6 +89,10 @@ extension ChatScreenExtensions on _ChatScreenState {
 
       if (processedBytesList == null || processedBytesList.isEmpty) return;
 
+      final String? batchGroupId = processedBytesList.length > 1
+          ? 'grp_${DateTime.now().millisecondsSinceEpoch}'
+          : null;
+
       for (int i = 0; i < processedBytesList.length; i++) {
         final bytes = processedBytesList[i];
         final parentMsg = _replyingToMessage;
@@ -104,6 +108,7 @@ extension ChatScreenExtensions on _ChatScreenState {
           'is_sending': true,
           'local_media_bytes': bytes,
           'media_type': 'image',
+          'group_id': ?batchGroupId,
           if (parentMsg != null) ...{
             'reply_to_id': parentMsg['id'],
             'reply_to_text': parentMsg['text'],
@@ -131,15 +136,20 @@ extension ChatScreenExtensions on _ChatScreenState {
               });
             }
             String contentToSave = '';
+            final Map<String, dynamic> metadata = {};
+            if (batchGroupId != null) {
+              metadata['group_id'] = batchGroupId;
+            }
             if (parentMsg != null) {
-              contentToSave = jsonEncode({
-                'reply_to_id': parentMsg['id'],
-                'reply_to_text': parentMsg['text'] ?? '',
-                'reply_to_sender': parentMsg['isMe'] == true
-                    ? 'You'
-                    : _realtimeOtherUser.fullName,
-                'text': '',
-              });
+              metadata['reply_to_id'] = parentMsg['id'];
+              metadata['reply_to_text'] = parentMsg['text'] ?? '';
+              metadata['reply_to_sender'] = parentMsg['isMe'] == true
+                  ? 'You'
+                  : _realtimeOtherUser.fullName;
+            }
+            if (metadata.isNotEmpty) {
+              metadata['text'] = '';
+              contentToSave = jsonEncode(metadata);
             }
             await dbService.sendMessage(_realtimeOtherUser.id, contentToSave,
                 mediaUrl: mediaUrl, mediaType: 'image');
@@ -465,19 +475,44 @@ extension ChatScreenExtensions on _ChatScreenState {
               Navigator.pop(ctx);
 
               // Optimistic UI update
+              final nowIso = DateTime.now().toIso8601String();
+              Map<String, dynamic>? targetMsg;
               setState(() {
                 for (final msg in _allMessages) {
                   if (msg['id'] == messageId) {
                     msg['text'] = newText;
+                    msg['is_edited'] = true;
+                    msg['edited_at'] = nowIso;
+                    targetMsg = msg;
                     break;
                   }
                 }
               });
 
+              final Map<String, dynamic> editPayload = {
+                'text': newText,
+                'is_edited': true,
+                'edited_at': nowIso,
+              };
+              if (targetMsg != null) {
+                if (targetMsg!['reply_to_id'] != null) {
+                  editPayload['reply_to_id'] = targetMsg!['reply_to_id'];
+                }
+                if (targetMsg!['reply_to_text'] != null) {
+                  editPayload['reply_to_text'] = targetMsg!['reply_to_text'];
+                }
+                if (targetMsg!['reply_to_sender'] != null) {
+                  editPayload['reply_to_sender'] = targetMsg!['reply_to_sender'];
+                }
+                if (targetMsg!['group_id'] != null) {
+                  editPayload['group_id'] = targetMsg!['group_id'];
+                }
+              }
+
               final dbService =
                   Provider.of<DatabaseService>(context, listen: false);
               final ok = await dbService.editMessage(
-                  messageId, _realtimeOtherUser.id, newText);
+                  messageId, _realtimeOtherUser.id, jsonEncode(editPayload));
               if (!ok && mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                   content: Text('Failed to edit message.'),
@@ -496,16 +531,23 @@ extension ChatScreenExtensions on _ChatScreenState {
   }
 
 
-  void _confirmDeleteMessage(String messageId) {
+  void _confirmDeleteMessage(String messageId, {List<String>? groupIds}) {
+    final List<String> targetIds = (groupIds != null && groupIds.isNotEmpty)
+        ? groupIds
+        : [messageId];
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.cardBg,
-        title: Text('Delete Message?',
+        title: Text('Delete Message',
             style: GoogleFonts.inter(color: context.textPrimary)),
         content: Text(
-            'Are you sure you want to delete this message? This action cannot be undone.',
-            style: GoogleFonts.inter(color: context.textSecondary)),
+          targetIds.length > 1
+              ? 'Are you sure you want to delete these ${targetIds.length} photos?'
+              : 'Are you sure you want to delete this message?',
+          style: GoogleFonts.inter(color: context.textSecondary),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -515,27 +557,17 @@ extension ChatScreenExtensions on _ChatScreenState {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
-
-              // Optimistically hide the message immediately
-              setState(() {
-                _deletedIds.add(messageId);
-                _pendingMessages.removeWhere((m) => m['id'] == messageId);
-              });
-
               final dbService =
                   Provider.of<DatabaseService>(context, listen: false);
-              final ok = await dbService.deleteMessage(messageId);
-              if (!ok && mounted) {
-                // Revert on failure
-                setState(() => _deletedIds.remove(messageId));
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                  content: Text('Failed to delete message.'),
-                  backgroundColor: Colors.redAccent,
-                ));
+              for (final id in targetIds) {
+                await dbService.deleteMessage(id);
               }
+              setState(() {
+                _allMessages.removeWhere((m) => targetIds.contains(m['id']));
+              });
             },
-            child: const Text('Delete',
-                style: TextStyle(
+            child: Text('Delete',
+                style: GoogleFonts.inter(
                     color: Colors.redAccent, fontWeight: FontWeight.bold)),
           ),
         ],
@@ -543,13 +575,17 @@ extension ChatScreenExtensions on _ChatScreenState {
     );
   }
 
+  // ——————————————————————————————————————————————————————————————————————————
+  // Context Menu Trigger (Telegram Style)
+  // ——————————————————————————————————————————————————————————————————————————
 
-  void _showMessageActionMenu(Map<String, dynamic> msg) {
-    final bool isMe = msg['isMe'] as bool;
+  void _showMessageActionMenu(Map<String, dynamic> msg, [Rect? bubbleRect]) {
+    final String messageId = msg['id'] as String;
     final String? text = msg['text'] as String?;
     final String? mediaUrl = msg['media_url'] as String?;
-    final String messageId = msg['id'] as String;
+    final bool isMe = msg['isMe'] as bool? ?? false;
     final bool isSending = msg['is_sending'] as bool? ?? false;
+    final bool isPinned = msg['is_pinned'] as bool? ?? false;
 
     if (isSending) return;
 
@@ -559,138 +595,69 @@ extension ChatScreenExtensions on _ChatScreenState {
       myReaction = (msg['reactions'] as Map)[myUid]?.toString();
     }
 
-    showModalBottomSheet(
+    final activeTheme = getChatThemeById(_currentThemeId);
+    final bool otherIsActive = _realtimeOtherUser.isActiveStatusEnabled &&
+        _realtimeOtherUser.lastSeen != null &&
+        DateTime.now().difference(_realtimeOtherUser.lastSeen!).inMinutes <= 5;
+
+    showTelegramMessageContextMenu(
       context: context,
-      backgroundColor: context.cardBg,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                  color: context.border,
-                  borderRadius: BorderRadius.circular(2)),
-            ),
-            // Quick Reaction Bar
-            ReactionBar(
-              currentUserReaction: myReaction,
-              onSelectReaction: (emoji) {
-                Navigator.pop(ctx);
-                _toggleMessageReaction(messageId, emoji);
-              },
-              onOpenMoreEmojis: () {
-                Navigator.pop(ctx);
-                _showFullEmojiReactionPicker(messageId, myReaction);
-              },
-            ),
-            // Pin / Unpin
-            ListTile(
-              leading: Icon(
-                Icons.push_pin_rounded,
-                color: (msg['is_pinned'] as bool? ?? false)
-                    ? Colors.amber
-                    : context.primaryAccent,
-              ),
-              title: Text(
-                (msg['is_pinned'] as bool? ?? false)
-                    ? 'Unpin message'
-                    : 'Pin message',
-                style: GoogleFonts.inter(color: context.textPrimary),
-              ),
-              onTap: () {
-                Navigator.pop(ctx);
-                _togglePinMessage(
-                  messageId,
-                  !(msg['is_pinned'] as bool? ?? false),
-                );
-              },
-            ),
-            // Reply
-            ListTile(
-              leading:
-                  Icon(Icons.reply_rounded, color: context.primaryAccent),
-              title: Text('Reply',
-                  style: GoogleFonts.inter(color: context.textPrimary)),
-              onTap: () {
-                Navigator.pop(ctx);
-                setState(() => _replyingToMessage = msg);
-              },
-            ),
-            // Copy
-            if (text != null && text.isNotEmpty)
-              ListTile(
-                leading:
-                    Icon(Icons.copy_rounded, color: context.primaryAccent),
-                title: Text('Copy',
-                    style: GoogleFonts.inter(color: context.textPrimary)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Clipboard.setData(ClipboardData(text: text));
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('Copied to clipboard'),
-                    duration: Duration(seconds: 1),
-                  ));
-                },
-              ),
-            // Edit (own text messages only)
-            if (isMe &&
-                text != null &&
-                text.isNotEmpty &&
-                (mediaUrl == null || mediaUrl.isEmpty))
-              ListTile(
-                leading:
-                    Icon(Icons.edit_rounded, color: context.primaryAccent),
-                title: Text('Edit',
-                    style: GoogleFonts.inter(color: context.textPrimary)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _showEditMessageDialog(messageId, text);
-                },
-              ),
-            // Delete
-            if (isMe)
-              ListTile(
-                leading: const Icon(Icons.delete_rounded,
-                    color: Colors.redAccent),
-                title: Text('Delete',
-                    style: GoogleFonts.inter(color: Colors.redAccent, fontWeight: FontWeight.w600)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _confirmDeleteMessage(messageId);
-                },
-              ),
-            // Report (for other user's messages/media)
-            if (!isMe)
-              ListTile(
-                leading: const Icon(Icons.flag_rounded,
-                    color: Colors.orangeAccent),
-                title: Text('Report',
-                    style: GoogleFonts.inter(color: context.textPrimary, fontWeight: FontWeight.w600)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _showReportMessageDialog(messageId);
-                },
-              ),
-            // Download media
-            if (mediaUrl != null && mediaUrl.isNotEmpty)
-              ListTile(
-                leading: Icon(Icons.download_rounded,
-                    color: context.primaryAccent),
-                title: Text('Download',
-                    style: GoogleFonts.inter(color: context.textPrimary)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _downloadMedia(mediaUrl);
-                },
-              ),
-          ],
-        ),
-      ),
+      msg: msg,
+      bubbleRect: bubbleRect,
+      activeTheme: activeTheme,
+      currentUserId: myUid,
+      isPinned: isPinned,
+      isOtherUserActive: otherIsActive,
+      otherUserLastSeen: _realtimeOtherUser.lastSeen,
+      isEdited: msg['is_edited'] == true || msg['edited_at'] != null,
+      onSelectReaction: (emoji) {
+        _toggleMessageReaction(messageId, emoji);
+      },
+      onOpenMoreEmojis: () {
+        _showFullEmojiReactionPicker(messageId, myReaction);
+      },
+      onReply: () {
+        setState(() => _replyingToMessage = msg);
+      },
+      onTranslate: () {
+        if (text != null && text.isNotEmpty) {
+          showTelegramTranslationSheet(context, text: text);
+        }
+      },
+      onCopy: () {
+        if (text != null && text.isNotEmpty) {
+          Clipboard.setData(ClipboardData(text: text));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Copied to clipboard'),
+            duration: Duration(seconds: 1),
+          ));
+        }
+      },
+      onEdit: (isMe &&
+              text != null &&
+              text.isNotEmpty &&
+              (mediaUrl == null || mediaUrl.isEmpty))
+          ? () => _showEditMessageDialog(messageId, text)
+          : null,
+      onPin: () {
+        _togglePinMessage(
+          messageId,
+          !isPinned,
+        );
+      },
+      onDelete: () {
+        List<String>? groupIds;
+        if (msg['is_group'] == true && msg['group_messages'] != null) {
+          groupIds = (msg['group_messages'] as List)
+              .map((m) => m['id'] as String)
+              .toList();
+        }
+        _confirmDeleteMessage(messageId, groupIds: groupIds);
+      },
+      onReport: !isMe ? () => _showReportMessageDialog(messageId) : null,
+      onSaveMedia: (mediaUrl != null && mediaUrl.isNotEmpty)
+          ? () => _downloadMedia(mediaUrl)
+          : null,
     );
   }
 

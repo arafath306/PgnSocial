@@ -21,7 +21,7 @@ class LocalChatDatabase {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _createDB,
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -33,6 +33,12 @@ class LocalChatDatabase {
           try {
             await db.execute('ALTER TABLE messages ADD COLUMN is_pinned INTEGER DEFAULT 0');
             await db.execute('ALTER TABLE messages ADD COLUMN pinned_at TEXT');
+          } catch (_) {}
+        }
+        if (oldVersion < 4) {
+          try {
+            await db.execute('ALTER TABLE messages ADD COLUMN is_edited INTEGER DEFAULT 0');
+            await db.execute('ALTER TABLE messages ADD COLUMN edited_at TEXT');
           } catch (_) {}
         }
       },
@@ -57,7 +63,9 @@ class LocalChatDatabase {
         room_id TEXT,
         reactions TEXT,
         is_pinned INTEGER DEFAULT 0,
-        pinned_at TEXT
+        pinned_at TEXT,
+        is_edited INTEGER DEFAULT 0,
+        edited_at TEXT
       )
     ''');
     
@@ -94,6 +102,8 @@ class LocalChatDatabase {
         'reactions': msg.reactions != null ? jsonEncode(msg.reactions) : null,
         'is_pinned': msg.isPinned ? 1 : 0,
         'pinned_at': msg.pinnedAt,
+        'is_edited': msg.isEdited ? 1 : 0,
+        'edited_at': msg.editedAt,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -124,6 +134,8 @@ class LocalChatDatabase {
           'reactions': msg.reactions != null ? jsonEncode(msg.reactions) : null,
           'is_pinned': msg.isPinned ? 1 : 0,
           'pinned_at': msg.pinnedAt,
+          'is_edited': msg.isEdited ? 1 : 0,
+          'edited_at': msg.editedAt,
         },
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
@@ -168,6 +180,8 @@ class LocalChatDatabase {
         reactions: reactions,
         isPinned: (map['is_pinned'] as int? ?? 0) == 1,
         pinnedAt: map['pinned_at'] as String?,
+        isEdited: (map['is_edited'] as int? ?? 0) == 1,
+        editedAt: map['edited_at'] as String?,
       );
     }).toList();
   }

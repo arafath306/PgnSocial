@@ -22,8 +22,8 @@ import 'widgets/chat_composer.dart';
 import 'widgets/blocked_banner.dart';
 import 'widgets/full_screen_media_viewer.dart';
 import 'widgets/messenger_profile_sheet.dart';
-import 'widgets/reaction_bar.dart';
 import 'widgets/pinned_message_banner.dart';
+import 'widgets/message_context_menu.dart';
 import 'media_preview_screen.dart';
 import '../../widgets/theme_picker_sheet.dart';
 import '../../widgets/verification_badge.dart';
@@ -387,11 +387,20 @@ class _ChatScreenState extends State<ChatScreen> {
     await MediaSaverUtility.saveToGallery(context, url);
   }
 
-  void _openFullScreenMedia(String mediaUrl) {
+  void _openFullScreenMedia(
+    dynamic media, {
+    int initialIndex = 0,
+    List<dynamic>? mediaList,
+  }) {
     Navigator.push(
       context,
       MaterialPageRoute(
-          builder: (_) => FullScreenMediaViewer(mediaUrl: mediaUrl)),
+        builder: (_) => FullScreenMediaViewer(
+          mediaUrl: media is String ? media : null,
+          mediaItems: mediaList ?? (media != null ? [media] : null),
+          initialIndex: initialIndex,
+        ),
+      ),
     );
   }
 

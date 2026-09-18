@@ -108,7 +108,9 @@ class ChatRepositoryImpl implements IChatRepository {
 
         if (content.startsWith('{') &&
             content.endsWith('}') &&
-            content.contains('reply_to_id')) {
+            (content.contains('reply_to_id') ||
+                content.contains('group_id') ||
+                content.contains('is_edited'))) {
           try {
             final Map<String, dynamic> jsonReply =
                 jsonDecode(content) as Map<String, dynamic>;
@@ -200,19 +202,42 @@ class ChatRepositoryImpl implements IChatRepository {
       String? replyToId;
       String? replyToText;
       String? replyToSender;
+      String? groupId;
+      bool isEdited = false;
+      String? editedAt;
 
       if (text.startsWith('{') &&
           text.endsWith('}') &&
-          text.contains('reply_to_id')) {
+          (text.contains('reply_to_id') ||
+              text.contains('group_id') ||
+              text.contains('is_edited') ||
+              text.contains('edited_at'))) {
         try {
           final Map<String, dynamic> jsonReply =
               jsonDecode(text) as Map<String, dynamic>;
           replyToId = jsonReply['reply_to_id'] as String?;
           replyToText = jsonReply['reply_to_text'] as String?;
           replyToSender = jsonReply['reply_to_sender'] as String?;
+          groupId = jsonReply['group_id'] as String?;
+          isEdited = jsonReply['is_edited'] as bool? ?? false;
+          editedAt = jsonReply['edited_at'] as String?;
           text = jsonReply['text'] as String? ?? '';
         } catch (e) {
           debugPrint('[ChatRepository] Error parsing reply JSON in message stream: $e');
+        }
+      }
+
+      if (!isEdited) {
+        if (json['is_edited'] == true) {
+          isEdited = true;
+          editedAt = json['edited_at']?.toString();
+        } else if (json['updated_at'] != null && json['created_at'] != null) {
+          final u = DateTime.tryParse(json['updated_at'].toString());
+          final c = DateTime.tryParse(json['created_at'].toString());
+          if (u != null && c != null && u.difference(c).inSeconds.abs() > 2) {
+            isEdited = true;
+            editedAt = json['updated_at'].toString();
+          }
         }
       }
 
@@ -238,6 +263,9 @@ class ChatRepositoryImpl implements IChatRepository {
         reactions: reactions,
         isPinned: json['is_pinned'] as bool? ?? false,
         pinnedAt: json['pinned_at'] as String?,
+        groupId: groupId,
+        isEdited: isEdited,
+        editedAt: editedAt,
       );
     }
 

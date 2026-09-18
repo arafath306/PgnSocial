@@ -13,6 +13,9 @@ class MessageEntity {
   final Map<String, String>? reactions;
   final bool isPinned;
   final String? pinnedAt;
+  final String? groupId;
+  final bool isEdited;
+  final String? editedAt;
 
   MessageEntity({
     required this.id,
@@ -29,6 +32,9 @@ class MessageEntity {
     this.reactions,
     this.isPinned = false,
     this.pinnedAt,
+    this.groupId,
+    this.isEdited = false,
+    this.editedAt,
   });
 }
 

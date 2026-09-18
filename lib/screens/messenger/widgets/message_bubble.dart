@@ -7,13 +7,14 @@ import '../../../utils/chat_themes.dart';
 import 'swipe_to_reply.dart';
 import 'chat_voice_player.dart';
 import 'reaction_bar.dart';
+import 'image_group_collage.dart';
 
 class MessageBubble extends StatefulWidget {
   final Map<String, dynamic> msg;
   final ChatTheme activeTheme;
-  final VoidCallback onTap;
+  final void Function(Rect? bubbleRect) onTap;
   final VoidCallback onReply;
-  final void Function(String) onOpenMedia;
+  final void Function(dynamic media, {int initialIndex, List<dynamic>? mediaList}) onOpenMedia;
   final void Function(String emoji)? onToggleReaction;
   final VoidCallback? onDoubleTap;
   final String? currentUserId;
@@ -83,6 +84,21 @@ class _MessageBubbleState extends State<MessageBubble>
     super.dispose();
   }
 
+  void _handleTap() {
+    final renderBox = context.findRenderObject() as RenderBox?;
+    Rect? rect;
+    if (renderBox != null && renderBox.hasSize) {
+      final offset = renderBox.localToGlobal(Offset.zero);
+      rect = Rect.fromLTWH(
+        offset.dx,
+        offset.dy,
+        renderBox.size.width,
+        renderBox.size.height,
+      );
+    }
+    widget.onTap(rect);
+  }
+
   void _triggerDoubleTapHeart() {
     setState(() => _showHeartPop = true);
     _heartAnimController.forward(from: 0.0);
@@ -106,7 +122,6 @@ class _MessageBubbleState extends State<MessageBubble>
   Widget build(BuildContext context) {
     final msg = widget.msg;
     final activeTheme = widget.activeTheme;
-    final onTap = widget.onTap;
     final onReply = widget.onReply;
     final onOpenMedia = widget.onOpenMedia;
     final marginBottom = widget.marginBottom;
@@ -114,7 +129,6 @@ class _MessageBubbleState extends State<MessageBubble>
     final bool isMe = msg['isMe'] as bool;
     final String? mediaUrl = msg['media_url'] as String?;
     final localMediaBytes = msg['local_media_bytes'];
-    final bool isRead = msg['is_read'] as bool? ?? false;
     final bool isSending = msg['is_sending'] as bool? ?? false;
     final String? replyToId = msg['reply_to_id'] as String?;
     final String? replyToText = msg['reply_to_text'] as String?;
@@ -188,69 +202,44 @@ class _MessageBubbleState extends State<MessageBubble>
       );
     }
 
-    final bool hasMedia = (localMediaBytes != null ||
-            (mediaUrl != null && mediaUrl.isNotEmpty)) &&
-        mediaType != 'audio';
+    final bool isGroup = msg['is_group'] == true;
+    final List<Map<String, dynamic>> groupMessages = isGroup
+        ? (msg['group_messages'] as List?)
+                ?.map((e) => Map<String, dynamic>.from(e as Map))
+                .toList() ??
+            []
+        : [];
 
-    String timeStr = msg['time'] as String? ?? '';
-    if (msg['created_at'] != null) {
-      try {
-        final dt = DateTime.parse(msg['created_at'] as String);
-        final dhakaTime = dt.toUtc().add(const Duration(hours: 6));
-        final hour24 = dhakaTime.hour;
-        final minute = dhakaTime.minute.toString().padLeft(2, '0');
-        final period = hour24 >= 12 ? 'PM' : 'AM';
-        int hour12 = hour24 % 12;
-        if (hour12 == 0) hour12 = 12;
-        timeStr = '$hour12:$minute $period';
-      } catch (e) {
-        debugPrint('[MessageBubble] Error parsing time: $e');
+    final bool hasMedia = isGroup ||
+        ((localMediaBytes != null ||
+                (mediaUrl != null && mediaUrl.isNotEmpty)) &&
+            mediaType != 'audio');
+
+    Widget buildStatusRow({required bool overlayMode}) {
+      final bool isPinned = msg['is_pinned'] as bool? ?? false;
+      if (!isPinned && !(isMe && isSending)) {
+        return const SizedBox.shrink();
       }
-    }
-
-    Widget buildTimeRow({required bool overlayMode}) {
-      final textStyle = GoogleFonts.inter(
-        fontSize: overlayMode ? 9.5 : 10,
-        color: overlayMode
-            ? Colors.white
-            : (isMe ? Colors.white60 : context.textMuted),
-      );
 
       final iconColor = overlayMode
-          ? (isSending
-              ? Colors.white.withValues(alpha: 0.5)
-              : (isRead
-                  ? Colors.greenAccent
-                  : Colors.white.withValues(alpha: 0.8)))
-          : (isSending
-              ? Colors.white54
-              : (isRead ? Colors.greenAccent : Colors.white60));
-
-      final bool isPinned = msg['is_pinned'] as bool? ?? false;
+          ? Colors.white.withValues(alpha: 0.9)
+          : (isMe ? Colors.white70 : context.primaryAccent);
 
       return Row(
-        mainAxisAlignment: MainAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (isPinned) ...[
+          if (isPinned)
             Icon(
               Icons.push_pin_rounded,
               size: 11,
-              color: overlayMode
-                  ? Colors.white.withValues(alpha: 0.9)
-                  : (isMe ? Colors.white70 : context.primaryAccent),
-            ),
-            const SizedBox(width: 3),
-          ],
-          Text(timeStr, style: textStyle),
-          if (isMe) ...[
-            const SizedBox(width: 4),
-            Icon(
-              isSending
-                  ? Icons.schedule_rounded
-                  : (isRead ? Icons.done_all : Icons.done),
-              size: 12,
               color: iconColor,
+            ),
+          if (isMe && isSending) ...[
+            if (isPinned) const SizedBox(width: 3),
+            Icon(
+              Icons.schedule_rounded,
+              size: 11,
+              color: overlayMode ? Colors.white70 : Colors.white54,
             ),
           ],
         ],
@@ -299,14 +288,18 @@ class _MessageBubbleState extends State<MessageBubble>
         onTap: () {
           if (mediaUrl != null && mediaUrl.isNotEmpty) {
             onOpenMedia(mediaUrl);
+          } else if (localMediaBytes != null) {
+            onOpenMedia(localMediaBytes);
           }
         },
+        onLongPress: _handleTap,
         child: ClipRRect(
           borderRadius: clipRadius,
           child: Stack(
             children: [
               image,
-              if (isOnlyImage)
+              if (isOnlyImage &&
+                  ((msg['is_pinned'] as bool? ?? false) || (isMe && isSending)))
                 Positioned(
                   bottom: 6,
                   right: 8,
@@ -317,7 +310,7 @@ class _MessageBubbleState extends State<MessageBubble>
                       color: Colors.black.withValues(alpha: 0.45),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: buildTimeRow(overlayMode: true),
+                    child: buildStatusRow(overlayMode: true),
                   ),
                 ),
             ],
@@ -378,6 +371,7 @@ class _MessageBubbleState extends State<MessageBubble>
     }
 
     Widget buildVoicePlayerWidget({String? url, Uint8List? bytes}) {
+      final bool isPinned = msg['is_pinned'] as bool? ?? false;
       return Column(
         crossAxisAlignment:
             isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -388,10 +382,11 @@ class _MessageBubbleState extends State<MessageBubble>
             audioBytes: bytes,
             isMe: isMe,
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8, bottom: 4),
-            child: buildTimeRow(overlayMode: false),
-          ),
+          if (isPinned || (isMe && isSending))
+            Padding(
+              padding: const EdgeInsets.only(right: 8, bottom: 4),
+              child: buildStatusRow(overlayMode: false),
+            ),
         ],
       );
     }
@@ -448,19 +443,24 @@ class _MessageBubbleState extends State<MessageBubble>
         );
       }
 
+      final bool isPinned = msg['is_pinned'] as bool? ?? false;
+      final showStatus = isPinned || (isMe && isSending);
+
       return Padding(
         padding: hasMedia
-            ? const EdgeInsets.fromLTRB(10, 6, 8, 4)
+            ? const EdgeInsets.fromLTRB(12, 6, 12, 6)
             : EdgeInsets.zero,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            textChild,
-            const SizedBox(height: 2),
-            buildTimeRow(overlayMode: false),
-          ],
-        ),
+        child: showStatus
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  textChild,
+                  const SizedBox(height: 2),
+                  buildStatusRow(overlayMode: false),
+                ],
+              )
+            : textChild,
       );
     }
 
@@ -478,13 +478,50 @@ class _MessageBubbleState extends State<MessageBubble>
         mainAxisSize: MainAxisSize.min,
         children: [
           buildReplyQuoteHeader(),
-          if (localMediaBytes != null && mediaType != 'audio')
-            buildImageWidget(localMediaBytes),
-          if (localMediaBytes == null &&
-              mediaUrl != null &&
-              mediaUrl.isNotEmpty &&
-              mediaType != 'audio')
-            buildImageWidget(mediaUrl),
+          if (isGroup && groupMessages.isNotEmpty)
+            Stack(
+              children: [
+                ImageGroupCollage(
+                  groupMessages: groupMessages,
+                  isMe: isMe,
+                  hasReplyQuote: replyToId != null,
+                  hasTextCaption: text != null && text.isNotEmpty,
+                  onLongPress: _handleTap,
+                  onOpenMedia: (items, initialIndex) {
+                    onOpenMedia(
+                      items[initialIndex],
+                      initialIndex: initialIndex,
+                      mediaList: items,
+                    );
+                  },
+                ),
+                if ((text == null || text.isEmpty) &&
+                    ((msg['is_pinned'] as bool? ?? false) ||
+                        (isMe && isSending)))
+                  Positioned(
+                    bottom: 6,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: buildStatusRow(overlayMode: true),
+                    ),
+                  ),
+              ],
+            )
+          else ...[
+            if (localMediaBytes != null && mediaType != 'audio')
+              buildImageWidget(localMediaBytes),
+            if (localMediaBytes == null &&
+                mediaUrl != null &&
+                mediaUrl.isNotEmpty &&
+                mediaType != 'audio')
+              buildImageWidget(mediaUrl),
+          ],
           if (text != null && text.isNotEmpty) buildTextContentWidget(text),
         ],
       );
@@ -508,14 +545,14 @@ class _MessageBubbleState extends State<MessageBubble>
             clipBehavior: Clip.none,
             children: [
               GestureDetector(
-                onTap: onTap,
-                onLongPress: onTap,
+                onTap: _handleTap,
+                onLongPress: _handleTap,
                 onDoubleTap: _triggerDoubleTapHeart,
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 350),
                   padding: hasMedia
                       ? EdgeInsets.zero
-                      : const EdgeInsets.fromLTRB(12, 8, 10, 5),
+                      : const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                   decoration: BoxDecoration(
                     color: isMe
                         ? (activeTheme.gradientColors == null
@@ -530,14 +567,14 @@ class _MessageBubbleState extends State<MessageBubble>
                           )
                         : null,
                     borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(16),
-                      topRight: const Radius.circular(16),
+                      topLeft: const Radius.circular(18),
+                      topRight: const Radius.circular(18),
                       bottomLeft: isMe
-                          ? const Radius.circular(16)
-                          : const Radius.circular(0),
+                          ? const Radius.circular(18)
+                          : const Radius.circular(4),
                       bottomRight: isMe
-                          ? const Radius.circular(0)
-                          : const Radius.circular(16),
+                          ? const Radius.circular(4)
+                          : const Radius.circular(18),
                     ),
                     border: widget.isHighlighted
                         ? Border.all(color: context.primaryAccent, width: 2.0)
@@ -631,7 +668,7 @@ class _MessageBubbleState extends State<MessageBubble>
     final totalCount = reactions.length;
 
     return GestureDetector(
-      onTap: widget.onTap,
+      onTap: _handleTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(

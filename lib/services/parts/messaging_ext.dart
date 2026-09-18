@@ -20,6 +20,9 @@ extension MessagingExtension on DatabaseService {
         'reactions': msg.reactions,
         'is_pinned': msg.isPinned,
         'pinned_at': msg.pinnedAt,
+        'group_id': msg.groupId,
+        'is_edited': msg.isEdited,
+        'edited_at': msg.editedAt,
       }).toList();
     });
   }

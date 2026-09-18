@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../services/media_download_service.dart';
 
 class FullScreenMediaViewer extends StatefulWidget {
   final List<String> imageUrls;
@@ -111,8 +112,30 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
                         ),
                       ),
                     ),
-                  // Empty space to balance row
-                  const SizedBox(width: 40),
+                  GestureDetector(
+                    onTap: () async {
+                      if (_currentIndex >= 0 &&
+                          _currentIndex < widget.imageUrls.length) {
+                        final currentUrl = widget.imageUrls[_currentIndex];
+                        await MediaDownloadService.downloadMedia(
+                          context,
+                          imageUrls: [currentUrl],
+                        );
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Colors.black45,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.download_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

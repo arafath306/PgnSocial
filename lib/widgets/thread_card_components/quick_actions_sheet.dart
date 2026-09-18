@@ -108,7 +108,10 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet>
   @override
   Widget build(BuildContext context) {
     final username = widget.post.author.username;
-    final hasMedia = (widget.post.imageUrls?.isNotEmpty == true) || widget.post.videoUrl != null;
+    final targetPost = (widget.post.isRepost && widget.post.repostedPost != null)
+        ? widget.post.repostedPost!
+        : widget.post;
+    final hasMedia = (targetPost.imageUrls?.isNotEmpty == true) || targetPost.videoUrl != null;
 
     final actions = <_QuickActionItem>[
       if (hasMedia)
@@ -120,8 +123,8 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet>
             Navigator.pop(context);
             await MediaDownloadService.downloadMedia(
               parentCtx,
-              imageUrls: widget.post.imageUrls,
-              videoUrl: widget.post.videoUrl,
+              imageUrls: targetPost.imageUrls,
+              videoUrl: targetPost.videoUrl,
             );
           },
         ),
@@ -251,10 +254,12 @@ class _QuickActionsSheetState extends State<_QuickActionsSheet>
               return AnimatedBuilder(
                 animation: _staggerController,
                 builder: (context, child) {
+                  final slideVal = i < _slideAnims.length ? _slideAnims[i].value : 0.0;
+                  final fadeVal = i < _fadeAnims.length ? _fadeAnims[i].value : 1.0;
                   return Transform.translate(
-                    offset: Offset(0, _slideAnims[i].value),
+                    offset: Offset(0, slideVal),
                     child: Opacity(
-                      opacity: _fadeAnims[i].value,
+                      opacity: fadeVal,
                       child: child,
                     ),
                   );
@@ -975,7 +980,7 @@ class _AuthorActionsSheetState extends State<_AuthorActionsSheet>
   late final List<Animation<double>> _slideAnims;
   late final List<Animation<double>> _fadeAnims;
   
-  static const int _itemCount = 6;
+  static const int _itemCount = 12;
 
   @override
   void initState() {
@@ -1152,8 +1157,27 @@ class _AuthorActionsSheetState extends State<_AuthorActionsSheet>
     final isPinned = widget.post.isPinned;
     final isMuted = widget.post.muteNotifications;
     final isHiddenFromProfile = widget.post.hideFromProfile;
+    final targetPost = (widget.post.isRepost && widget.post.repostedPost != null)
+        ? widget.post.repostedPost!
+        : widget.post;
+    final hasMedia = (targetPost.imageUrls?.isNotEmpty == true) || targetPost.videoUrl != null;
 
-    final actions = <_QuickActionItem>[];
+    final actions = <_QuickActionItem>[
+      if (hasMedia)
+        _QuickActionItem(
+          icon: Icons.download_outlined,
+          label: 'Download media',
+          onTap: () async {
+            final parentCtx = widget.parentContext;
+            Navigator.pop(context);
+            await MediaDownloadService.downloadMedia(
+              parentCtx,
+              imageUrls: targetPost.imageUrls,
+              videoUrl: targetPost.videoUrl,
+            );
+          },
+        ),
+    ];
     if (widget.post.isRepost) {
       actions.addAll([
         _QuickActionItem(
@@ -1294,10 +1318,12 @@ class _AuthorActionsSheetState extends State<_AuthorActionsSheet>
               return AnimatedBuilder(
                 animation: _staggerController,
                 builder: (context, child) {
+                  final slideVal = i < _slideAnims.length ? _slideAnims[i].value : 0.0;
+                  final fadeVal = i < _fadeAnims.length ? _fadeAnims[i].value : 1.0;
                   return Transform.translate(
-                    offset: Offset(0, _slideAnims[i].value),
+                    offset: Offset(0, slideVal),
                     child: Opacity(
-                      opacity: _fadeAnims[i].value,
+                      opacity: fadeVal,
                       child: child,
                     ),
                   );
