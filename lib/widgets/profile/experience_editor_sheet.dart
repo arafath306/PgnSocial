@@ -34,14 +34,12 @@ class _ExperienceEditorSheetState extends State<ExperienceEditorSheet> {
   late TextEditingController _companyCtrl;
   late TextEditingController _locationCtrl;
   late TextEditingController _descriptionCtrl;
-  late TextEditingController _milestoneNoteCtrl;
 
   String _employmentType = 'Full-time';
   String _locationType = 'On-site';
   bool _isCurrent = true;
   String _startDate = '';
   String _endDate = '';
-  bool _shareAsMilestone = false;
   bool _isSaving = false;
 
   final List<String> _employmentTypes = [
@@ -63,7 +61,6 @@ class _ExperienceEditorSheetState extends State<ExperienceEditorSheet> {
     _companyCtrl = TextEditingController(text: exp?.company ?? '');
     _locationCtrl = TextEditingController(text: exp?.location ?? '');
     _descriptionCtrl = TextEditingController(text: exp?.description ?? '');
-    _milestoneNoteCtrl = TextEditingController();
 
     if (exp != null) {
       _employmentType = exp.employmentType;
@@ -74,7 +71,6 @@ class _ExperienceEditorSheetState extends State<ExperienceEditorSheet> {
     } else {
       final now = DateTime.now();
       _startDate = '${_monthName(now.month)} ${now.year}';
-      _shareAsMilestone = true; // Default ON for brand new role
     }
   }
 
@@ -84,7 +80,6 @@ class _ExperienceEditorSheetState extends State<ExperienceEditorSheet> {
     _companyCtrl.dispose();
     _locationCtrl.dispose();
     _descriptionCtrl.dispose();
-    _milestoneNoteCtrl.dispose();
     super.dispose();
   }
 
@@ -143,8 +138,7 @@ class _ExperienceEditorSheetState extends State<ExperienceEditorSheet> {
 
     final success = await db.saveUserExperience(
       updatedExp,
-      shareAsMilestone: _shareAsMilestone,
-      milestoneNote: _milestoneNoteCtrl.text.trim(),
+      shareAsMilestone: false,
     );
 
     if (mounted) {
@@ -153,12 +147,8 @@ class _ExperienceEditorSheetState extends State<ExperienceEditorSheet> {
         widget.onSaved?.call();
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _shareAsMilestone
-                  ? 'Experience saved and milestone post shared to feed! 🎉'
-                  : 'Experience saved successfully!',
-            ),
+          const SnackBar(
+            content: Text('Experience saved successfully.'),
           ),
         );
       } else {
@@ -425,81 +415,7 @@ class _ExperienceEditorSheetState extends State<ExperienceEditorSheet> {
                   bg: fieldBg,
                   maxLines: 3,
                 ),
-                const SizedBox(height: 18),
-
-                // ── Milestone Celebration Post Box (Facebook/LinkedIn Style) ──
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF0C101D) : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: context.border,
-                      width: 1.0,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              const Text('🎉', style: TextStyle(fontSize: 16)),
-                              const SizedBox(width: 8),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Share milestone with followers',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: context.textPrimary,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Creates a celebratory post on your feed',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 11,
-                                      color: context.textMuted,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          Switch.adaptive(
-                            value: _shareAsMilestone,
-                            activeTrackColor: context.primaryAccent,
-                            onChanged: (val) => setState(() => _shareAsMilestone = val),
-                          ),
-                        ],
-                      ),
-                      if (_shareAsMilestone) ...[
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: _milestoneNoteCtrl,
-                          maxLines: 2,
-                          decoration: InputDecoration(
-                            hintText: 'Add an optional note e.g. "Excited to embark on this new journey! 🚀"',
-                            hintStyle: GoogleFonts.inter(fontSize: 12, color: context.textMuted),
-                            filled: true,
-                            fillColor: isDark ? Colors.black26 : Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: context.border),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          ),
-                          style: GoogleFonts.inter(fontSize: 12.5),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 22),
+                const SizedBox(height: 24),
 
                 // Action Buttons
                 Row(

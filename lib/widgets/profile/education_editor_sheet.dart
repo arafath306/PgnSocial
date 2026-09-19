@@ -36,12 +36,10 @@ class _EducationEditorSheetState extends State<EducationEditorSheet> {
   late TextEditingController _gradeCtrl;
   late TextEditingController _activitiesCtrl;
   late TextEditingController _descriptionCtrl;
-  late TextEditingController _milestoneNoteCtrl;
 
   bool _isCurrent = false;
   String _startDate = '';
   String _endDate = '';
-  bool _shareAsMilestone = false;
   bool _isSaving = false;
 
   final List<String> _popularDegrees = [
@@ -66,7 +64,6 @@ class _EducationEditorSheetState extends State<EducationEditorSheet> {
     _gradeCtrl = TextEditingController(text: edu?.grade ?? '');
     _activitiesCtrl = TextEditingController(text: edu?.activities ?? '');
     _descriptionCtrl = TextEditingController(text: edu?.description ?? '');
-    _milestoneNoteCtrl = TextEditingController();
 
     if (edu != null) {
       _isCurrent = edu.isCurrent;
@@ -76,7 +73,6 @@ class _EducationEditorSheetState extends State<EducationEditorSheet> {
       final now = DateTime.now();
       _startDate = '${now.year - 4}';
       _endDate = '${now.year}';
-      _shareAsMilestone = true;
     }
   }
 
@@ -88,7 +84,6 @@ class _EducationEditorSheetState extends State<EducationEditorSheet> {
     _gradeCtrl.dispose();
     _activitiesCtrl.dispose();
     _descriptionCtrl.dispose();
-    _milestoneNoteCtrl.dispose();
     super.dispose();
   }
 
@@ -142,8 +137,7 @@ class _EducationEditorSheetState extends State<EducationEditorSheet> {
 
     final success = await db.saveUserEducation(
       updatedEdu,
-      shareAsMilestone: _shareAsMilestone,
-      milestoneNote: _milestoneNoteCtrl.text.trim(),
+      shareAsMilestone: false,
     );
 
     if (mounted) {
@@ -152,12 +146,8 @@ class _EducationEditorSheetState extends State<EducationEditorSheet> {
         widget.onSaved?.call();
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _shareAsMilestone
-                  ? 'Education saved and academic milestone shared! 🎓'
-                  : 'Education saved successfully!',
-            ),
+          const SnackBar(
+            content: Text('Education saved successfully.'),
           ),
         );
       } else {
@@ -399,81 +389,7 @@ class _EducationEditorSheetState extends State<EducationEditorSheet> {
                   bg: fieldBg,
                   maxLines: 2,
                 ),
-                const SizedBox(height: 18),
-
-                // ── Milestone Celebration Post Box (Facebook/LinkedIn Style) ──
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF0C101D) : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: context.border,
-                      width: 1.0,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              const Text('🎓', style: TextStyle(fontSize: 16)),
-                              const SizedBox(width: 8),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Share academic milestone',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: context.textPrimary,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Creates a celebratory post on your feed',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 11,
-                                      color: context.textMuted,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          Switch.adaptive(
-                            value: _shareAsMilestone,
-                            activeTrackColor: context.primaryAccent,
-                            onChanged: (val) => setState(() => _shareAsMilestone = val),
-                          ),
-                        ],
-                      ),
-                      if (_shareAsMilestone) ...[
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: _milestoneNoteCtrl,
-                          maxLines: 2,
-                          decoration: InputDecoration(
-                            hintText: 'Add an optional note e.g. "Proud and grateful for this milestone! 🎓"',
-                            hintStyle: GoogleFonts.inter(fontSize: 12, color: context.textMuted),
-                            filled: true,
-                            fillColor: isDark ? Colors.black26 : Colors.white,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: context.border),
-                            ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          ),
-                          style: GoogleFonts.inter(fontSize: 12.5),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 22),
+                const SizedBox(height: 24),
 
                 // Action Buttons
                 Row(

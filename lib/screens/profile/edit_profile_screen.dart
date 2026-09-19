@@ -948,146 +948,334 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               title: 'Work & Education',
               icon: Icons.school_outlined,
               children: [
-                _field(
-                  'Occupation / Profession',
-                  _occupationCtrl,
-                  fieldBg,
-                  maxLength: 60,
-                  hint: 'e.g. Software Engineer, Designer, Student',
-                  prefixIcon: Icons.work_outline_rounded,
+                Container(
+                  decoration: BoxDecoration(
+                    color: fieldBg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: context.border, width: 0.8),
+                  ),
+                  child: Column(
+                    children: [
+                      _appleInputRow(
+                        icon: Icons.work_outline_rounded,
+                        label: 'Occupation',
+                        hint: 'e.g. Software Engineer',
+                        controller: _occupationCtrl,
+                        maxLength: 60,
+                      ),
+                      Divider(
+                        height: 1,
+                        indent: 44,
+                        color: context.border.withValues(alpha: 0.4),
+                      ),
+                      _appleInputRow(
+                        icon: Icons.school_outlined,
+                        label: 'Institute',
+                        hint: 'e.g. University of Dhaka',
+                        controller: _educationCtrl,
+                        maxLength: 80,
+                      ),
+                      Divider(
+                        height: 1,
+                        indent: 44,
+                        color: context.border.withValues(alpha: 0.4),
+                      ),
+                      _appleInputRow(
+                        icon: Icons.link_rounded,
+                        label: 'Website',
+                        hint: 'e.g. https://yourwebsite.com',
+                        controller: _websiteCtrl,
+                        keyboardType: TextInputType.url,
+                        maxLength: 100,
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 14),
-                _field(
-                  'Education / Institute',
-                  _educationCtrl,
-                  fieldBg,
-                  maxLength: 80,
-                  hint: 'e.g. University of Dhaka, BUET, College',
-                  prefixIcon: Icons.school_outlined,
-                ),
-                const SizedBox(height: 14),
-                _field(
-                  'Website / Portfolio Link',
-                  _websiteCtrl,
-                  fieldBg,
-                  maxLength: 100,
-                  hint: 'e.g. https://yourwebsite.com',
-                  prefixIcon: Icons.link_rounded,
-                  keyboardType: TextInputType.url,
-                ),
-                const SizedBox(height: 16),
-                Divider(height: 1, color: context.border),
-                const SizedBox(height: 14),
+                const SizedBox(height: 20),
 
-                // Manage Experiences (LinkedIn-style list tile)
-                Consumer<DatabaseService>(
-                  builder: (ctx, db, _) {
-                    final expCount = db.myExperiences.length;
-                    return InkWell(
-                      borderRadius: BorderRadius.circular(12),
+                // Experience Subheading (Apple-style)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'EXPERIENCE',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                        color: context.textMuted,
+                      ),
+                    ),
+                    GestureDetector(
                       onTap: () => ExperienceEditorSheet.show(context),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: fieldBg,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: context.border, width: 1),
-                        ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: context.primaryAccent.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(Icons.business_center_outlined, size: 18, color: context.primaryAccent),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Manage Experience',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: context.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    expCount == 0 ? 'Add positions & career history' : '$expCount positions added',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 12,
-                                      color: context.textMuted,
-                                    ),
-                                  ),
-                                ],
+                            Icon(Icons.add_rounded, size: 15, color: context.primaryAccent),
+                            const SizedBox(width: 3),
+                            Text(
+                              'Add Position',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: context.primaryAccent,
                               ),
                             ),
-                            Icon(Icons.chevron_right_rounded, size: 20, color: context.textMuted),
                           ],
                         ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                Consumer<DatabaseService>(
+                  builder: (ctx, db, _) {
+                    final experiences = db.myExperiences;
+                    if (experiences.isEmpty) {
+                      return InkWell(
+                        onTap: () => ExperienceEditorSheet.show(context),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                          decoration: BoxDecoration(
+                            color: fieldBg,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: context.border, width: 0.8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.business_center_outlined, size: 18, color: context.textMuted),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Add work experience & career history',
+                                  style: GoogleFonts.inter(fontSize: 13, color: context.textMuted),
+                                ),
+                              ),
+                              Icon(Icons.chevron_right_rounded, size: 18, color: context.textMuted),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: fieldBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: context.border, width: 0.8),
+                      ),
+                      child: Column(
+                        children: [
+                          for (int i = 0; i < experiences.length; i++) ...[
+                            if (i > 0)
+                              Divider(
+                                height: 1,
+                                indent: 44,
+                                color: context.border.withValues(alpha: 0.4),
+                              ),
+                            InkWell(
+                              onTap: () => ExperienceEditorSheet.show(context, experience: experiences[i]),
+                              borderRadius: BorderRadius.vertical(
+                                top: i == 0 ? const Radius.circular(12) : Radius.zero,
+                                bottom: i == experiences.length - 1 ? const Radius.circular(12) : Radius.zero,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.business_center_outlined,
+                                      size: 18,
+                                      color: context.textSecondary,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            experiences[i].title,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 13.5,
+                                              fontWeight: FontWeight.w600,
+                                              color: context.textPrimary,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '${experiences[i].company} · ${experiences[i].startDate} - ${experiences[i].isCurrent ? "Present" : (experiences[i].endDate ?? "")}',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 12,
+                                              color: context.textMuted,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.chevron_right_rounded,
+                                      size: 18,
+                                      color: context.textMuted,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     );
                   },
                 ),
 
-                const SizedBox(height: 10),
+                const SizedBox(height: 20),
 
-                // Manage Education (LinkedIn-style list tile)
-                Consumer<DatabaseService>(
-                  builder: (ctx, db, _) {
-                    final eduCount = db.myEducations.length;
-                    return InkWell(
-                      borderRadius: BorderRadius.circular(12),
+                // Education Subheading (Apple-style)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'EDUCATION',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                        color: context.textMuted,
+                      ),
+                    ),
+                    GestureDetector(
                       onTap: () => EducationEditorSheet.show(context),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: fieldBg,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: context.border, width: 1),
-                        ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: context.primaryAccent.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(Icons.school_outlined, size: 18, color: context.primaryAccent),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Manage Education',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: context.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    eduCount == 0 ? 'Add degrees & institutions' : '$eduCount degrees added',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 12,
-                                      color: context.textMuted,
-                                    ),
-                                  ),
-                                ],
+                            Icon(Icons.add_rounded, size: 15, color: context.primaryAccent),
+                            const SizedBox(width: 3),
+                            Text(
+                              'Add Education',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: context.primaryAccent,
                               ),
                             ),
-                            Icon(Icons.chevron_right_rounded, size: 20, color: context.textMuted),
                           ],
                         ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+
+                Consumer<DatabaseService>(
+                  builder: (ctx, db, _) {
+                    final educations = db.myEducations;
+                    if (educations.isEmpty) {
+                      return InkWell(
+                        onTap: () => EducationEditorSheet.show(context),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                          decoration: BoxDecoration(
+                            color: fieldBg,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: context.border, width: 0.8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.school_outlined, size: 18, color: context.textMuted),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Add degree, school or academic history',
+                                  style: GoogleFonts.inter(fontSize: 13, color: context.textMuted),
+                                ),
+                              ),
+                              Icon(Icons.chevron_right_rounded, size: 18, color: context.textMuted),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: fieldBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: context.border, width: 0.8),
+                      ),
+                      child: Column(
+                        children: [
+                          for (int i = 0; i < educations.length; i++) ...[
+                            if (i > 0)
+                              Divider(
+                                height: 1,
+                                indent: 44,
+                                color: context.border.withValues(alpha: 0.4),
+                              ),
+                            InkWell(
+                              onTap: () => EducationEditorSheet.show(context, education: educations[i]),
+                              borderRadius: BorderRadius.vertical(
+                                top: i == 0 ? const Radius.circular(12) : Radius.zero,
+                                bottom: i == educations.length - 1 ? const Radius.circular(12) : Radius.zero,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.school_outlined,
+                                      size: 18,
+                                      color: context.textSecondary,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            educations[i].school,
+                                            style: GoogleFonts.inter(
+                                              fontSize: 13.5,
+                                              fontWeight: FontWeight.w600,
+                                              color: context.textPrimary,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            [
+                                              if (educations[i].degree != null && educations[i].degree!.isNotEmpty) educations[i].degree!,
+                                              if (educations[i].fieldOfStudy != null && educations[i].fieldOfStudy!.isNotEmpty) educations[i].fieldOfStudy!,
+                                              '${educations[i].startDate} - ${educations[i].isCurrent ? "Present" : (educations[i].endDate ?? "")}',
+                                            ].join(' · '),
+                                            style: GoogleFonts.inter(
+                                              fontSize: 12,
+                                              color: context.textMuted,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.chevron_right_rounded,
+                                      size: 18,
+                                      color: context.textMuted,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     );
                   },
@@ -1664,6 +1852,55 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   size: 20, color: context.textSecondary),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _appleInputRow({
+    required IconData icon,
+    required String label,
+    required TextEditingController controller,
+    required String hint,
+    TextInputType? keyboardType,
+    int? maxLength,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: context.textSecondary),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 86,
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: context.textPrimary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: TextField(
+              controller: controller,
+              keyboardType: keyboardType,
+              maxLength: maxLength,
+              buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
+              style: GoogleFonts.inter(fontSize: 13.5, color: context.textPrimary),
+              onChanged: (_) => setState(() {}),
+              decoration: InputDecoration(
+                hintText: hint,
+                hintStyle: GoogleFonts.inter(fontSize: 13, color: context.textMuted),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                isDense: true,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
