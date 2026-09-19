@@ -12,6 +12,8 @@ import 'package:dak/services/database_service.dart';
 import 'package:dak/services/general_settings_provider.dart';
 import 'package:dak/services/view_tracking_service.dart';
 import 'package:dak/models/profile.dart';
+import 'package:dak/models/user_experience.dart';
+import 'package:dak/models/user_education.dart';
 import 'package:dak/state/music_playback_controller.dart';
 import 'package:dak/state/monetization_controller.dart';
 import 'package:dak/l10n/generated/app_localizations.dart';
@@ -141,6 +143,12 @@ class FakeDatabaseService extends DatabaseService {
 
   @override
   Profile? get myProfile => _myProf;
+
+  @override
+  Future<List<UserExperience>> fetchUserExperiences(String userId) async => [];
+
+  @override
+  Future<List<UserEducation>> fetchUserEducations(String userId) async => [];
 }
 
 class MockGeneralSettingsProvider extends ChangeNotifier implements GeneralSettingsProvider {
@@ -264,6 +272,11 @@ void main() {
     });
 
     testWidgets('Renders tab bar items for profile sections', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(buildApp());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
@@ -271,6 +284,7 @@ void main() {
       expect(find.byType(TabBar), findsOneWidget);
       expect(find.text('Posts'), findsWidgets);
       expect(find.text('Replies'), findsWidgets);
+      expect(find.text('About'), findsWidgets);
     });
   });
 }

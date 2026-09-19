@@ -28,8 +28,8 @@ import '../../state/monetization_controller.dart';
 import '../../services/screenshot_protection_service.dart';
 import '../../models/user_experience.dart';
 import '../../models/user_education.dart';
-import '../../widgets/profile/experience_list_card.dart';
-import '../../widgets/profile/education_list_card.dart';
+import '../../widgets/profile/experience_editor_sheet.dart';
+import '../../widgets/profile/education_editor_sheet.dart';
 
 
 class ProfileScreen extends StatefulWidget {
@@ -61,6 +61,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     AppLocalizations.of(context)!.replies,
     AppLocalizations.of(context)!.reposts,
     AppLocalizations.of(context)!.media,
+    AppLocalizations.of(context)!.about,
   ];
 
   /// Own profile if userId is null OR matches the current user's Supabase UID
@@ -78,7 +79,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadProfileData();
@@ -121,11 +122,15 @@ class _ProfileScreenState extends State<ProfileScreen>
     _reposts = await dbService.fetchUserReposts(targetId);
 
     // Fetch LinkedIn-style experiences and educations
-    final expFuture = dbService.fetchUserExperiences(targetId);
-    final eduFuture = dbService.fetchUserEducations(targetId);
-    final results = await Future.wait([expFuture, eduFuture]);
-    _experiences = results[0] as List<UserExperience>;
-    _educations = results[1] as List<UserEducation>;
+    try {
+      final expFuture = dbService.fetchUserExperiences(targetId);
+      final eduFuture = dbService.fetchUserEducations(targetId);
+      final results = await Future.wait([expFuture, eduFuture]);
+      _experiences = results[0] as List<UserExperience>;
+      _educations = results[1] as List<UserEducation>;
+    } catch (e) {
+      debugPrint("Error fetching experiences or educations: $e");
+    }
 
     // Fetch monetization info if this is someone else and they can monetize
     if (!_isOwnProfile && _viewedProfile?.canMonetize == true) {
@@ -191,7 +196,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         return Scaffold(
           backgroundColor: context.scaffoldBg,
           body: RefreshIndicator(
-            color: const Color(0xFF0085FF),
+            color: context.primaryAccent,
             onRefresh: _loadProfileData,
             child: NestedScrollView(
               headerSliverBuilder: (context, _) => [
@@ -697,51 +702,14 @@ class _ProfileScreenState extends State<ProfileScreen>
           );
         }(),
 
-        const SizedBox(height: 6),
-
-        // Work Experiences (LinkedIn style)
-        () {
-          final targetId = _isOwnProfile ? db.currentUid : (widget.userId ?? '');
-          final userExperiences = _isOwnProfile
-              ? db.myExperiences
-              : (_experiences.isNotEmpty ? _experiences : db.getExperiencesForUser(targetId));
-          final userEducations = _isOwnProfile
-              ? db.myEducations
-              : (_educations.isNotEmpty ? _educations : db.getEducationsForUser(targetId));
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (userExperiences.isNotEmpty || _isOwnProfile)
-                ExperienceListCard(
-                  experiences: userExperiences,
-                  isOwnProfile: _isOwnProfile,
-                  onRefresh: () async {
-                    final list = await db.fetchUserExperiences(targetId);
-                    if (mounted) setState(() => _experiences = list);
-                  },
-                ),
-              if (userEducations.isNotEmpty || _isOwnProfile)
-                EducationListCard(
-                  educations: userEducations,
-                  isOwnProfile: _isOwnProfile,
-                  onRefresh: () async {
-                    final list = await db.fetchUserEducations(targetId);
-                    if (mounted) setState(() => _educations = list);
-                  },
-                ),
-            ],
-          );
-        }(),
-
-        const SizedBox(height: 4),
+        const SizedBox(height: 8),
       ],
     );
   }
 
 
   Widget _defaultAvatar({double size = 40}) => Container(
-        color: const Color(0xFF0085FF),
+        color: context.primaryAccent,
         child: Icon(Icons.person_rounded, color: Colors.white, size: size * 0.55),
       );
 
@@ -833,6 +801,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           KeepAliveWrapper(child: _repliesTab(profile)),
           KeepAliveWrapper(child: _repostsTab(profile)),
           KeepAliveWrapper(child: _mediaTab(profile, threads)),
+          KeepAliveWrapper(child: _aboutTab(profile)),
         ],
       );
 
@@ -1033,6 +1002,645 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  // ── About Tab (Facebook Style) ─────────────────────────────
+  Widget _aboutTab(Profile? profile) {
+    final db = Provider.of<DatabaseService>(context, listen: false);
+    final targetId = _isOwnProfile ? db.currentUid : (widget.userId ?? '');
+    final userExperiences = _isOwnProfile
+        ? db.myExperiences
+        : (_experiences.isNotEmpty ? _experiences : db.getExperiencesForUser(targetId));
+    final userEducations = _isOwnProfile
+        ? db.myEducations
+        : (_educations.isNotEmpty ? _educations : db.getEducationsForUser(targetId));
+
+    final hasWork = userExperiences.isNotEmpty || (profile?.occupation != null && profile!.occupation!.isNotEmpty);
+    final hasEdu = userEducations.isNotEmpty || (profile?.education != null && profile!.education!.isNotEmpty);
+    final hasPlaces = (profile?.city != null && profile!.city!.isNotEmpty) ||
+        (profile?.division != null && profile!.division!.isNotEmpty) ||
+        (profile?.village != null && profile!.village!.isNotEmpty);
+    final hasContactBasic = (profile?.website != null && profile!.website!.isNotEmpty) ||
+        (profile?.gender != null && profile!.gender!.isNotEmpty) ||
+        (profile?.bloodGroup != null && profile!.bloodGroup!.isNotEmpty) ||
+        profile?.createdAt != null ||
+        (_isOwnProfile && ((profile?.phone != null && profile!.phone!.isNotEmpty) ||
+            (profile?.email != null && profile!.email!.isNotEmpty) ||
+            (profile?.birthdate != null && profile!.birthdate!.isNotEmpty)));
+
+    final bool hasAnyContent = hasWork || hasEdu || hasPlaces || hasContactBasic || _isOwnProfile;
+
+    if (!hasAnyContent) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.info_outline_rounded, size: 28, color: context.textMuted),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'No public details available',
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: context.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView(
+      physics: const ClampingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+      children: [
+        // Work Section
+        if (hasWork || _isOwnProfile) ...[
+          _buildAboutSection(
+            title: 'Work',
+            children: [
+              if (userExperiences.isNotEmpty)
+                ...userExperiences.map((exp) => _buildExperienceItem(exp, targetId, db))
+              else if (profile?.occupation != null && profile!.occupation!.isNotEmpty)
+                _buildAboutRow(
+                  icon: Icons.business_center_outlined,
+                  titleSpans: [
+                    const TextSpan(text: 'Works as '),
+                    TextSpan(
+                      text: profile.occupation!,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              if (_isOwnProfile)
+                _buildAddActionRow(
+                  icon: Icons.add_rounded,
+                  label: 'Add work experience',
+                  onTap: () {
+                    ExperienceEditorSheet.show(
+                      context,
+                      onSaved: () async {
+                        final list = await db.fetchUserExperiences(targetId);
+                        if (mounted) setState(() => _experiences = list);
+                      },
+                    );
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
+
+        // Education Section
+        if (hasEdu || _isOwnProfile) ...[
+          _buildAboutSection(
+            title: 'Education',
+            children: [
+              if (userEducations.isNotEmpty)
+                ...userEducations.map((edu) => _buildEducationItem(edu, targetId, db))
+              else if (profile?.education != null && profile!.education!.isNotEmpty)
+                _buildAboutRow(
+                  icon: Icons.school_outlined,
+                  titleSpans: [
+                    const TextSpan(text: 'Went to '),
+                    TextSpan(
+                      text: profile.education!,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              if (_isOwnProfile)
+                _buildAddActionRow(
+                  icon: Icons.add_rounded,
+                  label: 'Add school or university',
+                  onTap: () {
+                    EducationEditorSheet.show(
+                      context,
+                      onSaved: () async {
+                        final list = await db.fetchUserEducations(targetId);
+                        if (mounted) setState(() => _educations = list);
+                      },
+                    );
+                  },
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
+
+        // Places Lived Section
+        if (hasPlaces || _isOwnProfile) ...[
+          _buildAboutSection(
+            title: 'Places lived',
+            children: [
+              if (profile?.city != null && profile!.city!.isNotEmpty)
+                _buildAboutRow(
+                  icon: Icons.home_outlined,
+                  titleSpans: [
+                    const TextSpan(text: 'Lives in '),
+                    TextSpan(
+                      text: '${profile.city}${profile.country != null && profile.country!.isNotEmpty ? ', ${profile.country}' : ''}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                  trailing: _isOwnProfile
+                      ? _buildEditIconButton(onTap: _openEditProfile)
+                      : null,
+                ),
+              if (profile?.division != null && profile!.division!.isNotEmpty)
+                _buildAboutRow(
+                  icon: Icons.location_on_outlined,
+                  titleSpans: [
+                    const TextSpan(text: 'From '),
+                    TextSpan(
+                      text: '${profile.division}${profile.country != null && profile.country!.isNotEmpty ? ', ${profile.country}' : ''}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                  trailing: _isOwnProfile
+                      ? _buildEditIconButton(onTap: _openEditProfile)
+                      : null,
+                ),
+              if (profile?.village != null && profile!.village!.isNotEmpty)
+                _buildAboutRow(
+                  icon: Icons.place_outlined,
+                  titleSpans: [
+                    const TextSpan(text: 'Area: '),
+                    TextSpan(
+                      text: profile.village!,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                  trailing: _isOwnProfile
+                      ? _buildEditIconButton(onTap: _openEditProfile)
+                      : null,
+                ),
+              if (_isOwnProfile && !hasPlaces)
+                _buildAddActionRow(
+                  icon: Icons.add_rounded,
+                  label: 'Add current city',
+                  onTap: _openEditProfile,
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
+
+        // Basic Info & Contact Section
+        if (hasContactBasic || _isOwnProfile) ...[
+          _buildAboutSection(
+            title: 'Basic and contact info',
+            children: [
+              // Website
+              if (profile?.website != null && profile!.website!.isNotEmpty)
+                _buildAboutRow(
+                  icon: Icons.language_rounded,
+                  title: profile.website!,
+                  subtitle: 'Website',
+                  trailing: _isOwnProfile
+                      ? _buildEditIconButton(onTap: _openEditProfile)
+                      : null,
+                ),
+
+              // Gender
+              if (profile?.gender != null && profile!.gender!.isNotEmpty)
+                _buildAboutRow(
+                  icon: Icons.person_outline_rounded,
+                  title: profile.gender!,
+                  subtitle: 'Gender',
+                  trailing: _isOwnProfile
+                      ? _buildEditIconButton(onTap: _openEditProfile)
+                      : null,
+                ),
+
+              // Blood Group
+              if (profile?.bloodGroup != null && profile!.bloodGroup!.isNotEmpty)
+                _buildAboutRow(
+                  icon: Icons.bloodtype_outlined,
+                  title: profile.bloodGroup!,
+                  subtitle: 'Blood group',
+                  trailing: _isOwnProfile
+                      ? _buildEditIconButton(onTap: _openEditProfile)
+                      : null,
+                ),
+
+              // Joined Date
+              if (profile?.createdAt != null)
+                _buildAboutRow(
+                  icon: Icons.calendar_today_outlined,
+                  title: 'Joined ${_formatJoinedDate(profile!.createdAt)}',
+                ),
+
+              // Private items (Visible only to owner)
+              if (_isOwnProfile) ...[
+                if (profile?.phone != null && profile!.phone!.isNotEmpty)
+                  _buildAboutRow(
+                    icon: Icons.phone_outlined,
+                    title: profile.phone!,
+                    subtitle: 'Mobile • Only you',
+                    isPrivate: true,
+                    trailing: _buildEditIconButton(onTap: _openEditProfile),
+                  ),
+                if (profile?.email != null && profile!.email!.isNotEmpty)
+                  _buildAboutRow(
+                    icon: Icons.email_outlined,
+                    title: profile.email!,
+                    subtitle: 'Email • Only you',
+                    isPrivate: true,
+                    trailing: _buildEditIconButton(onTap: _openEditProfile),
+                  ),
+                if (profile?.birthdate != null && profile!.birthdate!.isNotEmpty)
+                  _buildAboutRow(
+                    icon: Icons.cake_outlined,
+                    title: profile.birthdate!,
+                    subtitle: 'Birthday • Only you',
+                    isPrivate: true,
+                    trailing: _buildEditIconButton(onTap: _openEditProfile),
+                  ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
+
+        // Edit Profile Details Button for owner
+        if (_isOwnProfile) ...[
+          GestureDetector(
+            onTap: _openEditProfile,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: context.cardBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: context.border, width: 1),
+              ),
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.edit_outlined, size: 17, color: context.textPrimary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Edit public details',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: context.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ],
+    );
+  }
+
+  void _openEditProfile() {
+    final db = Provider.of<DatabaseService>(context, listen: false);
+    final myProfile = db.myProfile ?? _viewedProfile;
+    if (myProfile == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProfileScreen(
+          profile: myProfile.toJson(),
+        ),
+      ),
+    ).then((_) {
+      _loadProfileData();
+    });
+  }
+
+  String _formatJoinedDate(DateTime? dt) {
+    if (dt == null) return '';
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return '${months[dt.month - 1]} ${dt.year}';
+  }
+
+  Widget _buildAboutSection({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: context.cardBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.border, width: 0.8),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: context.textPrimary,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 14),
+          ...children.asMap().entries.map((entry) {
+            final idx = entry.key;
+            final widget = entry.value;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (idx > 0)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Divider(
+                      height: 1,
+                      thickness: 0.6,
+                      color: context.border.withValues(alpha: 0.5),
+                    ),
+                  ),
+                widget,
+              ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAboutRow({
+    required IconData icon,
+    String? title,
+    List<TextSpan>? titleSpans,
+    String? subtitle,
+    bool isPrivate = false,
+    Widget? trailing,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, size: 18, color: context.textSecondary),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (titleSpans != null)
+                RichText(
+                  text: TextSpan(
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: context.textPrimary,
+                      height: 1.35,
+                    ),
+                    children: titleSpans,
+                  ),
+                )
+              else if (title != null)
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: context.textPrimary,
+                    height: 1.35,
+                  ),
+                ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    if (isPrivate) ...[
+                      Icon(Icons.lock_outline_rounded, size: 12, color: context.textMuted),
+                      const SizedBox(width: 4),
+                    ],
+                    Expanded(
+                      child: Text(
+                        subtitle,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: context.textMuted,
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+        ?trailing,
+      ],
+    );
+  }
+
+  Widget _buildExperienceItem(UserExperience exp, String targetId, DatabaseService db) {
+    final spans = <TextSpan>[];
+    if (exp.isCurrent) {
+      if (exp.title.isNotEmpty) {
+        spans.add(const TextSpan(text: 'Works as '));
+        spans.add(TextSpan(
+          text: exp.title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ));
+        spans.add(const TextSpan(text: ' at '));
+        spans.add(TextSpan(
+          text: exp.company,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ));
+      } else {
+        spans.add(const TextSpan(text: 'Works at '));
+        spans.add(TextSpan(
+          text: exp.company,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ));
+      }
+    } else {
+      if (exp.title.isNotEmpty) {
+        spans.add(const TextSpan(text: 'Former '));
+        spans.add(TextSpan(
+          text: exp.title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ));
+        spans.add(const TextSpan(text: ' at '));
+        spans.add(TextSpan(
+          text: exp.company,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ));
+      } else {
+        spans.add(const TextSpan(text: 'Past: Works at '));
+        spans.add(TextSpan(
+          text: exp.company,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ));
+      }
+    }
+
+    final dateStr = '${exp.startDate} – ${exp.isCurrent ? 'Present' : (exp.endDate ?? '')}';
+    final details = StringBuffer(dateStr);
+    if (exp.employmentType.isNotEmpty) {
+      details.write(' • ${exp.employmentType}');
+    }
+    if (exp.location != null && exp.location!.isNotEmpty) {
+      details.write(' • ${exp.location}');
+    }
+
+    return _buildAboutRow(
+      icon: Icons.business_center_outlined,
+      titleSpans: spans,
+      subtitle: details.toString(),
+      trailing: _isOwnProfile
+          ? _buildEditIconButton(
+              onTap: () {
+                ExperienceEditorSheet.show(
+                  context,
+                  experience: exp,
+                  onSaved: () async {
+                    final list = await db.fetchUserExperiences(targetId);
+                    if (mounted) setState(() => _experiences = list);
+                  },
+                );
+              },
+            )
+          : null,
+    );
+  }
+
+  Widget _buildEducationItem(UserEducation edu, String targetId, DatabaseService db) {
+    final spans = <TextSpan>[];
+    if (edu.degree != null && edu.degree!.isNotEmpty) {
+      spans.add(const TextSpan(text: 'Studied '));
+      final study = StringBuffer(edu.degree!);
+      if (edu.fieldOfStudy != null && edu.fieldOfStudy!.isNotEmpty) {
+        study.write(' in ${edu.fieldOfStudy!}');
+      }
+      spans.add(TextSpan(
+        text: study.toString(),
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ));
+      spans.add(const TextSpan(text: ' at '));
+      spans.add(TextSpan(
+        text: edu.school,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ));
+    } else if (edu.fieldOfStudy != null && edu.fieldOfStudy!.isNotEmpty) {
+      spans.add(const TextSpan(text: 'Studied '));
+      spans.add(TextSpan(
+        text: edu.fieldOfStudy!,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ));
+      spans.add(const TextSpan(text: ' at '));
+      spans.add(TextSpan(
+        text: edu.school,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ));
+    } else {
+      spans.add(const TextSpan(text: 'Went to '));
+      spans.add(TextSpan(
+        text: edu.school,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ));
+    }
+
+    final dateStr = '${edu.startDate}${edu.endDate != null && edu.endDate!.isNotEmpty ? ' – ${edu.endDate}' : (edu.isCurrent ? ' – Present' : '')}';
+    final details = StringBuffer(dateStr);
+    if (edu.grade != null && edu.grade!.isNotEmpty) {
+      details.write(' • Grade: ${edu.grade}');
+    }
+
+    return _buildAboutRow(
+      icon: Icons.school_outlined,
+      titleSpans: spans,
+      subtitle: details.toString(),
+      trailing: _isOwnProfile
+          ? _buildEditIconButton(
+              onTap: () {
+                EducationEditorSheet.show(
+                  context,
+                  education: edu,
+                  onSaved: () async {
+                    final list = await db.fetchUserEducations(targetId);
+                    if (mounted) setState(() => _educations = list);
+                  },
+                );
+              },
+            )
+          : null,
+    );
+  }
+
+  Widget _buildAddActionRow({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: context.primaryAccent.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 20, color: context.primaryAccent),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: context.primaryAccent,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEditIconButton({required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Icon(
+          Icons.edit_outlined,
+          size: 18,
+          color: context.textMuted,
+        ),
+      ),
+    );
+  }
 
   // ── More Options ───────────────────────────────────────────
   void _showMoreOptions() {
