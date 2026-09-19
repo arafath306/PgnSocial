@@ -1053,245 +1053,263 @@ class _ProfileScreenState extends State<ProfileScreen>
       );
     }
 
-    return ListView(
-      physics: const ClampingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-      children: [
-        // Work Section
-        if (hasWork || _isOwnProfile) ...[
-          _buildAboutSection(
-            title: 'Work',
-            headerIcon: Icons.work_outline_rounded,
-            children: [
-              if (userExperiences.isNotEmpty)
-                ...userExperiences.map((exp) => _buildExperienceItem(exp, targetId, db))
-              else if (profile?.occupation != null && profile!.occupation!.isNotEmpty)
-                _buildAboutRow(
-                  icon: Icons.work_outline_rounded,
-                  titleSpans: [
-                    const TextSpan(text: 'Works as '),
-                    TextSpan(
-                      text: profile.occupation!,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              if (_isOwnProfile)
-                _buildAddActionRow(
-                  icon: Icons.add_rounded,
-                  label: 'Add work experience',
-                  onTap: () {
-                    ExperienceEditorSheet.show(
-                      context,
-                      onSaved: () async {
-                        final list = await db.fetchUserExperiences(targetId);
-                        if (mounted) setState(() => _experiences = list);
-                      },
-                    );
-                  },
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
+    final sections = <Widget>[];
 
-        // Education Section
-        if (hasEdu || _isOwnProfile) ...[
-          _buildAboutSection(
-            title: 'Education',
-            headerIcon: Icons.school_outlined,
-            children: [
-              if (userEducations.isNotEmpty)
-                ...userEducations.map((edu) => _buildEducationItem(edu, targetId, db))
-              else if (profile?.education != null && profile!.education!.isNotEmpty)
-                _buildAboutRow(
-                  icon: Icons.school_outlined,
-                  titleSpans: [
-                    const TextSpan(text: 'Went to '),
-                    TextSpan(
-                      text: profile.education!,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              if (_isOwnProfile)
-                _buildAddActionRow(
-                  icon: Icons.add_rounded,
-                  label: 'Add school or university',
-                  onTap: () {
-                    EducationEditorSheet.show(
-                      context,
-                      onSaved: () async {
-                        final list = await db.fetchUserEducations(targetId);
-                        if (mounted) setState(() => _educations = list);
-                      },
-                    );
-                  },
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
-
-        // Places Lived Section
-        if (hasPlaces || _isOwnProfile) ...[
-          _buildAboutSection(
-            title: 'Places lived',
-            headerIcon: Icons.place_outlined,
-            children: [
-              if (profile?.city != null && profile!.city!.isNotEmpty)
-                _buildAboutRow(
-                  icon: Icons.home_outlined,
-                  titleSpans: [
-                    const TextSpan(text: 'Lives in '),
-                    TextSpan(
-                      text: '${profile.city}${profile.country != null && profile.country!.isNotEmpty ? ', ${profile.country}' : ''}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                  trailing: _isOwnProfile
-                      ? _buildEditIconButton(onTap: _openEditProfile)
-                      : null,
-                ),
-              if (profile?.division != null && profile!.division!.isNotEmpty)
-                _buildAboutRow(
-                  icon: Icons.location_on_outlined,
-                  titleSpans: [
-                    const TextSpan(text: 'From '),
-                    TextSpan(
-                      text: '${profile.division}${profile.country != null && profile.country!.isNotEmpty ? ', ${profile.country}' : ''}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                  trailing: _isOwnProfile
-                      ? _buildEditIconButton(onTap: _openEditProfile)
-                      : null,
-                ),
-              if (profile?.village != null && profile!.village!.isNotEmpty)
-                _buildAboutRow(
-                  icon: Icons.near_me_outlined,
-                  titleSpans: [
-                    const TextSpan(text: 'Area: '),
-                    TextSpan(
-                      text: profile.village!,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                  trailing: _isOwnProfile
-                      ? _buildEditIconButton(onTap: _openEditProfile)
-                      : null,
-                ),
-              if (_isOwnProfile && !hasPlaces)
-                _buildAddActionRow(
-                  icon: Icons.add_rounded,
-                  label: 'Add current city',
-                  onTap: _openEditProfile,
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
-
-        // Basic Info & Contact Section
-        if (hasContactBasic || _isOwnProfile) ...[
-          _buildAboutSection(
-            title: 'Basic and contact info',
-            headerIcon: Icons.info_outline_rounded,
-            children: [
-              // Website
-              if (profile?.website != null && profile!.website!.isNotEmpty)
-                _buildAboutRow(
-                  icon: Icons.language_rounded,
-                  title: profile.website!,
-                  subtitle: 'Website',
-                  trailing: _isOwnProfile
-                      ? _buildEditIconButton(onTap: _openEditProfile)
-                      : null,
-                ),
-
-              // Gender
-              if (profile?.gender != null && profile!.gender!.isNotEmpty)
-                _buildAboutRow(
-                  icon: Icons.person_outline_rounded,
-                  title: profile.gender!,
-                  subtitle: 'Gender',
-                  trailing: _isOwnProfile
-                      ? _buildEditIconButton(onTap: _openEditProfile)
-                      : null,
-                ),
-
-              // Blood Group
-              if (profile?.bloodGroup != null && profile!.bloodGroup!.isNotEmpty)
-                _buildAboutRow(
-                  icon: Icons.water_drop_outlined,
-                  title: profile.bloodGroup!,
-                  subtitle: 'Blood group',
-                  trailing: _isOwnProfile
-                      ? _buildEditIconButton(onTap: _openEditProfile)
-                      : null,
-                ),
-
-              // Joined Date
-              if (profile?.createdAt != null)
-                _buildAboutRow(
-                  icon: Icons.calendar_today_outlined,
-                  title: 'Joined ${_formatJoinedDate(profile!.createdAt)}',
-                ),
-
-              // Private items (Visible only to owner)
-              if (_isOwnProfile) ...[
-                if (profile?.phone != null && profile!.phone!.isNotEmpty)
-                  _buildAboutRow(
-                    icon: Icons.phone_outlined,
-                    title: profile.phone!,
-                    subtitle: 'Phone Number',
-                    isPrivate: true,
-                    trailing: _buildEditIconButton(onTap: _openEditProfile),
+    // Work Section
+    if (hasWork || _isOwnProfile) {
+      sections.add(
+        _buildAboutSection(
+          title: 'Work',
+          headerIcon: Icons.work_outline_rounded,
+          children: [
+            if (userExperiences.isNotEmpty)
+              ...userExperiences.map((exp) => _buildExperienceItem(exp, targetId, db))
+            else if (profile?.occupation != null && profile!.occupation!.isNotEmpty)
+              _buildAboutRow(
+                icon: Icons.work_outline_rounded,
+                titleSpans: [
+                  const TextSpan(text: 'Works as '),
+                  TextSpan(
+                    text: profile.occupation!,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                if (profile?.email != null && profile!.email!.isNotEmpty)
-                  _buildAboutRow(
-                    icon: Icons.alternate_email_rounded,
-                    title: profile.email!,
-                    subtitle: 'Email Address',
-                    isPrivate: true,
-                    trailing: _buildEditIconButton(onTap: _openEditProfile),
-                  ),
-                if (profile?.birthdate != null && profile!.birthdate!.isNotEmpty)
-                  _buildAboutRow(
-                    icon: Icons.cake_outlined,
-                    title: profile.birthdate!,
-                    subtitle: 'Birthdate',
-                    isPrivate: true,
-                    trailing: _buildEditIconButton(onTap: _openEditProfile),
-                  ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
+                ],
+              ),
+            if (_isOwnProfile)
+              _buildAddActionRow(
+                icon: Icons.add_rounded,
+                label: 'Add work experience',
+                onTap: () {
+                  ExperienceEditorSheet.show(
+                    context,
+                    onSaved: () async {
+                      final list = await db.fetchUserExperiences(targetId);
+                      if (mounted) setState(() => _experiences = list);
+                    },
+                  );
+                },
+              ),
+          ],
+        ),
+      );
+    }
 
-        // Edit Profile Details Button for owner
-        if (_isOwnProfile) ...[
-          GestureDetector(
+    // Education Section
+    if (hasEdu || _isOwnProfile) {
+      sections.add(
+        _buildAboutSection(
+          title: 'Education',
+          headerIcon: Icons.school_outlined,
+          children: [
+            if (userEducations.isNotEmpty)
+              ...userEducations.map((edu) => _buildEducationItem(edu, targetId, db))
+            else if (profile?.education != null && profile!.education!.isNotEmpty)
+              _buildAboutRow(
+                icon: Icons.school_outlined,
+                titleSpans: [
+                  const TextSpan(text: 'Went to '),
+                  TextSpan(
+                    text: profile.education!,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            if (_isOwnProfile)
+              _buildAddActionRow(
+                icon: Icons.add_rounded,
+                label: 'Add school or university',
+                onTap: () {
+                  EducationEditorSheet.show(
+                    context,
+                    onSaved: () async {
+                      final list = await db.fetchUserEducations(targetId);
+                      if (mounted) setState(() => _educations = list);
+                    },
+                  );
+                },
+              ),
+          ],
+        ),
+      );
+    }
+
+    // Places Lived Section
+    if (hasPlaces || _isOwnProfile) {
+      sections.add(
+        _buildAboutSection(
+          title: 'Places lived',
+          headerIcon: Icons.place_outlined,
+          children: [
+            if (profile?.city != null && profile!.city!.isNotEmpty)
+              _buildAboutRow(
+                icon: Icons.home_outlined,
+                titleSpans: [
+                  const TextSpan(text: 'Lives in '),
+                  TextSpan(
+                    text: '${profile.city}${profile.country != null && profile.country!.isNotEmpty ? ', ${profile.country}' : ''}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+                trailing: _isOwnProfile
+                    ? _buildEditIconButton(onTap: _openEditProfile)
+                    : null,
+              ),
+            if (profile?.division != null && profile!.division!.isNotEmpty)
+              _buildAboutRow(
+                icon: Icons.location_on_outlined,
+                titleSpans: [
+                  const TextSpan(text: 'From '),
+                  TextSpan(
+                    text: '${profile.division}${profile.country != null && profile.country!.isNotEmpty ? ', ${profile.country}' : ''}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+                trailing: _isOwnProfile
+                    ? _buildEditIconButton(onTap: _openEditProfile)
+                    : null,
+              ),
+            if (profile?.village != null && profile!.village!.isNotEmpty)
+              _buildAboutRow(
+                icon: Icons.near_me_outlined,
+                titleSpans: [
+                  const TextSpan(text: 'Area: '),
+                  TextSpan(
+                    text: profile.village!,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+                trailing: _isOwnProfile
+                    ? _buildEditIconButton(onTap: _openEditProfile)
+                    : null,
+              ),
+            if (_isOwnProfile && !hasPlaces)
+              _buildAddActionRow(
+                icon: Icons.add_rounded,
+                label: 'Add current city',
+                onTap: _openEditProfile,
+              ),
+          ],
+        ),
+      );
+    }
+
+    // Basic Info & Contact Section
+    if (hasContactBasic || _isOwnProfile) {
+      sections.add(
+        _buildAboutSection(
+          title: 'Basic and contact info',
+          headerIcon: Icons.info_outline_rounded,
+          children: [
+            // Website
+            if (profile?.website != null && profile!.website!.isNotEmpty)
+              _buildAboutRow(
+                icon: Icons.language_rounded,
+                title: profile.website!,
+                subtitle: 'Website',
+                trailing: _isOwnProfile
+                    ? _buildEditIconButton(onTap: _openEditProfile)
+                    : null,
+              ),
+
+            // Gender
+            if (profile?.gender != null && profile!.gender!.isNotEmpty)
+              _buildAboutRow(
+                icon: Icons.person_outline_rounded,
+                title: profile.gender!,
+                subtitle: 'Gender',
+                trailing: _isOwnProfile
+                    ? _buildEditIconButton(onTap: _openEditProfile)
+                    : null,
+              ),
+
+            // Blood Group
+            if (profile?.bloodGroup != null && profile!.bloodGroup!.isNotEmpty)
+              _buildAboutRow(
+                icon: Icons.water_drop_outlined,
+                title: profile.bloodGroup!,
+                subtitle: 'Blood group',
+                trailing: _isOwnProfile
+                    ? _buildEditIconButton(onTap: _openEditProfile)
+                    : null,
+              ),
+
+            // Joined Date
+            if (profile?.createdAt != null)
+              _buildAboutRow(
+                icon: Icons.calendar_today_outlined,
+                title: 'Joined ${_formatJoinedDate(profile!.createdAt)}',
+              ),
+
+            // Private items (Visible only to owner)
+            if (_isOwnProfile) ...[
+              if (profile?.phone != null && profile!.phone!.isNotEmpty)
+                _buildAboutRow(
+                  icon: Icons.phone_outlined,
+                  title: profile.phone!,
+                  subtitle: 'Phone Number',
+                  isPrivate: true,
+                  trailing: _buildEditIconButton(onTap: _openEditProfile),
+                ),
+              if (profile?.email != null && profile!.email!.isNotEmpty)
+                _buildAboutRow(
+                  icon: Icons.alternate_email_rounded,
+                  title: profile.email!,
+                  subtitle: 'Email Address',
+                  isPrivate: true,
+                  trailing: _buildEditIconButton(onTap: _openEditProfile),
+                ),
+              if (profile?.birthdate != null && profile!.birthdate!.isNotEmpty)
+                _buildAboutRow(
+                  icon: Icons.cake_outlined,
+                  title: profile.birthdate!,
+                  subtitle: 'Birthdate',
+                  isPrivate: true,
+                  trailing: _buildEditIconButton(onTap: _openEditProfile),
+                ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    final listChildren = <Widget>[];
+    for (int i = 0; i < sections.length; i++) {
+      listChildren.add(sections[i]);
+      if (i < sections.length - 1) {
+        listChildren.add(_buildSectionDivider());
+      }
+    }
+
+    // Edit Profile Details Button for owner
+    if (_isOwnProfile) {
+      if (sections.isNotEmpty) {
+        listChildren.add(_buildSectionDivider());
+      }
+      listChildren.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 6, bottom: 24),
+          child: GestureDetector(
             onTap: _openEditProfile,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
-                color: context.cardBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: context.border, width: 1),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: context.border.withValues(alpha: 0.5),
+                  width: 0.8,
+                ),
               ),
               alignment: Alignment.center,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.edit_outlined, size: 17, color: context.textPrimary),
+                  Icon(Icons.edit_outlined, size: 15, color: context.textPrimary),
                   const SizedBox(width: 8),
                   Text(
                     'Edit public details',
                     style: GoogleFonts.inter(
-                      fontSize: 14,
+                      fontSize: 13.5,
                       fontWeight: FontWeight.w600,
                       color: context.textPrimary,
                     ),
@@ -1300,9 +1318,14 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
             ),
           ),
-          const SizedBox(height: 24),
-        ],
-      ],
+        ),
+      );
+    }
+
+    return ListView(
+      physics: const ClampingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 80),
+      children: listChildren,
     );
   }
 
@@ -1331,29 +1354,35 @@ class _ProfileScreenState extends State<ProfileScreen>
     return '${months[dt.month - 1]} ${dt.year}';
   }
 
+  Widget _buildSectionDivider() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Divider(
+        height: 1,
+        thickness: 0.5,
+        color: context.border.withValues(alpha: 0.28),
+      ),
+    );
+  }
+
   Widget _buildAboutSection({
     required String title,
     required IconData headerIcon,
     required List<Widget> children,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.border, width: 0.8),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
             children: [
-              Icon(headerIcon, size: 16, color: context.textMuted),
+              Icon(headerIcon, size: 15, color: context.textMuted),
               const SizedBox(width: 8),
               Text(
                 title,
                 style: GoogleFonts.inter(
-                  fontSize: 15,
+                  fontSize: 14,
                   fontWeight: FontWeight.w700,
                   color: context.textPrimary,
                   letterSpacing: -0.2,
@@ -1361,28 +1390,27 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          ...children.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final widget = entry.value;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (idx > 0)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Divider(
-                      height: 1,
-                      thickness: 0.6,
-                      color: context.border.withValues(alpha: 0.4),
-                    ),
+        ),
+        ...children.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final widget = entry.value;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (idx > 0)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Divider(
+                    height: 1,
+                    thickness: 0.5,
+                    color: context.border.withValues(alpha: 0.2),
                   ),
-                widget,
-              ],
-            );
-          }),
-        ],
-      ),
+                ),
+              widget,
+            ],
+          );
+        }),
+      ],
     );
   }
 
@@ -1398,17 +1426,15 @@ class _ProfileScreenState extends State<ProfileScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 40,
-          height: 40,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
-            color: context.isDarkMode ? const Color(0xFF1E2638) : const Color(0xFFF1F5F9),
+            color: context.isDarkMode
+                ? Colors.white.withValues(alpha: 0.05)
+                : Colors.black.withValues(alpha: 0.04),
             shape: BoxShape.circle,
-            border: Border.all(
-              color: context.border.withValues(alpha: 0.5),
-              width: 0.8,
-            ),
           ),
-          child: Icon(icon, size: 18, color: context.textSecondary),
+          child: Icon(icon, size: 17, color: context.textSecondary),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -1448,37 +1474,26 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
               ],
               if (_isOwnProfile) ...[
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-                  decoration: BoxDecoration(
-                    color: context.isDarkMode ? const Color(0xFF1E2638) : const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: context.border.withValues(alpha: 0.6),
-                      width: 0.6,
+                const SizedBox(height: 5),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isPrivate ? Icons.lock_outline_rounded : Icons.public_rounded,
+                      size: 11,
+                      color: context.textMuted,
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isPrivate ? Icons.lock_outline_rounded : Icons.public_rounded,
-                        size: 10.5,
-                        color: isPrivate ? context.textSecondary : context.textMuted,
+                    const SizedBox(width: 4),
+                    Text(
+                      isPrivate ? 'Only you' : 'Public',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: context.textMuted,
+                        letterSpacing: 0.1,
                       ),
-                      const SizedBox(width: 3.5),
-                      Text(
-                        isPrivate ? 'Only you' : 'Public',
-                        style: GoogleFonts.inter(
-                          fontSize: 10.5,
-                          fontWeight: isPrivate ? FontWeight.w600 : FontWeight.w500,
-                          color: isPrivate ? context.textSecondary : context.textMuted,
-                          letterSpacing: 0.1,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ],
@@ -1631,25 +1646,22 @@ class _ProfileScreenState extends State<ProfileScreen>
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
-                color: context.primaryAccent.withValues(alpha: 0.08),
+                color: context.primaryAccent.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: context.primaryAccent.withValues(alpha: 0.25),
-                  width: 0.8,
-                ),
               ),
-              child: Icon(icon, size: 18, color: context.primaryAccent),
+              child: Icon(icon, size: 16, color: context.primaryAccent),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Text(
               label,
               style: GoogleFonts.inter(
@@ -1673,7 +1685,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         padding: const EdgeInsets.all(6),
         child: Icon(
           Icons.edit_outlined,
-          size: 17,
+          size: 16,
           color: context.textMuted,
         ),
       ),
