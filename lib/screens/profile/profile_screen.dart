@@ -252,26 +252,20 @@ class _ProfileScreenState extends State<ProfileScreen>
                         errorWidget: (context, url, error) => Container(color: Colors.grey[200]),
                       )
                     : Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Color(0xFFE3F2FD), Color(0xFFBBDEFB)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
+                        color: context.isDarkMode ? const Color(0xFF131B2E) : const Color(0xFFE2E8F0),
                         child: _isOwnProfile
                             ? Center(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    const Icon(Icons.camera_alt_outlined, color: Color(0xFF0085FF), size: 28),
+                                    Icon(Icons.camera_alt_outlined, color: context.textSecondary, size: 24),
                                     const SizedBox(height: 4),
                                     Text(
                                       'Add cover photo',
                                       style: GoogleFonts.inter(
                                         fontSize: 12,
-                                        color: const Color(0xFF0085FF),
-                                        fontWeight: FontWeight.bold,
+                                        color: context.textSecondary,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ],
@@ -1067,12 +1061,13 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (hasWork || _isOwnProfile) ...[
           _buildAboutSection(
             title: 'Work',
+            headerIcon: Icons.work_outline_rounded,
             children: [
               if (userExperiences.isNotEmpty)
                 ...userExperiences.map((exp) => _buildExperienceItem(exp, targetId, db))
               else if (profile?.occupation != null && profile!.occupation!.isNotEmpty)
                 _buildAboutRow(
-                  icon: Icons.business_center_outlined,
+                  icon: Icons.work_outline_rounded,
                   titleSpans: [
                     const TextSpan(text: 'Works as '),
                     TextSpan(
@@ -1104,6 +1099,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (hasEdu || _isOwnProfile) ...[
           _buildAboutSection(
             title: 'Education',
+            headerIcon: Icons.school_outlined,
             children: [
               if (userEducations.isNotEmpty)
                 ...userEducations.map((edu) => _buildEducationItem(edu, targetId, db))
@@ -1141,6 +1137,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (hasPlaces || _isOwnProfile) ...[
           _buildAboutSection(
             title: 'Places lived',
+            headerIcon: Icons.place_outlined,
             children: [
               if (profile?.city != null && profile!.city!.isNotEmpty)
                 _buildAboutRow(
@@ -1172,7 +1169,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
               if (profile?.village != null && profile!.village!.isNotEmpty)
                 _buildAboutRow(
-                  icon: Icons.place_outlined,
+                  icon: Icons.near_me_outlined,
                   titleSpans: [
                     const TextSpan(text: 'Area: '),
                     TextSpan(
@@ -1199,6 +1196,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (hasContactBasic || _isOwnProfile) ...[
           _buildAboutSection(
             title: 'Basic and contact info',
+            headerIcon: Icons.info_outline_rounded,
             children: [
               // Website
               if (profile?.website != null && profile!.website!.isNotEmpty)
@@ -1225,7 +1223,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               // Blood Group
               if (profile?.bloodGroup != null && profile!.bloodGroup!.isNotEmpty)
                 _buildAboutRow(
-                  icon: Icons.bloodtype_outlined,
+                  icon: Icons.water_drop_outlined,
                   title: profile.bloodGroup!,
                   subtitle: 'Blood group',
                   trailing: _isOwnProfile
@@ -1246,15 +1244,15 @@ class _ProfileScreenState extends State<ProfileScreen>
                   _buildAboutRow(
                     icon: Icons.phone_outlined,
                     title: profile.phone!,
-                    subtitle: 'Mobile • Only you',
+                    subtitle: 'Phone Number',
                     isPrivate: true,
                     trailing: _buildEditIconButton(onTap: _openEditProfile),
                   ),
                 if (profile?.email != null && profile!.email!.isNotEmpty)
                   _buildAboutRow(
-                    icon: Icons.email_outlined,
+                    icon: Icons.alternate_email_rounded,
                     title: profile.email!,
-                    subtitle: 'Email • Only you',
+                    subtitle: 'Email Address',
                     isPrivate: true,
                     trailing: _buildEditIconButton(onTap: _openEditProfile),
                   ),
@@ -1262,7 +1260,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   _buildAboutRow(
                     icon: Icons.cake_outlined,
                     title: profile.birthdate!,
-                    subtitle: 'Birthday • Only you',
+                    subtitle: 'Birthdate',
                     isPrivate: true,
                     trailing: _buildEditIconButton(onTap: _openEditProfile),
                   ),
@@ -1335,26 +1333,33 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildAboutSection({
     required String title,
+    required IconData headerIcon,
     required List<Widget> children,
   }) {
     return Container(
       decoration: BoxDecoration(
         color: context.cardBg,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: context.border, width: 0.8),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: context.textPrimary,
-              letterSpacing: -0.2,
-            ),
+          Row(
+            children: [
+              Icon(headerIcon, size: 16, color: context.textMuted),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: context.textPrimary,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 14),
           ...children.asMap().entries.map((entry) {
@@ -1365,11 +1370,11 @@ class _ProfileScreenState extends State<ProfileScreen>
               children: [
                 if (idx > 0)
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     child: Divider(
                       height: 1,
                       thickness: 0.6,
-                      color: context.border.withValues(alpha: 0.5),
+                      color: context.border.withValues(alpha: 0.4),
                     ),
                   ),
                 widget,
@@ -1393,11 +1398,15 @@ class _ProfileScreenState extends State<ProfileScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 36,
-          height: 36,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
-            color: context.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+            color: context.isDarkMode ? const Color(0xFF1E2638) : const Color(0xFFF1F5F9),
             shape: BoxShape.circle,
+            border: Border.all(
+              color: context.border.withValues(alpha: 0.5),
+              width: 0.8,
+            ),
           ),
           child: Icon(icon, size: 18, color: context.textSecondary),
         ),
@@ -1429,23 +1438,47 @@ class _ProfileScreenState extends State<ProfileScreen>
                 ),
               if (subtitle != null) ...[
                 const SizedBox(height: 3),
-                Row(
-                  children: [
-                    if (isPrivate) ...[
-                      Icon(Icons.lock_outline_rounded, size: 12, color: context.textMuted),
-                      const SizedBox(width: 4),
-                    ],
-                    Expanded(
-                      child: Text(
-                        subtitle,
+                Text(
+                  subtitle,
+                  style: GoogleFonts.inter(
+                    fontSize: 12.5,
+                    color: context.textSecondary,
+                    height: 1.25,
+                  ),
+                ),
+              ],
+              if (_isOwnProfile) ...[
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                  decoration: BoxDecoration(
+                    color: context.isDarkMode ? const Color(0xFF1E2638) : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: context.border.withValues(alpha: 0.6),
+                      width: 0.6,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isPrivate ? Icons.lock_outline_rounded : Icons.public_rounded,
+                        size: 10.5,
+                        color: isPrivate ? context.textSecondary : context.textMuted,
+                      ),
+                      const SizedBox(width: 3.5),
+                      Text(
+                        isPrivate ? 'Only you' : 'Public',
                         style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: context.textMuted,
-                          height: 1.2,
+                          fontSize: 10.5,
+                          fontWeight: isPrivate ? FontWeight.w600 : FontWeight.w500,
+                          color: isPrivate ? context.textSecondary : context.textMuted,
+                          letterSpacing: 0.1,
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ],
@@ -1508,7 +1541,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
 
     return _buildAboutRow(
-      icon: Icons.business_center_outlined,
+      icon: Icons.work_outline_rounded,
       titleSpans: spans,
       subtitle: details.toString(),
       trailing: _isOwnProfile
@@ -1598,27 +1631,32 @@ class _ProfileScreenState extends State<ProfileScreen>
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(10),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(vertical: 6),
         child: Row(
           children: [
             Container(
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: context.primaryAccent.withValues(alpha: 0.1),
+                color: context.primaryAccent.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
+                border: Border.all(
+                  color: context.primaryAccent.withValues(alpha: 0.25),
+                  width: 0.8,
+                ),
               ),
-              child: Icon(icon, size: 20, color: context.primaryAccent),
+              child: Icon(icon, size: 18, color: context.primaryAccent),
             ),
             const SizedBox(width: 12),
             Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: 14,
+                fontSize: 13.5,
                 fontWeight: FontWeight.w600,
                 color: context.primaryAccent,
+                letterSpacing: -0.1,
               ),
             ),
           ],
@@ -1635,7 +1673,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         padding: const EdgeInsets.all(6),
         child: Icon(
           Icons.edit_outlined,
-          size: 18,
+          size: 17,
           color: context.textMuted,
         ),
       ),
