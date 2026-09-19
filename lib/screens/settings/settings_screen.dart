@@ -826,7 +826,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 16),
                   Center(
                     child: Text(
-                      "Version 6.8.4",
+                      "Version 6.9.1",
                       style: GoogleFonts.inter(
                         fontSize: 13,
                         color: context.textMuted,

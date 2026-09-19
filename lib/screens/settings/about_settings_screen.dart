@@ -38,7 +38,7 @@ class _AboutSettingsScreenState extends State<AboutSettingsScreen> {
             ),
           ),
           content: Text(
-            'You are on the latest release!\n\nVersion: 6.8.4\nBuild: 71',
+            'You are on the latest release!\n\nVersion: 6.9.1\nBuild: 73',
             style: GoogleFonts.inter(color: context.textSecondary),
           ),
           actions: [
@@ -127,7 +127,7 @@ class _AboutSettingsScreenState extends State<AboutSettingsScreen> {
           ),
           Center(
             child: Text(
-              'Version 6.8.4 (Build 71)',
+              'Version 6.9.1 (Build 73)',
               style: GoogleFonts.inter(fontSize: 13, color: context.textMuted),
             ),
           ),

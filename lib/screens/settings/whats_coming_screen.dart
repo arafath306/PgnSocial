@@ -51,7 +51,7 @@ class _WhatsComingScreenState extends State<WhatsComingScreen>
   late TabController _tabController;
   String _selectedStageFilter = 'all';
 
-  static const String _currentAppVersion = '6.9.0';
+  static const String _currentAppVersion = '6.9.1';
 
   late List<RoadmapItem> _roadmapItems;
   final List<RoadmapItem> _communityRequests = [];
