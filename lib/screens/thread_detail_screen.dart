@@ -1,3 +1,4 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import '../services/general_settings_provider.dart';
@@ -42,10 +43,41 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
   int _pickerTabIndex = 0;
   bool _isUploading = false;
   bool _showEmojiPanel = false;
+  String? _exactCreatedAt;
+  bool _isFetchingTimestamp = false;
+
+  Future<void> _fetchExactCreatedAt() async {
+    if (_isFetchingTimestamp) return;
+    if (_exactCreatedAt != null && _exactCreatedAt!.contains('T')) return;
+    _isFetchingTimestamp = true;
+    try {
+      final res = await Supabase.instance.client
+          .from('threads')
+          .select('created_at')
+          .eq('id', widget.post.id)
+          .maybeSingle();
+      if (res != null && res['created_at'] != null && mounted) {
+        final raw = res['created_at'].toString();
+        setState(() {
+          _exactCreatedAt = raw;
+        });
+        if (mounted) {
+          final db = Provider.of<DatabaseService>(context, listen: false);
+          db.updatePostCreatedAt(widget.post.id, raw);
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching exact post created_at: $e");
+    } finally {
+      _isFetchingTimestamp = false;
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    _exactCreatedAt = widget.post.createdAtRaw;
+    _fetchExactCreatedAt();
     _loadComments();
     _scrollController.addListener(_onScroll);
     if (widget.post.author.hasScreenshotProtection || widget.post.author.isPremium) {
@@ -57,6 +89,7 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
       if (!mounted) return;
       final dbService = Provider.of<DatabaseService>(context, listen: false);
       dbService.incrementThreadViews(widget.post.id);
+      dbService.ensurePostTimestamp(widget.post.id);
     });
   }
 
@@ -250,7 +283,12 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
-    final activePost = context.select<DatabaseService, ThreadPost>((db) => db.getLatestPost(widget.post));
+    var activePost = context.select<DatabaseService, ThreadPost>((db) => db.getLatestPost(widget.post));
+    if (_exactCreatedAt != null && (activePost.createdAtRaw == null || !activePost.createdAtRaw!.contains('T'))) {
+      activePost = activePost.copyWith(createdAtRaw: _exactCreatedAt);
+    } else if (_exactCreatedAt == null && (activePost.createdAtRaw == null || !activePost.createdAtRaw!.contains('T'))) {
+      _fetchExactCreatedAt();
+    }
 
     final settings = Provider.of<GeneralSettingsProvider>(context);
     final isPriorityEnabled = settings.isAlgorithmicPriorityEnabled;
@@ -370,16 +408,9 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
           ),
         ),
         actions: [
-          AnimatedOpacity(
-            opacity: _scrolledHeader ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 250),
-            child: IgnorePointer(
-              ignoring: !_scrolledHeader,
-              child: IconButton(
-                icon: Icon(Icons.more_horiz, color: context.textPrimary),
-                onPressed: () => _showPostQuickActions(context, dbService, activePost),
-              ),
-            ),
+          IconButton(
+            icon: Icon(Icons.more_horiz, color: context.textPrimary),
+            onPressed: () => _showPostQuickActions(context, dbService, activePost),
           ),
         ],
       ),
@@ -395,7 +426,6 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
                   ThreadDetailHeader(
                     activePost: activePost,
                     dbService: dbService,
-                    onMoreTap: () => _showPostQuickActions(context, dbService, activePost),
                     formatTime: _formatTime,
                     formatCount: _formatCount,
                   ),

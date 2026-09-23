@@ -59,7 +59,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     final response = await supabaseClient
         .from('messages')
         .select('*, sender:profiles!sender_id(*), receiver:profiles!receiver_id(*)')
-        .or('sender_id.eq.$currentUserId,receiver_id.eq.$currentUserId')
+        .or('and(sender_id.eq.$currentUserId,deleted_by_sender.eq.false),and(receiver_id.eq.$currentUserId,deleted_by_receiver.eq.false)')
         .order('created_at', ascending: false);
     return response as List<dynamic>;
   }
@@ -69,7 +69,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     final response = await supabaseClient
         .from('messages')
         .select()
-        .or('and(sender_id.eq.$currentUserId,receiver_id.eq.$otherUserId),and(sender_id.eq.$otherUserId,receiver_id.eq.$currentUserId)')
+        .or('and(sender_id.eq.$currentUserId,receiver_id.eq.$otherUserId,deleted_by_sender.eq.false),and(sender_id.eq.$otherUserId,receiver_id.eq.$currentUserId,deleted_by_receiver.eq.false)')
         .order('created_at', ascending: false)
         .limit(100);
     final list = response as List<dynamic>;
@@ -102,11 +102,26 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
 
   @override
   Future<bool> deleteConversation(String currentUserId, String otherUserId) async {
-    await supabaseClient
-        .from('messages')
-        .delete()
-        .or('and(sender_id.eq.$currentUserId,receiver_id.eq.$otherUserId),and(sender_id.eq.$otherUserId,receiver_id.eq.$currentUserId)');
-    return true;
+    try {
+      // Mark as deleted for sender
+      await supabaseClient
+          .from('messages')
+          .update({'deleted_by_sender': true})
+          .eq('sender_id', currentUserId)
+          .eq('receiver_id', otherUserId);
+          
+      // Mark as deleted for receiver
+      await supabaseClient
+          .from('messages')
+          .update({'deleted_by_receiver': true})
+          .eq('receiver_id', currentUserId)
+          .eq('sender_id', otherUserId);
+          
+      return true;
+    } catch (e) {
+      debugPrint('Error deleting conversation: $e');
+      return false;
+    }
   }
 
   @override

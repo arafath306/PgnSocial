@@ -92,6 +92,7 @@ class DatabaseService with ChangeNotifier {
       sharesCount: entity.sharesCount,
       viewsCount: entity.viewsCount,
       createdAt: entity.createdAt,
+      createdAtRaw: entity.createdAtRaw,
       isLikedByMe: entity.isLikedByMe,
       reactionType: entity.reactionType,
       isPinned: entity.isPinned,
@@ -221,6 +222,41 @@ class DatabaseService with ChangeNotifier {
       return fallbackPost;
     }
     return cached;
+  }
+
+  void updatePostCreatedAt(String threadId, String raw) {
+    ThreadPost? currentPost = _postsCache[threadId];
+    if (currentPost == null) {
+      final feedIdx = _feed.indexWhere((p) => p.id == threadId);
+      if (feedIdx != -1) currentPost = _feed[feedIdx];
+      final pIdx = _personalizedFeed.indexWhere((p) => p.id == threadId);
+      if (pIdx != -1) currentPost = _personalizedFeed[pIdx];
+    }
+    if (currentPost != null) {
+      final updated = currentPost.copyWith(createdAtRaw: raw);
+      _updatePostInLists(threadId, updated);
+      notifyListeners();
+    }
+  }
+
+  Future<void> ensurePostTimestamp(String threadId) async {
+    try {
+      final post = _postsCache[threadId];
+      if (post != null && post.createdAtRaw != null && post.createdAtRaw!.contains('T')) {
+        return;
+      }
+      final res = await _supabase
+          .from('threads')
+          .select('created_at')
+          .eq('id', threadId)
+          .maybeSingle();
+      if (res != null && res['created_at'] != null) {
+        final raw = res['created_at'].toString();
+        updatePostCreatedAt(threadId, raw);
+      }
+    } catch (e) {
+      debugPrint('Error ensuring post timestamp: $e');
+    }
   }
 
   List<AppNotification> _notifications = [];

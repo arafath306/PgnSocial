@@ -12,17 +12,17 @@ import '../verification_badge.dart';
 class ThreadDetailHeader extends StatelessWidget {
   final ThreadPost activePost;
   final DatabaseService dbService;
-  final VoidCallback onMoreTap;
-  final String Function(String) formatTime;
-  final String Function(int) formatCount;
+  final VoidCallback? onMoreTap;
+  final String Function(String)? formatTime;
+  final String Function(int)? formatCount;
 
   const ThreadDetailHeader({
     super.key,
     required this.activePost,
     required this.dbService,
-    required this.onMoreTap,
-    required this.formatTime,
-    required this.formatCount,
+    this.onMoreTap,
+    this.formatTime,
+    this.formatCount,
   });
 
   @override
@@ -95,9 +95,9 @@ class ThreadDetailHeader extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 1,
                                 style: GoogleFonts.hindSiliguri(
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 17,
-                                  color: context.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16.5,
+                                  color: context.textPrimary.withValues(alpha: 0.90),
                                 ),
                               ),
                             ),
@@ -117,54 +117,16 @@ class ThreadDetailHeader extends StatelessWidget {
                       const SizedBox(width: 8),
                       _buildFollowButton(context),
                     ],
-                    const SizedBox(width: 8),
-                    Text(
-                      "· ${formatTime(activePost.createdAt)}",
-                      style: TextStyle(
-                        color: context.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
                   ],
                 ),
-                Row(
-                  children: [
-                    Text(
-                      "@${activePost.author.username}",
-                      style: TextStyle(
-                        color: context.textSecondary,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      "·",
-                      style: TextStyle(color: context.textSecondary),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.bar_chart_rounded,
-                      size: 14,
-                      color: context.textSecondary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      "${formatCount(activePost.viewsCount)} views",
-                      style: TextStyle(
-                        color: context.textSecondary,
-                        fontSize: 13.5,
-                      ),
-                    ),
-                  ],
+                Text(
+                  "@${activePost.author.username}",
+                  style: TextStyle(
+                    color: context.textSecondary,
+                    fontSize: 14,
+                  ),
                 ),
               ],
-            ),
-          ),
-          GestureDetector(
-            onTap: onMoreTap,
-            child: Padding(
-              padding: const EdgeInsets.all(4.0),
-              child: Icon(Icons.more_horiz, color: context.textSecondary),
             ),
           ),
         ],

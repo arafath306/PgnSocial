@@ -948,38 +948,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               title: 'Work & Education',
               icon: Icons.school_outlined,
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: fieldBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: context.border, width: 0.8),
-                  ),
-                  child: Column(
+                Column(
                     children: [
-                      _appleInputRow(
-                        icon: Icons.work_outline_rounded,
-                        label: 'Occupation',
-                        hint: 'e.g. Software Engineer',
-                        controller: _occupationCtrl,
-                        maxLength: 60,
-                      ),
-                      Divider(
-                        height: 1,
-                        indent: 44,
-                        color: context.border.withValues(alpha: 0.4),
-                      ),
-                      _appleInputRow(
-                        icon: Icons.school_outlined,
-                        label: 'Institute',
-                        hint: 'e.g. University of Dhaka',
-                        controller: _educationCtrl,
-                        maxLength: 80,
-                      ),
-                      Divider(
-                        height: 1,
-                        indent: 44,
-                        color: context.border.withValues(alpha: 0.4),
-                      ),
                       _appleInputRow(
                         icon: Icons.link_rounded,
                         label: 'Website',
@@ -990,7 +960,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                     ],
                   ),
-                ),
                 const SizedBox(height: 20),
 
                 // Experience Subheading (Apple-style)
@@ -1062,21 +1031,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       );
                     }
 
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: fieldBg,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: context.border, width: 0.8),
-                      ),
-                      child: Column(
+                    return Column(
                         children: [
                           for (int i = 0; i < experiences.length; i++) ...[
                             if (i > 0)
-                              Divider(
-                                height: 1,
-                                indent: 44,
-                                color: context.border.withValues(alpha: 0.4),
-                              ),
                             InkWell(
                               onTap: () => ExperienceEditorSheet.show(context, experience: experiences[i]),
                               borderRadius: BorderRadius.vertical(
@@ -1129,8 +1087,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ),
                           ],
                         ],
-                      ),
-                    );
+                      );
                   },
                 ),
 
@@ -1205,21 +1162,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       );
                     }
 
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: fieldBg,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: context.border, width: 0.8),
-                      ),
-                      child: Column(
+                    return Column(
                         children: [
                           for (int i = 0; i < educations.length; i++) ...[
                             if (i > 0)
-                              Divider(
-                                height: 1,
-                                indent: 44,
-                                color: context.border.withValues(alpha: 0.4),
-                              ),
                             InkWell(
                               onTap: () => EducationEditorSheet.show(context, education: educations[i]),
                               borderRadius: BorderRadius.vertical(
@@ -1276,8 +1222,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ),
                           ],
                         ],
-                      ),
-                    );
+                      );
                   },
                 ),
               ],
@@ -1598,71 +1543,48 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required IconData icon,
     required List<Widget> children,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 18),
-      decoration: BoxDecoration(
-        color: context.cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: context.border,
-          width: 1.0,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+          child: Text(
+            title.toUpperCase(),
+            style: GoogleFonts.inter(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.0,
+              color: context.textSecondary,
+            ),
+          ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-            child: Row(
-              children: [
-                Icon(icon, size: 16, color: context.primaryAccent),
-                const SizedBox(width: 8),
-                Text(
-                  title.toUpperCase(),
-                  style: GoogleFonts.inter(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.1,
-                    color: context.textPrimary,
-                  ),
-                ),
-              ],
-            ),
+        Container(
+          color: context.isDarkMode ? const Color(0xFF0F141E) : Colors.white,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Divider(height: 1, thickness: 0.8, color: context.border.withValues(alpha: 0.8)),
+              ...children,
+              Divider(height: 1, thickness: 0.8, color: context.border.withValues(alpha: 0.8)),
+            ],
           ),
-          Divider(
-            height: 1,
-            color: context.border,
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: children,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildPrivacyTrustBanner() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: context.isDarkMode ? const Color(0xFF0C101D) : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: context.border, width: 1.0),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Icon(Icons.lock_outline_rounded, size: 15, color: context.textMuted),
-          const SizedBox(width: 8),
+          Icon(Icons.lock_outline_rounded, size: 16, color: context.textMuted),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               'Personal info below is private and only visible to you.',
               style: GoogleFonts.inter(
-                fontSize: 12,
+                fontSize: 13,
                 color: context.textMuted,
                 height: 1.35,
               ),
@@ -1820,39 +1742,41 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required VoidCallback onTap,
     VoidCallback? onClear,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: fieldBg,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: context.border, width: 1.0),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: context.textSecondary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                value ?? hint,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: value != null ? context.textPrimary : context.textMuted,
+    return Column(
+      children: [
+        InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(
+              children: [
+                Icon(icon, size: 20, color: context.textSecondary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    value ?? hint,
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      color: value != null ? context.textPrimary : context.textMuted,
+                    ),
+                  ),
                 ),
-              ),
+                if (onClear != null)
+                  GestureDetector(
+                    onTap: onClear,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Icon(Icons.close_rounded, size: 18, color: context.textMuted),
+                    ),
+                  )
+                else
+                  Icon(Icons.chevron_right_rounded, size: 20, color: context.textSecondary),
+              ],
             ),
-            if (onClear != null)
-              GestureDetector(
-                onTap: onClear,
-                child: Icon(Icons.close_rounded, size: 18, color: context.textMuted),
-              )
-            else
-              Icon(Icons.keyboard_arrow_down_rounded,
-                  size: 20, color: context.textSecondary),
-          ],
+          ),
         ),
-      ),
+        Divider(height: 1, thickness: 0.8, color: context.border.withValues(alpha: 0.8)),
+      ],
     );
   }
 
@@ -1865,17 +1789,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     int? maxLength,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: context.textSecondary),
+          Icon(icon, size: 20, color: context.textSecondary),
           const SizedBox(width: 12),
           SizedBox(
-            width: 86,
+            width: 90,
             child: Text(
               label,
               style: GoogleFonts.inter(
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: context.textPrimary,
               ),
@@ -1887,11 +1811,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               keyboardType: keyboardType,
               maxLength: maxLength,
               buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
-              style: GoogleFonts.inter(fontSize: 13.5, color: context.textPrimary),
+              style: GoogleFonts.inter(fontSize: 15, color: context.textPrimary),
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
                 hintText: hint,
-                hintStyle: GoogleFonts.inter(fontSize: 13, color: context.textMuted),
+                hintStyle: GoogleFonts.inter(fontSize: 15, color: context.textMuted),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -1923,25 +1847,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _label(label),
-            if (maxLength != null)
-              Padding(
-                padding: const EdgeInsets.only(right: 2, bottom: 4),
-                child: Text(
-                  '${ctrl.text.length}/$maxLength',
+        if (label.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  label,
                   style: GoogleFonts.inter(
-                    fontSize: 10.5,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: ctrl.text.length > maxLength ? Colors.redAccent : context.textMuted,
+                    color: context.textPrimary,
                   ),
                 ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 6),
+                if (maxLength != null)
+                  Text(
+                    '/',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: ctrl.text.length > maxLength ? Colors.redAccent : context.textMuted,
+                    ),
+                  ),
+              ],
+            ),
+          ),
         TextField(
           controller: ctrl,
           maxLines: maxLines,
@@ -1955,48 +1886,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           decoration: InputDecoration(
             prefixIcon: prefixIcon != null
                 ? Padding(
-                    padding: const EdgeInsets.only(left: 14, right: 10),
-                    child: Icon(prefixIcon, size: 18, color: context.textSecondary),
+                    padding: const EdgeInsets.only(left: 16, right: 12),
+                    child: Icon(prefixIcon, size: 20, color: context.textSecondary),
                   )
                 : null,
             prefixIconConstraints: prefixIcon != null
-              ? const BoxConstraints(minWidth: 42, minHeight: 24)
+              ? const BoxConstraints(minWidth: 48, minHeight: 24)
               : null,
             prefixText: prefix,
-            prefixStyle: GoogleFonts.inter(color: context.textSecondary, fontWeight: FontWeight.w600),
+            prefixStyle: GoogleFonts.inter(color: context.textSecondary, fontWeight: FontWeight.w600, fontSize: 15),
             hintText: hint,
-            hintStyle: GoogleFonts.inter(color: context.textMuted, fontSize: 13.5),
+            hintStyle: GoogleFonts.inter(color: context.textMuted, fontSize: 15),
             filled: true,
-            fillColor: bg,
+            fillColor: Colors.transparent,
             suffixIcon: suffixIcon,
             helperText: helperText,
             helperStyle: GoogleFonts.inter(
-              fontSize: 11.5,
+              fontSize: 12,
               fontWeight: FontWeight.w500,
               color: helperColor ?? context.textMuted,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(
-                color: helperColor != null && helperColor == Colors.redAccent
-                    ? Colors.redAccent.withValues(alpha: 0.6)
-                    : context.border,
-                width: 1.0,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(
-                color: helperColor != null && helperColor == Colors.redAccent
-                    ? Colors.redAccent
-                    : context.primaryAccent,
-                width: 1.5,
-              ),
-            ),
+            contentPadding: EdgeInsets.fromLTRB(16, label.isEmpty ? 16 : 8, 16, 16),
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
           ),
-          style: GoogleFonts.inter(fontSize: 14, color: context.textPrimary),
+          style: GoogleFonts.inter(fontSize: 15, color: context.textPrimary),
         ),
+        Divider(height: 1, thickness: 0.8, color: context.border.withValues(alpha: 0.8)),
       ],
     );
   }

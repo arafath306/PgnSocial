@@ -181,6 +181,7 @@ extension RepostsExtension on DatabaseService {
             author: reposterProfile,
             content: row['quote_text'] as String? ?? '',
             createdAt: ThreadPost.formatRelativeTime(row['created_at'] as String?),
+            createdAtRaw: row['created_at'] as String?,
             isRepost: true,
             repostedPost: originalPost,
             quoteText: row['quote_text'] as String?,

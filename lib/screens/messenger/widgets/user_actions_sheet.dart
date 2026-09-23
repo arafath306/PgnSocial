@@ -83,7 +83,7 @@ class UserActionsSheet extends StatelessWidget {
               _actionTile(
                 context: context,
                 icon: isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
-                color: isPinned ? const Color(0xFF10B981) : context.textPrimary,
+                color: isPinned ? context.textPrimary : context.textPrimary,
                 label: isPinned ? 'Unpin Conversation' : 'Pin to Top',
                 onTap: () {
                   Navigator.pop(context);
@@ -95,7 +95,7 @@ class UserActionsSheet extends StatelessWidget {
             _actionTile(
               context: context,
               icon: Icons.delete_outline_rounded,
-              color: Colors.redAccent,
+              color: Colors.red,
               label: 'Delete Conversation',
               onTap: () {
                 Navigator.pop(context);
@@ -185,7 +185,7 @@ class UserActionsSheet extends StatelessWidget {
             _actionTile(
               context: context,
               icon: Icons.block_flipped,
-              color: Colors.redAccent,
+              color: Colors.red,
               label: 'Block User',
               onTap: () {
                 Navigator.pop(context);
@@ -234,12 +234,12 @@ class UserActionsSheet extends StatelessWidget {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                               content: Text(
                                   '${profile.fullName} has been blocked.'),
-                              backgroundColor: Colors.redAccent,
+                              backgroundColor: Colors.red,
                             ));
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.redAccent,
+                          backgroundColor: Colors.red,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -378,12 +378,12 @@ class UserActionsSheet extends StatelessWidget {
                                   shape: BoxShape.circle,
                                   border: Border.all(
                                     color: selectedReason == r
-                                        ? Colors.amber[800]!
+                                        ? context.primaryAccent!
                                         : context.textMuted,
                                     width: 2,
                                   ),
                                   color: selectedReason == r
-                                      ? Colors.amber[800]
+                                      ? context.primaryAccent
                                       : Colors.transparent,
                                 ),
                                 child: selectedReason == r
@@ -421,7 +421,7 @@ class UserActionsSheet extends StatelessWidget {
                               }
                             },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber[800],
+                        backgroundColor: context.primaryAccent,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),

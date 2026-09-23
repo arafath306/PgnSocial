@@ -17,6 +17,7 @@ class ThreadPostEntity {
   final int sharesCount;
   final int viewsCount;
   final String createdAt;
+  final String? createdAtRaw;
   final bool isLikedByMe;
   final String? reactionType;
   final bool isPinned;
@@ -56,6 +57,7 @@ class ThreadPostEntity {
     this.sharesCount = 0,
     this.viewsCount = 0,
     required this.createdAt,
+    this.createdAtRaw,
     this.isLikedByMe = false,
     this.reactionType,
     this.isPinned = false,
@@ -89,6 +91,7 @@ class ThreadPostEntity {
     int? sharesCount,
     int? viewsCount,
     String? createdAt,
+    String? createdAtRaw,
     bool? isLikedByMe,
     String? reactionType,
     bool? isPinned,
@@ -121,6 +124,7 @@ class ThreadPostEntity {
       sharesCount: sharesCount ?? this.sharesCount,
       viewsCount: viewsCount ?? this.viewsCount,
       createdAt: createdAt ?? this.createdAt,
+      createdAtRaw: createdAtRaw ?? this.createdAtRaw,
       isLikedByMe: isLikedByMe ?? this.isLikedByMe,
       reactionType: reactionType ?? this.reactionType,
       isPinned: isPinned ?? this.isPinned,

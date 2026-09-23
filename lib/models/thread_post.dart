@@ -19,6 +19,7 @@ class ThreadPost {
   final int savesCount;
   final int sharesCount;
   final String createdAt;
+  final String? createdAtRaw;
   final bool isLikedByMe;
   final String? reactionType;
   final bool isPinned;
@@ -65,6 +66,7 @@ class ThreadPost {
     this.community,
     this.commenterAvatars,
     required this.createdAt,
+    this.createdAtRaw,
     this.isLikedByMe = false,
     this.reactionType,
     this.isPinned = false,
@@ -243,6 +245,12 @@ class ThreadPost {
       community: parsedCommunity,
       commenterAvatars: parsedCommenterAvatars,
       createdAt: formatRelativeTime(json['created_at'] as String?),
+      createdAtRaw: (json['created_at_raw'] as String?) ??
+          ((json['created_at'] != null && json['created_at'].toString().contains('T'))
+              ? json['created_at'].toString()
+              : (DateTime.tryParse(json['created_at']?.toString() ?? '') != null
+                  ? json['created_at'].toString()
+                  : null)),
       isLikedByMe: isLiked,
       reactionType: isLiked ? '❤️' : null,
       isPinned: json['is_pinned'] as bool? ?? false,
@@ -282,6 +290,7 @@ class ThreadPost {
       'communities': community?.toJson(),
       'commenter_avatars': commenterAvatars,
       'created_at': createdAt, // This is a formatted string, we save it back directly
+      'created_at_raw': createdAtRaw,
       'is_pinned': isPinned,
       'mute_notifications': muteNotifications,
       'hide_from_profile': hideFromProfile,
@@ -316,6 +325,7 @@ class ThreadPost {
     String? communityId,
     Community? community,
     String? createdAt,
+    String? createdAtRaw,
     bool? isLikedByMe,
     String? reactionType,
     bool? isPinned,
@@ -351,6 +361,7 @@ class ThreadPost {
       community: community ?? this.community,
       commenterAvatars: commenterAvatars ?? this.commenterAvatars,
       createdAt: createdAt ?? this.createdAt,
+      createdAtRaw: createdAtRaw ?? this.createdAtRaw,
       isLikedByMe: isLikedByMe ?? this.isLikedByMe,
       reactionType: reactionType ?? this.reactionType,
       isPinned: isPinned ?? this.isPinned,
@@ -367,6 +378,18 @@ class ThreadPost {
       musicTrack: musicTrack ?? this.musicTrack,
       lifeEvent: lifeEvent ?? this.lifeEvent,
     );
+  }
+
+  DateTime? get createdDateTime {
+    if (createdAtRaw != null && createdAtRaw!.isNotEmpty) {
+      try {
+        return DateTime.parse(createdAtRaw!).toLocal();
+      } catch (_) {}
+    }
+    try {
+      return DateTime.parse(createdAt).toLocal();
+    } catch (_) {}
+    return null;
   }
 }
 

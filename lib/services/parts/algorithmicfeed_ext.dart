@@ -97,6 +97,7 @@ extension AlgorithmicFeedExtension on DatabaseService {
                 author: reposterProfile,
                 content: repost['quote_text'] as String? ?? '',
                 createdAt: ThreadPost.formatRelativeTime(repost['created_at'] as String?),
+                createdAtRaw: repost['created_at'] as String?,
                 isRepost: true,
                 repostedPost: originalPost,
                 quoteText: repost['quote_text'] as String?,

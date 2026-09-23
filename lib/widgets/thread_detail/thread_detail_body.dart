@@ -81,7 +81,13 @@ class ThreadDetailBody extends StatelessWidget {
           
 
           
-          Divider(height: 24, color: context.border),
+          const SizedBox(height: 12),
+          Divider(height: 1, color: context.border.withValues(alpha: 0.5)),
+          const SizedBox(height: 2),
+          _buildMetadataRow(context),
+          const SizedBox(height: 2),
+          Divider(height: 1, color: context.border.withValues(alpha: 0.5)),
+          const SizedBox(height: 6),
 
           // Action buttons with inline counts and Save post
           Row(
@@ -107,13 +113,13 @@ class ThreadDetailBody extends StatelessWidget {
                               CupertinoIcons.heart_fill,
                               key: ValueKey<int>(1),
                               color: Colors.red,
-                              size: 18,
+                              size: 22,
                             )
                           : Icon(
                               CupertinoIcons.heart,
                               key: const ValueKey<int>(0),
                               color: context.textPrimary.withValues(alpha: 0.75),
-                              size: 18,
+                              size: 22,
                             ),
                     ),
                     const SizedBox(width: 6),
@@ -123,7 +129,7 @@ class ThreadDetailBody extends StatelessWidget {
                         color: activePost.isLikedByMe
                             ? Colors.red
                             : context.textPrimary.withValues(alpha: 0.75),
-                        fontSize: 13,
+                        fontSize: 13.5,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -151,7 +157,7 @@ class ThreadDetailBody extends StatelessWidget {
                       color: dbService.isReposted(activePost.id)
                           ? Theme.of(context).primaryColor
                           : context.textPrimary.withValues(alpha: 0.75),
-                      size: 18,
+                      size: 22,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -160,7 +166,7 @@ class ThreadDetailBody extends StatelessWidget {
                         color: dbService.isReposted(activePost.id)
                             ? Theme.of(context).primaryColor
                             : context.textPrimary.withValues(alpha: 0.75),
-                        fontSize: 13,
+                        fontSize: 13.5,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -201,7 +207,7 @@ class ThreadDetailBody extends StatelessWidget {
                       color: dbService.isSaved(activePost.id)
                           ? Theme.of(context).primaryColor
                           : context.textPrimary.withValues(alpha: 0.75),
-                      size: 18,
+                      size: 22,
                     ),
                     if (activePost.savesCount > 0) ...[
                       const SizedBox(width: 6),
@@ -211,7 +217,7 @@ class ThreadDetailBody extends StatelessWidget {
                           color: dbService.isSaved(activePost.id)
                               ? Theme.of(context).primaryColor
                               : context.textPrimary.withValues(alpha: 0.75),
-                          fontSize: 13,
+                          fontSize: 13.5,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -246,7 +252,7 @@ class ThreadDetailBody extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon,
-              color: context.textPrimary.withValues(alpha: 0.75), size: 18),
+              color: context.textPrimary.withValues(alpha: 0.75), size: 22),
           if (label.isNotEmpty && label != '0') ...[
             const SizedBox(width: 6),
             Text(
@@ -344,5 +350,150 @@ class ThreadDetailBody extends StatelessWidget {
     );
   }
 
+  static const List<String> _monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
 
+  Widget _buildMetadataRow(BuildContext context) {
+    final dt = activePost.createdDateTime;
+    final viewsFormatted = formatCount(activePost.viewsCount);
+    final primaryTextColor = context.textPrimary.withValues(alpha: 0.95);
+
+    String? timeStr;
+    String? dateStr;
+    if (dt != null) {
+      final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+      final minute = dt.minute.toString().padLeft(2, '0');
+      final period = dt.hour >= 12 ? 'PM' : 'AM';
+      timeStr = '$hour:$minute $period';
+
+      final day = dt.day;
+      final month = (dt.month >= 1 && dt.month <= 12) ? _monthNames[dt.month - 1] : '';
+      final year = dt.year;
+      dateStr = '$day $month $year';
+    } else {
+      final rawRel = activePost.createdAt.trim();
+      final numMatch = RegExp(r'^(\d+)([dhm])$').firstMatch(rawRel);
+      if (numMatch != null) {
+        final val = int.tryParse(numMatch.group(1) ?? '') ?? 0;
+        final unit = numMatch.group(2);
+        DateTime approxDt = DateTime.now();
+        if (unit == 'd') {
+          approxDt = approxDt.subtract(Duration(days: val));
+        } else if (unit == 'h') {
+          approxDt = approxDt.subtract(Duration(hours: val));
+        } else if (unit == 'm') {
+          approxDt = approxDt.subtract(Duration(minutes: val));
+        }
+        final day = approxDt.day;
+        final month = (approxDt.month >= 1 && approxDt.month <= 12) ? _monthNames[approxDt.month - 1] : '';
+        final year = approxDt.year;
+        dateStr = '$day $month $year';
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2.0, vertical: 8.0),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          children: [
+            if (timeStr != null) ...[
+              Text(
+                timeStr,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: primaryTextColor,
+                  letterSpacing: -0.1,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 7.0),
+                child: Text(
+                  '·',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: context.textPrimary.withValues(alpha: 0.65),
+                  ),
+                ),
+              ),
+            ],
+            if (dateStr != null) ...[
+              Text(
+                dateStr,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: primaryTextColor,
+                  letterSpacing: -0.1,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 7.0),
+                child: Text(
+                  '·',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: context.textPrimary.withValues(alpha: 0.65),
+                  ),
+                ),
+              ),
+            ],
+            _buildSleekBarChartIcon(context, color: primaryTextColor),
+            const SizedBox(width: 5),
+            Text(
+              '$viewsFormatted views',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: primaryTextColor,
+                letterSpacing: -0.1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSleekBarChartIcon(BuildContext context, {Color? color}) {
+    final barColor = color ?? context.textPrimary.withValues(alpha: 0.95);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Container(
+          width: 2.4,
+          height: 8.0,
+          decoration: BoxDecoration(
+            color: barColor,
+            borderRadius: BorderRadius.circular(1.0),
+          ),
+        ),
+        const SizedBox(width: 2.2),
+        Container(
+          width: 2.4,
+          height: 15.0,
+          decoration: BoxDecoration(
+            color: barColor,
+            borderRadius: BorderRadius.circular(1.0),
+          ),
+        ),
+        const SizedBox(width: 2.2),
+        Container(
+          width: 2.4,
+          height: 11.0,
+          decoration: BoxDecoration(
+            color: barColor,
+            borderRadius: BorderRadius.circular(1.0),
+          ),
+        ),
+      ],
+    );
+  }
 }
