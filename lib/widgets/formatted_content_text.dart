@@ -8,6 +8,7 @@ import '../utils/app_theme.dart';
 import '../utils/hashtag_mention_parser.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/search_explore_screen.dart';
+import 'in_app_browser_screen.dart';
 
 class FormattedContentText extends StatelessWidget {
   final String text;
@@ -76,6 +77,20 @@ class FormattedContentText extends StatelessWidget {
                 ),
                 recognizer: TapGestureRecognizer()
                   ..onTap = () => _handleMentionTap(context, token.value),
+              );
+            } else if (token.type == TextTokenType.link) {
+              return TextSpan(
+                text: token.text,
+                style: baseStyle.copyWith(
+                  color: activeLinkColor,
+                  fontWeight: FontWeight.w600,
+                  decoration: TextDecoration.underline,
+                  decorationColor: activeLinkColor.withValues(alpha: 0.4),
+                ),
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () {
+                    InAppBrowserScreen.open(context, token.value);
+                  },
               );
             } else {
               return TextSpan(text: token.text, style: baseStyle);

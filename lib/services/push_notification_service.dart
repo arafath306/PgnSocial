@@ -5,6 +5,32 @@ import 'dart:io' show Platform;
 import 'local_notification_service.dart';
 import 'database_service.dart';
 import 'notification_settings_provider.dart';
+import 'notification_navigation_handler.dart';
+
+String? _extractPayload(RemoteMessage message) {
+  if (message.data['payload'] != null &&
+      message.data['payload'].toString().isNotEmpty) {
+    return message.data['payload'].toString();
+  }
+  final type = message.data['type'] ?? '';
+  final senderId = message.data['sender_id'] ??
+      message.data['senderId'] ??
+      message.data['actor_id'] ??
+      message.data['userId'];
+  if (type == 'message' && senderId != null) {
+    return 'message:$senderId';
+  }
+  if (message.data['thread_id'] != null) {
+    return 'thread:${message.data['thread_id']}';
+  }
+  if (message.data['comment_id'] != null) {
+    return 'comment:${message.data['comment_id']}';
+  }
+  if (type == 'follow' && senderId != null) {
+    return 'profile:$senderId';
+  }
+  return null;
+}
 
 // Helper to route notification display based on notification type
 Future<void> _displayNotification({
@@ -65,22 +91,28 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   // IMPORTANT: When message.notification is NOT null, Google Play Services / Android OS
   // AUTOMATICALLY displays the notification in the tray when the app is in the background or killed!
-  // Calling LocalNotificationService._displayNotification here was creating a DUPLICATE notification!
   // We ONLY need to manually display a notification if this is a DATA-ONLY message (notification == null).
   if (notification == null && message.data.isNotEmpty) {
     final title = message.data['title'] ?? 'Dak Notification';
     final body = message.data['body'] ?? '';
     final channelId = message.data['channel_id'] as String?;
     final type = message.data['type'] ?? (channelId == 'pigeon_messages' ? 'message' : 'activity');
+    final senderId = message.data['sender_id'] ??
+        message.data['senderId'] ??
+        message.data['actor_id'] ??
+        message.data['userId'];
+    final notifId = (type == 'message' && senderId != null)
+        ? senderId.toString().hashCode
+        : message.hashCode;
 
     if (body.isNotEmpty) {
       await LocalNotificationService.initialize();
       await _displayNotification(
-        id: message.hashCode,
+        id: notifId,
         title: title,
         body: body,
         type: type,
-        payload: message.data['payload'],
+        payload: _extractPayload(message),
       );
     }
   }
@@ -117,6 +149,7 @@ class PushNotificationService {
     // 3. Set Background Handler
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
+    // 4. Foreground Message Listener
     FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
       debugPrint('Got a message whilst in the foreground!');
       debugPrint('Message data: ${message.data}');
@@ -157,18 +190,40 @@ class PushNotificationService {
         return;
       }
 
+      final notifId = (type == 'message' && senderId != null)
+          ? senderId.toString().hashCode
+          : message.hashCode;
+
       if (body.isNotEmpty || notification != null) {
         await _displayNotification(
-          id: message.hashCode,
+          id: notifId,
           title: title,
           body: body,
           type: type,
-          payload: message.data['payload'],
+          payload: _extractPayload(message),
         );
       }
     });
 
-    // 5. Update Token in Supabase
+    // 5. Handle Background Notification Tap (onMessageOpenedApp)
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint('[PushNotificationService] onMessageOpenedApp triggered: ${message.data}');
+      final payload = _extractPayload(message);
+      NotificationNavigationHandler.handlePayload(payload);
+    });
+
+    // 6. Handle Terminated App Cold Launch Tap (getInitialMessage)
+    _fcm.getInitialMessage().then((RemoteMessage? message) {
+      if (message != null) {
+        debugPrint('[PushNotificationService] getInitialMessage triggered: ${message.data}');
+        final payload = _extractPayload(message);
+        Future.delayed(const Duration(milliseconds: 600), () {
+          NotificationNavigationHandler.handlePayload(payload);
+        });
+      }
+    });
+
+    // 7. Update Token in Supabase
     await _syncToken();
     _fcm.onTokenRefresh.listen((newToken) {
       final user = Supabase.instance.client.auth.currentUser;

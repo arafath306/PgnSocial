@@ -8,34 +8,36 @@ class ChangeEmailOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: context.cardBg,
-      margin: const EdgeInsets.only(bottom: 1),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        title: Text(
-          'Change Email',
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-            color: context.textPrimary,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          title: Text(
+            'Change Email',
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: context.textPrimary,
+            ),
           ),
-        ),
-        subtitle: Text(
-          'Update your registered email address.',
-          style: GoogleFonts.inter(
-            fontSize: 12.5,
-            color: context.textMuted,
+          subtitle: Text(
+            'Update your registered email address.',
+            style: GoogleFonts.inter(
+              fontSize: 12.5,
+              color: context.textMuted,
+            ),
           ),
+          trailing: Icon(Icons.chevron_right, color: context.textMuted, size: 20),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ChangeEmailScreen()),
+            );
+          },
         ),
-        trailing: Icon(Icons.chevron_right, color: context.textMuted, size: 20),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ChangeEmailScreen()),
-          );
-        },
-      ),
+        Divider(height: 1, thickness: 0.5, color: context.border),
+      ],
     );
   }
 }

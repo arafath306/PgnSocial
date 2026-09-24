@@ -88,4 +88,55 @@ extension NotificationsExtension on DatabaseService {
     return '${diff.inDays}d ago';
   }
 
+  /// Batch creates mention notifications for all @usernames found in [content].
+  /// Resolves usernames in a single query, filters out self-mentions,
+  /// and bulk-inserts notification records in one database request.
+  Future<void> sendMentionNotificationsBatch({
+    required String content,
+    required String threadId,
+    bool isComment = false,
+  }) async {
+    if (_currentUid.isEmpty || content.trim().isEmpty) return;
+    try {
+      final List<String> mentions = HashtagMentionParser.extractMentions(content);
+      if (mentions.isEmpty) return;
+
+      // 1. Fetch matching user IDs in one batch query
+      final response = await _supabase
+          .from('profiles')
+          .select('id, username')
+          .inFilter('username', mentions);
+
+      final List<dynamic> profilesData = response as List<dynamic>;
+      if (profilesData.isEmpty) return;
+
+      // 2. Filter out self-mentions and duplicate user IDs
+      final targetUserIds = <String>{};
+      for (final p in profilesData) {
+        final uid = p['id'] as String?;
+        if (uid != null && uid.isNotEmpty && uid != _currentUid) {
+          targetUserIds.add(uid);
+        }
+      }
+
+      if (targetUserIds.isEmpty) return;
+
+      // 3. Prepare batch notification records
+      final notificationRows = targetUserIds.map((targetUid) => {
+        'user_id': targetUid,
+        'actor_id': _currentUid,
+        'type': 'MENTION',
+        'thread_id': threadId,
+        'content': isComment ? 'mentioned you in a comment' : 'mentioned you in a post',
+        'is_read': false,
+      }).toList();
+
+      // 4. Atomic batch insertion
+      await _supabase.from('notifications').insert(notificationRows);
+      debugPrint('[Mentions] Successfully batch inserted ${notificationRows.length} mention notifications for thread: $threadId');
+    } catch (e) {
+      debugPrint('[Mentions] Error sending mention notifications batch: $e');
+    }
+  }
+
 }

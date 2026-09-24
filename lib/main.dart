@@ -19,6 +19,7 @@ import 'services/local_notification_service.dart';
 import 'services/push_notification_service.dart';
 import 'utils/app_theme.dart';
 import 'utils/app_router.dart';
+import 'services/account_switcher_service.dart';
 import 'services/log_service.dart';
 import 'package:go_router/go_router.dart';
 import 'core/injection.dart';
@@ -101,6 +102,7 @@ void main() {
           ChangeNotifierProvider(create: (_) => MusicPlaybackController()),
           ChangeNotifierProvider(create: (_) => CommunityService()),
           ChangeNotifierProvider(create: (_) => ViewTrackingService()),
+          ChangeNotifierProvider(create: (_) => AccountSwitcherService()..init()),
         ],
         child: const PigeonApp(),
       ),

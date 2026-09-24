@@ -30,9 +30,52 @@ class ThreadActions extends StatelessWidget {
     return '${(count / 1000000000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')}B';
   }
 
+  Widget _buildSleekBarChartIcon(BuildContext context, {Color? color}) {
+    final barColor = color ?? context.textPrimary.withValues(alpha: 0.75);
+    return SizedBox(
+      width: 19,
+      height: 19,
+      child: Center(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Container(
+              width: 1.6,
+              height: 7.0,
+              decoration: BoxDecoration(
+                color: barColor,
+                borderRadius: BorderRadius.circular(0.8),
+              ),
+            ),
+            const SizedBox(width: 2.0),
+            Container(
+              width: 1.6,
+              height: 13.0,
+              decoration: BoxDecoration(
+                color: barColor,
+                borderRadius: BorderRadius.circular(0.8),
+              ),
+            ),
+            const SizedBox(width: 2.0),
+            Container(
+              width: 1.6,
+              height: 9.5,
+              decoration: BoxDecoration(
+                color: barColor,
+                borderRadius: BorderRadius.circular(0.8),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildActionItem({
     required BuildContext context,
-    required IconData icon,
+    IconData? icon,
+    Widget? customIcon,
     required Color color,
     required bool isActive,
     required int count,
@@ -46,7 +89,7 @@ class ThreadActions extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
-            child: Icon(icon, color: color, size: 19),
+            child: customIcon ?? Icon(icon!, color: color, size: 19),
           ),
           if (count > 0) ...[
             const SizedBox(width: 2),
@@ -102,7 +145,7 @@ class ThreadActions extends StatelessWidget {
         ),
         _buildActionItem(
           context: context,
-          icon: CupertinoIcons.chart_bar_alt_fill,
+          customIcon: _buildSleekBarChartIcon(context),
           color: context.textPrimary,
           isActive: false,
           count: targetPost.viewsCount,

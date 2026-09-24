@@ -315,17 +315,24 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
                   ),
                 Padding(
                   padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 8.0, bottom: 6.0),
-                  child: IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildLeftColumn(context, dbService, post),
-                        const SizedBox(width: 12),
-                        Expanded(
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned(
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: 40,
+                        child: _buildLeftColumn(context, dbService, post),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 52.0),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 48),
                           child: _buildRightColumn(context, dbService, post, isVerified),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
                 Divider(height: 1, thickness: 0.5, color: context.border),
@@ -450,6 +457,7 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
     final bool showVerified = !post.isAnonymous && isVerified;
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(

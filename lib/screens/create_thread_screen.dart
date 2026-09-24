@@ -33,6 +33,7 @@ import 'package:path_provider/path_provider.dart';
 import '../services/general_settings_provider.dart';
 import 'settings/verification/verification_intro_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../utils/hashtag_mention_parser.dart';
 part 'create_thread_drafts_extensions.dart';
 part 'create_thread_media_extensions.dart';
 part 'create_thread_voice_extensions.dart';
@@ -144,6 +145,7 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
 
 
 
+  // Mention & Hashtag autocomplete state
   List<Profile> _mentionSuggestions = [];
   bool _isSearchingMentions = false;
   String? _activeMentionQuery;
@@ -154,13 +156,147 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
   String? _activeHashtagQuery;
   int _hashtagStartIndex = -1;
 
+  // Link prevention in posts state
+  bool _isSanitizingText = false;
+  DateTime? _lastLinkWarningTime;
+
   void _onContentChanged() {
+    // -----------------------------------------------------------------------
+    // ANTI-SPAM LINK FILTER:
+    // Automatically removes any pasted or typed links in thread posts.
+    // -----------------------------------------------------------------------
+    if (_filterAndBlockLinksInPost()) {
+      return;
+    }
+
     setState(() {
       _charCount = _contentController.text.length;
     });
 
     _checkMentionTrigger();
     _checkHashtagTrigger();
+  }
+
+  /// =========================================================================
+  /// NOTE (SPAM PREVENTION):
+  /// Link posting in threads / posts is temporarily disabled to prevent spam
+  /// until user trust verification / link moderation is implemented.
+  /// Any URL typed or pasted into the thread composer is automatically stripped,
+  /// and a gentle, light notification is displayed to the user.
+  /// 
+  /// Links remain fully active in Comments, Direct Chat, and Profile About.
+  /// 
+  /// TO RE-ENABLE LINK POSTING IN THREADS LATER:
+  /// Simply comment out or remove the call to [_filterAndBlockLinksInPost]
+  /// in [_onContentChanged] and in [_submit] in [create_thread_publish_extensions.dart].
+  /// =========================================================================
+  bool _filterAndBlockLinksInPost() {
+    if (_isSanitizingText) return false;
+    final text = _contentController.text;
+    if (text.isEmpty) return false;
+
+    if (HashtagMentionParser.urlRegex.hasMatch(text)) {
+      _isSanitizingText = true;
+      try {
+        final sanitizedText = text
+            .replaceAll(HashtagMentionParser.urlRegex, '')
+            .replaceAll(RegExp(r' {2,}'), ' ');
+
+        final oldSelection = _contentController.selection;
+        int newOffset = oldSelection.baseOffset;
+        if (newOffset > sanitizedText.length) {
+          newOffset = sanitizedText.length;
+        }
+        if (newOffset < 0) newOffset = 0;
+
+        _contentController.value = TextEditingValue(
+          text: sanitizedText,
+          selection: TextSelection.collapsed(offset: newOffset),
+        );
+
+        _showLinkNotAllowedGentleNotice();
+        return true;
+      } finally {
+        _isSanitizingText = false;
+      }
+    }
+    return false;
+  }
+
+  void _showLinkNotAllowedGentleNotice() {
+    final now = DateTime.now();
+    if (_lastLinkWarningTime != null &&
+        now.difference(_lastLinkWarningTime!).inSeconds < 3) {
+      return; // Prevent spamming notifications on continuous keystrokes
+    }
+    _lastLinkWarningTime = now;
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: context.isDarkMode
+                    ? Colors.white.withValues(alpha: 0.12)
+                    : const Color(0xFFF3F4F6),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.link_off_rounded,
+                color: context.isDarkMode ? Colors.white : Colors.black87,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Links in posts are temporarily disabled',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: context.isDarkMode ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'To prevent spam, direct links cannot be included in posts.',
+                    style: GoogleFonts.inter(
+                      fontSize: 11.5,
+                      color: context.isDarkMode ? Colors.white70 : Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: context.isDarkMode
+            ? const Color(0xFF26262B)
+            : Colors.white,
+        elevation: 4,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(
+            color: context.isDarkMode
+                ? Colors.white.withValues(alpha: 0.1)
+                : Colors.black.withValues(alpha: 0.08),
+            width: 0.8,
+          ),
+        ),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+        duration: const Duration(seconds: 3),
+      ),
+    );
   }
 
   Future<void> _checkHashtagTrigger() async {

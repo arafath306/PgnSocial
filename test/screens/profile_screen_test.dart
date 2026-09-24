@@ -144,10 +144,8 @@ class FakeDatabaseService extends DatabaseService {
   @override
   Profile? get myProfile => _myProf;
 
-  @override
   Future<List<UserExperience>> fetchUserExperiences(String userId) async => [];
 
-  @override
   Future<List<UserEducation>> fetchUserEducations(String userId) async => [];
 }
 

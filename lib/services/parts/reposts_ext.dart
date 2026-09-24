@@ -73,6 +73,14 @@ extension RepostsExtension on DatabaseService {
             .update({'quote_text': quoteText})
             .eq('user_id', _currentUid)
             .eq('thread_id', threadId);
+
+        if (quoteText.isNotEmpty) {
+          sendMentionNotificationsBatch(
+            content: quoteText,
+            threadId: threadId,
+            isComment: false,
+          );
+        }
       } else {
         // Create repost
         await _supabase.from('reposts').insert({
@@ -80,6 +88,14 @@ extension RepostsExtension on DatabaseService {
           'thread_id': threadId,
           'quote_text': quoteText,
         });
+
+        if (quoteText != null && quoteText.isNotEmpty) {
+          sendMentionNotificationsBatch(
+            content: quoteText,
+            threadId: threadId,
+            isComment: false,
+          );
+        }
       }
       fetchFeed(silent: true);
       fetchAIFeed(silent: true);

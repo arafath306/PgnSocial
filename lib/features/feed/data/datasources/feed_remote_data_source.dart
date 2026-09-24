@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
+import '../../../../utils/hashtag_mention_parser.dart';
 
 abstract class FeedRemoteDataSource {
   Future<List<dynamic>> fetchFeedRaw();
@@ -178,6 +180,15 @@ class FeedRemoteDataSourceImpl implements FeedRemoteDataSource {
 
       await supabaseClient.from('poll_options').insert(optionsToInsert);
     }
+
+    // Trigger batch mention notifications for newly created thread
+    await _sendMentionNotificationsBatch(
+      actorId: userId,
+      content: content,
+      threadId: threadId,
+      isComment: false,
+    );
+
     return true;
   }
 
@@ -246,13 +257,24 @@ class FeedRemoteDataSourceImpl implements FeedRemoteDataSource {
 
   @override
   Future<bool> addComment(String userId, String threadId, String content, {String? parentId, String? imageUrl}) async {
-    await supabaseClient.from('comments').insert({
+    final Map<String, dynamic> insertData = {
       'user_id': userId,
       'thread_id': threadId,
       'content': content,
-      'parent_id': ?parentId,
-      'image_url': ?imageUrl,
-    });
+    };
+    if (parentId != null) insertData['parent_id'] = parentId;
+    if (imageUrl != null) insertData['image_url'] = imageUrl;
+
+    await supabaseClient.from('comments').insert(insertData);
+
+    // Trigger batch mention notifications for newly added comment
+    await _sendMentionNotificationsBatch(
+      actorId: userId,
+      content: content,
+      threadId: threadId,
+      isComment: true,
+    );
+
     return true;
   }
 
@@ -352,5 +374,56 @@ class FeedRemoteDataSourceImpl implements FeedRemoteDataSource {
         .select('thread_id')
         .eq('user_id', userId);
     return response as List<dynamic>;
+  }
+
+  /// Batch creates mention notifications for all @usernames found in [content].
+  /// Resolves usernames in a single query, filters out self-mentions,
+  /// and bulk-inserts notification records in one database request.
+  Future<void> _sendMentionNotificationsBatch({
+    required String actorId,
+    required String content,
+    required String threadId,
+    required bool isComment,
+  }) async {
+    try {
+      final mentions = HashtagMentionParser.extractMentions(content);
+      if (mentions.isEmpty) return;
+
+      // 1. Single batch query to find matching profile IDs
+      final response = await supabaseClient
+          .from('profiles')
+          .select('id, username')
+          .inFilter('username', mentions);
+
+      final List<dynamic> profilesData = response as List<dynamic>;
+      if (profilesData.isEmpty) return;
+
+      // 2. Filter out self-mentions and invalid IDs
+      final targetUserIds = <String>{};
+      for (final p in profilesData) {
+        final uid = p['id'] as String?;
+        if (uid != null && uid.isNotEmpty && uid != actorId) {
+          targetUserIds.add(uid);
+        }
+      }
+
+      if (targetUserIds.isEmpty) return;
+
+      // 3. Batch build notification rows
+      final notificationRows = targetUserIds.map((targetUid) => {
+        'user_id': targetUid,
+        'actor_id': actorId,
+        'type': 'MENTION',
+        'thread_id': threadId,
+        'content': isComment ? 'mentioned you in a comment' : 'mentioned you in a post',
+        'is_read': false,
+      }).toList();
+
+      // 4. Atomic batch insertion
+      await supabaseClient.from('notifications').insert(notificationRows);
+      debugPrint('[Mentions] Successfully batch inserted ${notificationRows.length} mention notifications for thread: $threadId');
+    } catch (e) {
+      debugPrint('[Mentions] Error sending mention notifications batch: $e');
+    }
   }
 }

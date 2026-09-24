@@ -12,3 +12,4 @@ class NoTransitionPageRoute<T> extends PageRouteBuilder<T> {
         );
 }
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();

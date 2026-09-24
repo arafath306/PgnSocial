@@ -20,6 +20,7 @@ class AppRouter {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
 
     return GoRouter(
+      navigatorKey: rootNavigatorKey,
       initialLocation: '/splash',
       refreshListenable: authService,
       observers: [routeObserver],

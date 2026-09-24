@@ -192,29 +192,31 @@ class ChangePasswordOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: context.cardBg,
-      margin: const EdgeInsets.only(bottom: 1),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        title: Text(
-          'Change Password',
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-            color: context.textPrimary,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          title: Text(
+            'Change Password',
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: context.textPrimary,
+            ),
           ),
-        ),
-        subtitle: Text(
-          'Update your login credentials regularly.',
-          style: GoogleFonts.inter(
-            fontSize: 12.5,
-            color: context.textMuted,
+          subtitle: Text(
+            'Update your login credentials regularly.',
+            style: GoogleFonts.inter(
+              fontSize: 12.5,
+              color: context.textMuted,
+            ),
           ),
+          trailing: Icon(Icons.chevron_right, color: context.textMuted, size: 20),
+          onTap: () => _showChangePasswordSheet(context),
         ),
-        trailing: Icon(Icons.chevron_right, color: context.textMuted, size: 20),
-        onTap: () => _showChangePasswordSheet(context),
-      ),
+        Divider(height: 1, thickness: 0.5, color: context.border),
+      ],
     );
   }
 }

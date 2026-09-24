@@ -38,11 +38,12 @@ class _TwoFactorOptionState extends State<TwoFactorOption> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: context.cardBg,
-      margin: const EdgeInsets.only(bottom: 1),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
         children: [
           Expanded(
             child: Column(
@@ -123,10 +124,12 @@ class _TwoFactorOptionState extends State<TwoFactorOption> {
             activeThumbColor: Colors.white,
             activeTrackColor: context.primaryAccent,
             inactiveTrackColor: context.isDarkMode ? Colors.grey[800] : Colors.black12,
-            inactiveThumbColor: Colors.white,
           ),
         ],
       ),
-    );
+    ),
+    Divider(height: 1, thickness: 0.5, color: context.border),
+  ],
+);
   }
 }

@@ -108,15 +108,32 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
                 ),
               ),
 
-              if (sessions.isEmpty)
-                Container(
-                  color: context.cardBg,
-                  padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-                  alignment: Alignment.center,
-                  child: Text(
-                    'No active sessions found.',
-                    style: GoogleFonts.inter(color: context.textMuted, fontSize: 14),
+              if (provider.isLoadingSessions && sessions.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
                   ),
+                )
+              else if (sessions.isEmpty)
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                      child: Center(
+                        child: Text(
+                          'No active sessions found.',
+                          style: GoogleFonts.inter(color: context.textMuted, fontSize: 13.5),
+                        ),
+                      ),
+                    ),
+                    Divider(height: 1, thickness: 0.5, color: context.border),
+                  ],
                 )
               else
                 ...sessions.map((session) => _buildSessionTile(context, provider, session)),
@@ -163,29 +180,31 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    return Container(
-      color: context.cardBg,
-      margin: const EdgeInsets.only(bottom: 1),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        title: Text(
-          title,
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-            color: context.textPrimary,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          title: Text(
+            title,
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: context.textPrimary,
+            ),
           ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: GoogleFonts.inter(
-            fontSize: 12.5,
-            color: context.textMuted,
+          subtitle: Text(
+            subtitle,
+            style: GoogleFonts.inter(
+              fontSize: 12.5,
+              color: context.textMuted,
+            ),
           ),
+          trailing: Icon(Icons.chevron_right, color: context.textMuted, size: 20),
+          onTap: onTap,
         ),
-        trailing: Icon(Icons.chevron_right, color: context.textMuted, size: 20),
-        onTap: onTap,
-      ),
+        Divider(height: 1, thickness: 0.5, color: context.border),
+      ],
     );
   }
 
@@ -197,119 +216,123 @@ class _SecuritySettingsScreenState extends State<SecuritySettingsScreen> {
     final ip = session['ip'] ?? '';
     final status = session['status'] ?? '';
 
-    return Container(
-      color: context.cardBg,
-      margin: const EdgeInsets.only(bottom: 1),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: context.isDarkMode
-                  ? Colors.white.withValues(alpha: 0.06)
-                  : Colors.black.withValues(alpha: 0.04),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              _getDeviceIcon(session),
-              color: isCurrent ? context.primaryAccent : context.textSecondary,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: context.isDarkMode
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : Colors.black.withValues(alpha: 0.04),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _getDeviceIcon(session),
+                  color: isCurrent ? context.primaryAccent : context.textSecondary,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Flexible(
-                      child: Text(
-                        deviceName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14.5,
-                          color: context.textPrimary,
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            deviceName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14.5,
+                              color: context.textPrimary,
+                            ),
+                          ),
                         ),
+                        if (isCurrent) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: context.primaryAccent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 5,
+                                  height: 5,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: context.primaryAccent,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'This device',
+                                  style: GoogleFonts.inter(
+                                    color: context.primaryAccent,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      [
+                        location,
+                        if (osVersion.isNotEmpty && !deviceName.contains(osVersion)) osVersion,
+                        status,
+                      ].join('  ·  '),
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: context.textMuted,
                       ),
                     ),
-                    if (isCurrent) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: context.primaryAccent.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 5,
-                              height: 5,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: context.primaryAccent,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'This device',
-                              style: GoogleFonts.inter(
-                                color: context.primaryAccent,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                    if (ip.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'IP: $ip',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: context.textMuted.withValues(alpha: 0.75),
                         ),
                       ),
                     ],
                   ],
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  [
-                    location,
-                    if (osVersion.isNotEmpty && !deviceName.contains(osVersion)) osVersion,
-                    status,
-                  ].join('  ·  '),
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: context.textMuted,
-                  ),
-                ),
-                if (ip.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    'IP: $ip',
+              ),
+              if (!isCurrent)
+                TextButton(
+                  onPressed: () => _confirmRevokeSession(context, provider, session),
+                  child: Text(
+                    'Revoke',
                     style: GoogleFonts.inter(
-                      fontSize: 11,
-                      color: context.textMuted.withValues(alpha: 0.75),
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
                   ),
-                ],
-              ],
-            ),
-          ),
-          if (!isCurrent)
-            TextButton(
-              onPressed: () => _confirmRevokeSession(context, provider, session),
-              child: Text(
-                'Revoke',
-                style: GoogleFonts.inter(
-                  color: Colors.redAccent,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
                 ),
-              ),
-            ),
-        ],
-      ),
+            ],
+          ),
+        ),
+        Divider(height: 1, thickness: 0.5, color: context.border),
+      ],
     );
   }
 

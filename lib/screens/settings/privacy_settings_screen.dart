@@ -187,46 +187,50 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
-    return Container(
-      color: context.cardBg,
-      margin: const EdgeInsets.only(bottom: 1),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                    color: context.textPrimary,
-                  ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: context.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.inter(
+                        fontSize: 12.5,
+                        color: context.textMuted,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.inter(
-                    fontSize: 12.5,
-                    color: context.textMuted,
-                  ),
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 16),
+              Switch(
+                value: value,
+                onChanged: onChanged,
+                activeThumbColor: Colors.white,
+                activeTrackColor: context.primaryAccent,
+                inactiveTrackColor: context.isDarkMode ? Colors.grey[800] : Colors.black12,
+                inactiveThumbColor: Colors.white,
+              ),
+            ],
           ),
-          const SizedBox(width: 16),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: Colors.white,
-            activeTrackColor: context.primaryAccent,
-            inactiveTrackColor: context.isDarkMode ? Colors.grey[800] : Colors.black12,
-            inactiveThumbColor: Colors.white,
-          ),
-        ],
-      ),
+        ),
+        Divider(height: 1, thickness: 0.5, color: context.border),
+      ],
     );
   }
 
@@ -236,29 +240,31 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    return Container(
-      color: context.cardBg,
-      margin: const EdgeInsets.only(bottom: 1),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        title: Text(
-          title,
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-            color: context.textPrimary,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          title: Text(
+            title,
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: context.textPrimary,
+            ),
           ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: GoogleFonts.inter(
-            fontSize: 12.5,
-            color: context.textMuted,
+          subtitle: Text(
+            subtitle,
+            style: GoogleFonts.inter(
+              fontSize: 12.5,
+              color: context.textMuted,
+            ),
           ),
+          trailing: Icon(Icons.chevron_right, color: context.textMuted, size: 20),
+          onTap: onTap,
         ),
-        trailing: Icon(Icons.chevron_right, color: context.textMuted, size: 20),
-        onTap: onTap,
-      ),
+        Divider(height: 1, thickness: 0.5, color: context.border),
+      ],
     );
   }
 
@@ -268,30 +274,32 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    return Container(
-      color: context.cardBg,
-      margin: const EdgeInsets.only(bottom: 1),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        title: Text(
-          title,
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-            color: context.textPrimary,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          title: Text(
+            title,
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: context.textPrimary,
+            ),
           ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: GoogleFonts.inter(
-            fontSize: 12.5,
-            color: context.primaryAccent,
-            fontWeight: FontWeight.w500,
+          subtitle: Text(
+            subtitle,
+            style: GoogleFonts.inter(
+              fontSize: 12.5,
+              color: context.primaryAccent,
+              fontWeight: FontWeight.w500,
+            ),
           ),
+          trailing: Icon(Icons.chevron_right, color: context.textMuted, size: 20),
+          onTap: onTap,
         ),
-        trailing: Icon(Icons.chevron_right, color: context.textMuted, size: 20),
-        onTap: onTap,
-      ),
+        Divider(height: 1, thickness: 0.5, color: context.border),
+      ],
     );
   }
 

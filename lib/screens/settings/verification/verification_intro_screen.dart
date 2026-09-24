@@ -977,6 +977,7 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
                         _proceedToDetails(tierId);
                       },
                       style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         backgroundColor: isSelected
                             ? _categoryColor
                             : (isDark
@@ -992,21 +993,25 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            isSelected
-                                ? "Continue with $title"
-                                : "Select & Continue",
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              isSelected
+                                  ? (tierId == 'premium' ? "Continue with Premium VIP" : "Continue with $title")
+                                  : "Select & Continue",
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          const Icon(Icons.arrow_forward_rounded, size: 16),
-                        ],
+                            const SizedBox(width: 6),
+                            const Icon(Icons.arrow_forward_rounded, size: 16),
+                          ],
+                        ),
                       ),
                     ),
                   ),

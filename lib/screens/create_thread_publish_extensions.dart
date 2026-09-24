@@ -11,6 +11,15 @@ extension CreateThreadPublishExtensions on _CreateThreadScreenState {
 
     if (text.isEmpty && _recordedAudioPath == null && _selectedImagesBytesList.isEmpty && imageUrl.isEmpty && videoUrl.isEmpty && _selectedMusic == null) return;
 
+    // -----------------------------------------------------------------------
+    // ANTI-SPAM LINK CHECK (TEMPORARILY DISABLED FOR THREAD POSTS):
+    // If any URL is detected in text, block submission and notify user gently.
+    // -----------------------------------------------------------------------
+    if (HashtagMentionParser.urlRegex.hasMatch(text)) {
+      _showLinkNotAllowedGentleNotice();
+      return;
+    }
+
     setState(() => _isUploadingImage = true);
     final db = Provider.of<DatabaseService>(context, listen: false);
 

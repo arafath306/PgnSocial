@@ -30,6 +30,7 @@ import '../../models/user_experience.dart';
 import '../../models/user_education.dart';
 import '../../widgets/profile/experience_editor_sheet.dart';
 import '../../widgets/profile/education_editor_sheet.dart';
+import '../../widgets/in_app_browser_screen.dart';
 
 
 class ProfileScreen extends StatefulWidget {
@@ -635,67 +636,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
         ],
 
-        // Website & Blood Group chips
-        () {
-          final website = profile?.website;
-          final bloodGroup = profile?.bloodGroup;
-          final hasWebsite = website != null && website.isNotEmpty;
-          final hasBloodGroup = bloodGroup != null && bloodGroup.isNotEmpty;
-
-          if (!hasWebsite && !hasBloodGroup) return const SizedBox.shrink();
-
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 4,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                if (hasWebsite)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.link_rounded, size: 14, color: Color(0xFF0085FF)),
-                      const SizedBox(width: 4),
-                      Text(
-                        website,
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: const Color(0xFF0085FF),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                if (hasBloodGroup)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.water_drop_rounded, size: 12, color: Colors.redAccent),
-                        const SizedBox(width: 3),
-                        Text(
-                          'Blood: $bloodGroup',
-                          style: GoogleFonts.inter(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.redAccent,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          );
-        }(),
-
         const SizedBox(height: 8),
       ],
     );
@@ -1206,6 +1146,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 icon: Icons.language_rounded,
                 title: profile.website!,
                 subtitle: 'Website',
+                onTap: () => InAppBrowserScreen.open(context, profile.website!),
                 trailing: _isOwnProfile
                     ? _buildEditIconButton(onTap: _openEditProfile)
                     : null,
@@ -1421,8 +1362,9 @@ class _ProfileScreenState extends State<ProfileScreen>
     String? subtitle,
     bool isPrivate = false,
     Widget? trailing,
+    VoidCallback? onTap,
   }) {
-    return Row(
+    final row = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
@@ -1458,8 +1400,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: context.textPrimary,
+                    color: onTap != null ? const Color(0xFF0085FF) : context.textPrimary,
                     height: 1.35,
+                    decoration: onTap != null ? TextDecoration.underline : null,
+                    decorationColor: const Color(0xFF0085FF).withValues(alpha: 0.5),
                   ),
                 ),
               if (subtitle != null) ...[
@@ -1502,6 +1446,15 @@ class _ProfileScreenState extends State<ProfileScreen>
         ?trailing,
       ],
     );
+
+    if (onTap != null) {
+      return GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: row,
+      );
+    }
+    return row;
   }
 
   Widget _buildExperienceItem(UserExperience exp, String targetId, DatabaseService db) {

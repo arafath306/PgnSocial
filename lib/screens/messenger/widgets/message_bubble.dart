@@ -1,9 +1,11 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../utils/app_theme.dart';
 import '../../../utils/chat_themes.dart';
+import '../../../widgets/in_app_browser_screen.dart';
 import 'swipe_to_reply.dart';
 import 'chat_voice_player.dart';
 import 'reaction_bar.dart';
@@ -399,6 +401,63 @@ class _MessageBubbleState extends State<MessageBubble>
         fontWeight: FontWeight.w400,
       );
 
+      List<InlineSpan> buildSpansWithLinks(String text, TextStyle baseStyle) {
+        final urlRegExp = RegExp(
+          r'(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}(?:\/[^\s]*)?)',
+          caseSensitive: false,
+        );
+
+        final List<InlineSpan> spans = [];
+        final matches = urlRegExp.allMatches(text);
+        int lastEnd = 0;
+
+        final linkStyle = isMe
+            ? baseStyle.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                decoration: TextDecoration.underline,
+                decorationColor: Colors.white70,
+              )
+            : baseStyle.copyWith(
+                color: const Color(0xFF0085FF),
+                fontWeight: FontWeight.w600,
+                decoration: TextDecoration.underline,
+                decorationColor: const Color(0xFF0085FF).withValues(alpha: 0.6),
+              );
+
+        for (final match in matches) {
+          if (match.start > lastEnd) {
+            spans.add(TextSpan(
+              text: text.substring(lastEnd, match.start),
+              style: baseStyle,
+            ));
+          }
+
+          final rawUrl = match.group(0)!;
+          spans.add(
+            TextSpan(
+              text: rawUrl,
+              style: linkStyle,
+              recognizer: TapGestureRecognizer()
+                ..onTap = () {
+                  InAppBrowserScreen.open(context, rawUrl);
+                },
+            ),
+          );
+
+          lastEnd = match.end;
+        }
+
+        if (lastEnd < text.length) {
+          spans.add(TextSpan(
+            text: text.substring(lastEnd),
+            style: baseStyle,
+          ));
+        }
+
+        return spans;
+      }
+
       Widget textChild;
       final query = widget.searchQuery?.trim().toLowerCase();
 
@@ -436,9 +495,9 @@ class _MessageBubbleState extends State<MessageBubble>
           textAlign: TextAlign.left,
         );
       } else {
-        textChild = Text(
-          bodyText,
-          style: baseStyle,
+        final spans = buildSpansWithLinks(bodyText, baseStyle);
+        textChild = Text.rich(
+          TextSpan(children: spans),
           textAlign: TextAlign.left,
         );
       }

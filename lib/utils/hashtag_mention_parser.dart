@@ -1,9 +1,9 @@
-enum TextTokenType { plain, hashtag, mention }
+enum TextTokenType { plain, hashtag, mention, link }
 
 class TextToken {
   final String text;
   final TextTokenType type;
-  final String value; // The raw hashtag tag (without #) or username (without @)
+  final String value; // The raw hashtag tag (without #), username (without @), or URL
 
   const TextToken({
     required this.text,
@@ -16,13 +16,18 @@ class HashtagMentionParser {
   // Regex supporting English, digits, underscore, dot and Bangla unicode (\u0980-\u09FF)
   static final RegExp mentionRegex = RegExp(r'@([a-zA-Z0-9_\.\u0980-\u09FF]+)');
   static final RegExp hashtagRegex = RegExp(r'#([a-zA-Z0-9_\u0980-\u09FF]+)');
-
-  // Combined regex matching either mention or hashtag
-  static final RegExp combinedRegex = RegExp(
-    r'(@[a-zA-Z0-9_\.\u0980-\u09FF]+)|(#[a-zA-Z0-9_\u0980-\u09FF]+)',
+  static final RegExp urlRegex = RegExp(
+    r'(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}(?:\/[^\s]*)?)',
+    caseSensitive: false,
   );
 
-  /// Parses text into a list of plain, hashtag, or mention tokens.
+  // Combined regex matching either link, mention, or hashtag
+  static final RegExp combinedRegex = RegExp(
+    r'(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}(?:\/[^\s]*)?)|(@[a-zA-Z0-9_\.\u0980-\u09FF]+)|(#[a-zA-Z0-9_\u0980-\u09FF]+)',
+    caseSensitive: false,
+  );
+
+  /// Parses text into a list of plain, hashtag, mention, or link tokens.
   static List<TextToken> parse(String text) {
     if (text.isEmpty) return [];
 
@@ -51,6 +56,29 @@ class HashtagMentionParser {
           type: TextTokenType.hashtag,
           value: matchedText.substring(1),
         ));
+      } else {
+        // Link match: handle trailing punctuation cleanly
+        String cleanUrl = matchedText;
+        String trailingPunctuation = '';
+        while (cleanUrl.isNotEmpty && RegExp(r'[\.,;:!?\)>]$').hasMatch(cleanUrl)) {
+          trailingPunctuation = cleanUrl[cleanUrl.length - 1] + trailingPunctuation;
+          cleanUrl = cleanUrl.substring(0, cleanUrl.length - 1);
+        }
+
+        if (cleanUrl.isNotEmpty) {
+          tokens.add(TextToken(
+            text: cleanUrl,
+            type: TextTokenType.link,
+            value: cleanUrl,
+          ));
+        }
+        if (trailingPunctuation.isNotEmpty) {
+          tokens.add(TextToken(
+            text: trailingPunctuation,
+            type: TextTokenType.plain,
+            value: '',
+          ));
+        }
       }
 
       lastMatchEnd = match.end;

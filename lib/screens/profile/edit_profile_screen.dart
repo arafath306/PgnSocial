@@ -443,6 +443,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _villageCtrl = TextEditingController(text: _initialVillage);
     _zipCtrl = TextEditingController(text: _initialZip);
 
+    for (final ctrl in [
+      _nameCtrl,
+      _usernameCtrl,
+      _bioCtrl,
+      _phoneCtrl,
+      _educationCtrl,
+      _occupationCtrl,
+      _websiteCtrl,
+      _cityCtrl,
+      _villageCtrl,
+      _zipCtrl,
+    ]) {
+      ctrl.addListener(_onFieldChanged);
+    }
+
     _selectedCountry = widget.profile['country']?.toString();
     if (_selectedCountry != null && _selectedCountry!.isEmpty) _selectedCountry = null;
     _initialCountry = _selectedCountry;
@@ -479,9 +494,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
   }
 
+  void _onFieldChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
     _debounceUsernameTimer?.cancel();
+    for (final ctrl in [
+      _nameCtrl,
+      _usernameCtrl,
+      _bioCtrl,
+      _phoneCtrl,
+      _educationCtrl,
+      _occupationCtrl,
+      _websiteCtrl,
+      _cityCtrl,
+      _villageCtrl,
+      _zipCtrl,
+    ]) {
+      ctrl.removeListener(_onFieldChanged);
+    }
     _nameCtrl.dispose();
     _usernameCtrl.dispose();
     _bioCtrl.dispose();
@@ -872,7 +905,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
         ),
         body: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          padding: EdgeInsets.fromLTRB(16, 16, 16, _hasUnsavedChanges ? 90 : 24),
           children: [
             Consumer<DatabaseService>(
               builder: (context, db, _) {
@@ -1031,10 +1064,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       );
                     }
 
-                    return Column(
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: fieldBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: context.border, width: 0.8),
+                      ),
+                      child: Column(
                         children: [
                           for (int i = 0; i < experiences.length; i++) ...[
                             if (i > 0)
+                              Divider(height: 1, thickness: 0.5, color: context.border),
                             InkWell(
                               onTap: () => ExperienceEditorSheet.show(context, experience: experiences[i]),
                               borderRadius: BorderRadius.vertical(
@@ -1087,7 +1127,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ),
                           ],
                         ],
-                      );
+                      ),
+                    );
                   },
                 ),
 
@@ -1162,10 +1203,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       );
                     }
 
-                    return Column(
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: fieldBg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: context.border, width: 0.8),
+                      ),
+                      child: Column(
                         children: [
                           for (int i = 0; i < educations.length; i++) ...[
                             if (i > 0)
+                              Divider(height: 1, thickness: 0.5, color: context.border),
                             InkWell(
                               onTap: () => EducationEditorSheet.show(context, education: educations[i]),
                               borderRadius: BorderRadius.vertical(
@@ -1222,7 +1270,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ),
                           ],
                         ],
-                      );
+                      ),
+                    );
                   },
                 ),
               ],
@@ -1363,6 +1412,129 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             const SizedBox(height: 24),
           ],
         ),
+        bottomNavigationBar: _hasUnsavedChanges
+            ? SafeArea(
+                child: _buildFloatingSaveBar(context, canSave),
+              )
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildFloatingSaveBar(BuildContext context, bool canSave) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: context.isDarkMode
+            ? const Color(0xFF131B2E).withValues(alpha: 0.95)
+            : Colors.white.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: context.primaryAccent.withValues(alpha: 0.35),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: context.isDarkMode ? 0.45 : 0.12),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: context.primaryAccent,
+              boxShadow: [
+                BoxShadow(
+                  color: context.primaryAccent.withValues(alpha: 0.6),
+                  blurRadius: 6,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Unsaved changes',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: context.textPrimary,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: _isSaving
+                ? null
+                : () {
+                    setState(() {
+                      _nameCtrl.text = _initialName;
+                      _usernameCtrl.text = _initialUsername;
+                      _bioCtrl.text = _initialBio;
+                      _phoneCtrl.text = _initialPhone;
+                      _educationCtrl.text = _initialEducation;
+                      _occupationCtrl.text = _initialOccupation;
+                      _websiteCtrl.text = _initialWebsite;
+                      _cityCtrl.text = _initialCity;
+                      _villageCtrl.text = _initialVillage;
+                      _zipCtrl.text = _initialZip;
+                      _selectedCountry = _initialCountry;
+                      _selectedDivision = _initialDivision;
+                      _selectedGender = _initialGender;
+                      _selectedBloodGroup = _initialBloodGroup;
+                      _birthdateString = _initialBirthdate;
+                      _isUsernameAvailable = null;
+                      _usernameError = null;
+                    });
+                  },
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              'Reset',
+              style: GoogleFonts.inter(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: context.textMuted,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          FilledButton(
+            onPressed: canSave ? _saveProfile : null,
+            style: FilledButton.styleFrom(
+              backgroundColor: context.primaryAccent,
+              disabledBackgroundColor: context.primaryAccent.withValues(alpha: 0.35),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              minimumSize: const Size(0, 36),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              elevation: 0,
+            ),
+            child: _isSaving
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : Text(
+                    'Save Changes',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+          ),
+        ],
       ),
     );
   }

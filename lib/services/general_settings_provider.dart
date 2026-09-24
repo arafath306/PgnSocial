@@ -267,6 +267,8 @@ class GeneralSettingsProvider with ChangeNotifier {
 
   final List<Map<String, String>> _activeSessions = [];
   List<Map<String, String>> get activeSessions => _activeSessions;
+  bool _isLoadingSessions = false;
+  bool get isLoadingSessions => _isLoadingSessions;
 
   RealtimeChannel? _sessionsChannel;
 
@@ -327,6 +329,11 @@ class GeneralSettingsProvider with ChangeNotifier {
   Future<void> fetchActiveSessions({bool isBackgroundSync = false}) async {
     final uid = _currentUid;
     if (uid.isEmpty) return;
+
+    if (!isBackgroundSync && _activeSessions.isEmpty) {
+      _isLoadingSessions = true;
+      notifyListeners();
+    }
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -389,9 +396,11 @@ class GeneralSettingsProvider with ChangeNotifier {
           'status': isCurrent ? 'Active now' : _formatLastActive(item['last_active'] as String?),
         });
       }
-      notifyListeners();
     } catch (e) {
       debugPrint('[GeneralSettings] fetchActiveSessions error: $e');
+    } finally {
+      _isLoadingSessions = false;
+      notifyListeners();
     }
   }
 

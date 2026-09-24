@@ -29,6 +29,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dak/l10n/generated/app_localizations.dart';
 
 import '../../widgets/verification_badge.dart';
+import '../../services/account_switcher_service.dart';
+import '../../widgets/account_switcher_sheet.dart';
 
 class SettingsScreen extends StatefulWidget {
   final VoidCallback? onSwitchToProfile;
@@ -284,6 +286,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final dbService = Provider.of<DatabaseService>(context, listen: false);
     final myProfile = context.select((DatabaseService db) => db.myProfile);
     final monetization = Provider.of<MonetizationController>(context);
+    final switcher = Provider.of<AccountSwitcherService>(context);
+
+    if (myProfile != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        switcher.syncProfile(myProfile);
+      });
+    }
 
     return Scaffold(
       backgroundColor: context.scaffoldBg,
@@ -427,11 +436,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ],
                             ),
                           ),
-                          Icon(
-                            Icons.chevron_right,
-                            color: context.textMuted,
-                            size: 20,
-                          ),
+                          const SizedBox(width: 8),
+                          _buildAccountSwitchButton(context, switcher),
                         ],
                       ),
                     ),
@@ -1224,6 +1230,101 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       },
     );
+  }
+
+  Widget _buildAccountSwitchButton(
+    BuildContext context,
+    AccountSwitcherService switcher,
+  ) {
+    final otherAccounts = switcher.otherAccounts;
+    final secondAccount = otherAccounts.isNotEmpty ? otherAccounts.first : null;
+
+    if (secondAccount == null) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => showAccountSwitcherSheet(context),
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: context.isDarkMode
+                  ? const Color(0xFF1E293B)
+                  : const Color(0xFFF1F5F9),
+              border: Border.all(
+                color: context.border,
+                width: 1.2,
+              ),
+            ),
+            child: Icon(
+              Icons.add_rounded,
+              color: context.textPrimary,
+              size: 20,
+            ),
+          ),
+        ),
+      );
+    } else {
+      final avatarUrl = secondAccount.avatarUrl;
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: () => showAccountSwitcherSheet(context),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFF1E824C),
+                    width: 1.8,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 17,
+                  backgroundColor: context.isDarkMode
+                      ? Colors.grey[800]
+                      : Colors.grey[200],
+                  backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
+                      ? CachedNetworkImageProvider(avatarUrl)
+                      : null,
+                  child: (avatarUrl == null || avatarUrl.isEmpty)
+                      ? Icon(Icons.person, color: context.textPrimary, size: 18)
+                      : null,
+                ),
+              ),
+              Positioned(
+                right: -2,
+                bottom: -2,
+                child: Container(
+                  width: 15,
+                  height: 15,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E824C),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: context.scaffoldBg,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.swap_horiz_rounded,
+                    size: 9,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
   }
 }
 

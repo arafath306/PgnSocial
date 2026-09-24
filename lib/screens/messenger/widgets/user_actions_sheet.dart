@@ -378,7 +378,7 @@ class UserActionsSheet extends StatelessWidget {
                                   shape: BoxShape.circle,
                                   border: Border.all(
                                     color: selectedReason == r
-                                        ? context.primaryAccent!
+                                        ? context.primaryAccent
                                         : context.textMuted,
                                     width: 2,
                                   ),
