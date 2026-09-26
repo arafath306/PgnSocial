@@ -50,6 +50,11 @@ class _MessageBubbleState extends State<MessageBubble>
   late Animation<double> _heartOpacity;
   bool _showHeartPop = false;
 
+  static final RegExp _urlRegExp = RegExp(
+    r'(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}(?:\/[^\s]*)?)',
+    caseSensitive: false,
+  );
+
   @override
   void initState() {
     super.initState();
@@ -219,7 +224,9 @@ class _MessageBubbleState extends State<MessageBubble>
 
     Widget buildStatusRow({required bool overlayMode}) {
       final bool isPinned = msg['is_pinned'] as bool? ?? false;
-      if (!isPinned && !(isMe && isSending)) {
+      final bool isRead = msg['is_read'] as bool? ?? false;
+
+      if (!isPinned && !isMe) {
         return const SizedBox.shrink();
       }
 
@@ -229,20 +236,37 @@ class _MessageBubbleState extends State<MessageBubble>
 
       return Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          if (isPinned)
+          if (isPinned) ...[
             Icon(
               Icons.push_pin_rounded,
               size: 11,
               color: iconColor,
             ),
-          if (isMe && isSending) ...[
-            if (isPinned) const SizedBox(width: 3),
-            Icon(
-              Icons.schedule_rounded,
-              size: 11,
-              color: overlayMode ? Colors.white70 : Colors.white54,
-            ),
+            const SizedBox(width: 3),
+          ],
+          if (isMe) ...[
+            if (isSending)
+              Icon(
+                Icons.schedule_rounded,
+                size: 11,
+                color: overlayMode ? Colors.white70 : Colors.white60,
+              )
+            else if (isRead)
+              Icon(
+                Icons.done_all_rounded,
+                size: 14,
+                color: overlayMode
+                    ? const Color(0xFF64B5F6)
+                    : const Color(0xFF80D8FF),
+              )
+            else
+              Icon(
+                Icons.done_rounded,
+                size: 13,
+                color: overlayMode ? Colors.white70 : Colors.white70,
+              ),
           ],
         ],
       );
@@ -266,12 +290,14 @@ class _MessageBubbleState extends State<MessageBubble>
               width: double.infinity,
               height: 240,
               fit: BoxFit.cover,
+              cacheWidth: 600,
             )
           : CachedNetworkImage(
               imageUrl: bytesOrUrl as String,
               width: double.infinity,
               height: 240,
               fit: BoxFit.cover,
+              memCacheWidth: 600,
               placeholder: (context, url) => const _ImageShimmerPlaceholder(),
               errorWidget: (context, url, error) => Container(
                 width: double.infinity,
@@ -301,7 +327,7 @@ class _MessageBubbleState extends State<MessageBubble>
             children: [
               image,
               if (isOnlyImage &&
-                  ((msg['is_pinned'] as bool? ?? false) || (isMe && isSending)))
+                  ((msg['is_pinned'] as bool? ?? false) || isMe))
                 Positioned(
                   bottom: 6,
                   right: 8,
@@ -384,7 +410,7 @@ class _MessageBubbleState extends State<MessageBubble>
             audioBytes: bytes,
             isMe: isMe,
           ),
-          if (isPinned || (isMe && isSending))
+          if (isPinned || isMe)
             Padding(
               padding: const EdgeInsets.only(right: 8, bottom: 4),
               child: buildStatusRow(overlayMode: false),
@@ -402,15 +428,28 @@ class _MessageBubbleState extends State<MessageBubble>
       );
 
       List<InlineSpan> buildSpansWithLinks(String text, TextStyle baseStyle) {
-        final urlRegExp = RegExp(
-          r'(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}(?:\/[^\s]*)?)',
-          caseSensitive: false,
-        );
+        final lower = text.toLowerCase();
+        final bool hasPotentialLink = lower.contains('http://') ||
+            lower.contains('https://') ||
+            lower.contains('www.') ||
+            lower.contains('.com') ||
+            lower.contains('.net') ||
+            lower.contains('.org') ||
+            lower.contains('.io') ||
+            lower.contains('.me') ||
+            lower.contains('.app');
+
+        if (!hasPotentialLink) {
+          return [TextSpan(text: text, style: baseStyle)];
+        }
 
         final List<InlineSpan> spans = [];
-        final matches = urlRegExp.allMatches(text);
-        int lastEnd = 0;
+        final matches = _urlRegExp.allMatches(text);
+        if (matches.isEmpty) {
+          return [TextSpan(text: text, style: baseStyle)];
+        }
 
+        int lastEnd = 0;
         final linkStyle = isMe
             ? baseStyle.copyWith(
                 color: Colors.white,
@@ -503,7 +542,7 @@ class _MessageBubbleState extends State<MessageBubble>
       }
 
       final bool isPinned = msg['is_pinned'] as bool? ?? false;
-      final showStatus = isPinned || (isMe && isSending);
+      final showStatus = isPinned || isMe;
 
       return Padding(
         padding: hasMedia
@@ -511,7 +550,7 @@ class _MessageBubbleState extends State<MessageBubble>
             : EdgeInsets.zero,
         child: showStatus
             ? Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   textChild,
@@ -555,8 +594,7 @@ class _MessageBubbleState extends State<MessageBubble>
                   },
                 ),
                 if ((text == null || text.isEmpty) &&
-                    ((msg['is_pinned'] as bool? ?? false) ||
-                        (isMe && isSending)))
+                    ((msg['is_pinned'] as bool? ?? false) || isMe))
                   Positioned(
                     bottom: 6,
                     right: 8,

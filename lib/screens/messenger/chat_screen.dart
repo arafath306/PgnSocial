@@ -89,13 +89,14 @@ class _ChatScreenState extends State<ChatScreen> {
     
     _realtimeOtherUser = widget.otherUser;
     final dbService = Provider.of<DatabaseService>(context, listen: false);
-    dbService.currentActiveChatUserId = widget.otherUser.id;
-    LocalNotificationService.cancelNotification(widget.otherUser.id.hashCode);
-    _messagesStream = dbService.getMessagesStream(widget.otherUser.id);
+    final cleanOtherUserId = widget.otherUser.id.trim();
+    dbService.currentActiveChatUserId = cleanOtherUserId;
+    LocalNotificationService.cancelNotification(cleanOtherUserId.hashCode);
+    _messagesStream = dbService.getMessagesStream(cleanOtherUserId);
 
     // Mark read once on enter, not on every rebuild
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      dbService.markMessagesAsRead(widget.otherUser.id);
+      dbService.markMessagesAsRead(cleanOtherUserId);
     });
 
     _loadMuteStatus();
@@ -344,7 +345,11 @@ class _ChatScreenState extends State<ChatScreen> {
     _typingSub?.cancel();
     _typingTimer?.cancel();
     final dbService = Provider.of<DatabaseService>(context, listen: false);
-    dbService.currentActiveChatUserId = null;
+    final cleanOtherUserId = widget.otherUser.id.trim();
+    if (dbService.currentActiveChatUserId?.trim().toLowerCase() == cleanOtherUserId.toLowerCase()) {
+      dbService.currentActiveChatUserId = null;
+    }
+    LocalNotificationService.cancelNotification(cleanOtherUserId.hashCode);
     super.dispose();
   }
 
@@ -481,10 +486,6 @@ class _ChatScreenState extends State<ChatScreen> {
           statusText = 'Active ${diff.inDays}d ago';
         }
       }
-    }
-
-    if (_otherIsTyping) {
-      statusText = 'Typing...';
     }
 
     Widget mainContent = Scaffold(
@@ -814,7 +815,67 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
 
-          // â”€â”€ Composer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          // ── Bottom Typing Indicator (Appears smoothly above composer) ──
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: SizeTransition(
+                sizeFactor: animation,
+                axis: Axis.vertical,
+                alignment: Alignment.bottomLeft,
+                child: child,
+              ),
+            ),
+            child: _otherIsTyping
+                ? Container(
+                    key: const ValueKey('typing_indicator_bottom'),
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.only(left: 16, bottom: 6, top: 4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: context.cardBg,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
+                          bottomRight: Radius.circular(16),
+                          bottomLeft: Radius.circular(4),
+                        ),
+                        border: Border.all(color: context.border, width: 0.8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircleAvatar(
+                            radius: 10,
+                            backgroundColor: context.border,
+                            backgroundImage: _realtimeOtherUser.avatarUrl != null &&
+                                    _realtimeOtherUser.avatarUrl!.isNotEmpty
+                                ? CachedNetworkImageProvider(_realtimeOtherUser.avatarUrl!)
+                                : null,
+                            child: (_realtimeOtherUser.avatarUrl == null ||
+                                    _realtimeOtherUser.avatarUrl!.isEmpty)
+                                ? Icon(Icons.person, size: 10, color: context.textMuted)
+                                : null,
+                          ),
+                          const SizedBox(width: 8),
+                          _TypingDotsIndicator(color: activeTheme.primaryColor),
+                        ],
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink(key: ValueKey('typing_empty')),
+          ),
+
+          // ── Composer ──
           isBlocked
               ? BlockedBanner(
                   otherUser: widget.otherUser,
@@ -874,8 +935,76 @@ class _ChatScreenState extends State<ChatScreen> {
       body: mainContent,
     );
   }
+}
 
+class _TypingDotsIndicator extends StatefulWidget {
+  final Color color;
+  const _TypingDotsIndicator({required this.color});
 
+  @override
+  State<_TypingDotsIndicator> createState() => _TypingDotsIndicatorState();
+}
+
+class _TypingDotsIndicatorState extends State<_TypingDotsIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (index) {
+            final delay = index * 0.2;
+            final progress = (_controller.value - delay) % 1.0;
+            final bounce = (progress >= 0 && progress <= 0.5)
+                ? (progress < 0.25 ? progress * 4 : (0.5 - progress) * 4)
+                : 0.0;
+            final scale = 0.7 + (0.35 * bounce);
+            final opacity = 0.4 + (0.6 * bounce);
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2.0),
+              child: Transform.translate(
+                offset: Offset(0, -2.5 * bounce),
+                child: Opacity(
+                  opacity: opacity.clamp(0.0, 1.0),
+                  child: Transform.scale(
+                    scale: scale,
+                    child: Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: widget.color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        );
+      },
+    );
+  }
 }
 
 // â”€â”€â”€ Isolated Message List â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

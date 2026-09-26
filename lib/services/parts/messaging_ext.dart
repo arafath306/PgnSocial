@@ -142,8 +142,8 @@ extension MessagingExtension on DatabaseService {
     );
   }
 
-  Future<bool> deleteMessage(String messageId) async {
-    final result = await sl<IChatRepository>().deleteMessage(messageId);
+  Future<bool> deleteMessage(String messageId, {bool forEveryone = false}) async {
+    final result = await sl<IChatRepository>().deleteMessage(messageId, forEveryone: forEveryone);
     return result.fold(
       (failure) {
         debugPrint("Delete message error: ${failure.message}");
@@ -151,6 +151,14 @@ extension MessagingExtension on DatabaseService {
       },
       (_) => true,
     );
+  }
+
+  Future<bool> deleteMessageForMe(String messageId) async {
+    return deleteMessage(messageId, forEveryone: false);
+  }
+
+  Future<bool> deleteMessageForEveryone(String messageId) async {
+    return deleteMessage(messageId, forEveryone: true);
   }
 
   Future<bool> toggleMessageReaction(String messageId, String emoji) async {

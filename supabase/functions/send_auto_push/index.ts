@@ -55,7 +55,7 @@ serve(async (req) => {
   }
 
   try {
-    const { title, body, fcm_token, tag, channel_id, silent } = await req.json();
+    const { title, body, fcm_token, tag, channel_id, silent, sender_id, type, payload } = await req.json();
 
     if (!fcm_token) {
       throw new Error("Missing fcm_token in request payload");
@@ -71,6 +71,16 @@ serve(async (req) => {
 
     const accessToken = await getFCMToken(clientEmail, privateKey);
 
+    const dataPayload: Record<string, string> = {
+      title: title || '',
+      body: body || '',
+      type: type || (channel_id === 'pigeon_messages' ? 'message' : 'activity'),
+      channel_id: channel_id || '',
+      sender_id: sender_id || '',
+      tag: tag || '',
+      payload: payload || (sender_id ? (type === 'message' ? `message:${sender_id}` : `profile:${sender_id}`) : ''),
+    };
+
     const message = {
       message: {
         token: fcm_token,
@@ -78,6 +88,7 @@ serve(async (req) => {
           title,
           body,
         },
+        data: dataPayload,
         android: {
           priority: silent ? 'normal' : 'high',
           notification: { 

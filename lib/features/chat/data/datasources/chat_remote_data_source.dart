@@ -13,6 +13,8 @@ abstract class ChatRemoteDataSource {
   Stream<sb.PostgresChangePayload> getMessagesRealtimeStream(String otherUserId);
   Future<void> editMessage(String messageId, String senderId, String receiverId, String content);
   Future<void> deleteMessage(String messageId);
+  Future<void> deleteMessageForMe(String messageId, String currentUserId);
+  Future<void> deleteMessageForEveryone(String messageId, String currentUserId);
   Future<void> toggleReaction(String messageId, String userId, String emoji);
   Future<void> togglePinMessage(String messageId, bool isPinned);
   void sendTypingEvent(String currentUserId, String otherUserId, bool isTyping);
@@ -59,9 +61,16 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     final response = await supabaseClient
         .from('messages')
         .select('*, sender:profiles!sender_id(*), receiver:profiles!receiver_id(*)')
-        .or('and(sender_id.eq.$currentUserId,deleted_by_sender.eq.false),and(receiver_id.eq.$currentUserId,deleted_by_receiver.eq.false)')
+        .or('and(sender_id.eq.$currentUserId,deleted_by_sender.neq.true),and(receiver_id.eq.$currentUserId,deleted_by_receiver.neq.true)')
         .order('created_at', ascending: false);
-    return response as List<dynamic>;
+    final rawList = response as List<dynamic>;
+    return rawList.where((msg) {
+      final senderId = msg['sender_id']?.toString();
+      final isMe = senderId == currentUserId;
+      if (isMe && msg['deleted_by_sender'] == true) return false;
+      if (!isMe && msg['deleted_by_receiver'] == true) return false;
+      return true;
+    }).toList();
   }
 
   @override
@@ -69,10 +78,16 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     final response = await supabaseClient
         .from('messages')
         .select()
-        .or('and(sender_id.eq.$currentUserId,receiver_id.eq.$otherUserId,deleted_by_sender.eq.false),and(sender_id.eq.$otherUserId,receiver_id.eq.$currentUserId,deleted_by_receiver.eq.false)')
+        .or('and(sender_id.eq.$currentUserId,receiver_id.eq.$otherUserId,deleted_by_sender.neq.true),and(sender_id.eq.$otherUserId,receiver_id.eq.$currentUserId,deleted_by_receiver.neq.true)')
         .order('created_at', ascending: false)
         .limit(100);
-    final list = response as List<dynamic>;
+    final list = (response as List<dynamic>).where((msg) {
+      final senderId = msg['sender_id']?.toString();
+      final isMe = senderId == currentUserId;
+      if (isMe && msg['deleted_by_sender'] == true) return false;
+      if (!isMe && msg['deleted_by_receiver'] == true) return false;
+      return true;
+    }).toList();
     return list.reversed.toList();
   }
 
@@ -103,14 +118,23 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   @override
   Future<bool> deleteConversation(String currentUserId, String otherUserId) async {
     try {
-      // Mark as deleted for sender
+      // 1. Try secure RPC first
+      try {
+        await supabaseClient.rpc('delete_conversation_for_me', params: {
+          'p_other_user_id': otherUserId,
+        });
+        return true;
+      } catch (rpcErr) {
+        debugPrint('[ChatRemoteDataSource] RPC delete_conversation_for_me fallback: $rpcErr');
+      }
+
+      // 2. Fallback direct update
       await supabaseClient
           .from('messages')
           .update({'deleted_by_sender': true})
           .eq('sender_id', currentUserId)
           .eq('receiver_id', otherUserId);
           
-      // Mark as deleted for receiver
       await supabaseClient
           .from('messages')
           .update({'deleted_by_receiver': true})
@@ -119,7 +143,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
           
       return true;
     } catch (e) {
-      debugPrint('Error deleting conversation: $e');
+      debugPrint('[ChatRemoteDataSource] Error deleting conversation: $e');
       return false;
     }
   }
@@ -198,7 +222,73 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
 
   @override
   Future<void> deleteMessage(String messageId) async {
-    await supabaseClient.from('messages').delete().eq('id', messageId);
+    final myId = supabaseClient.auth.currentUser?.id ?? '';
+    await deleteMessageForMe(messageId, myId);
+  }
+
+  @override
+  Future<void> deleteMessageForMe(String messageId, String currentUserId) async {
+    try {
+      // 1. Try secure RPC first
+      try {
+        await supabaseClient.rpc('delete_message_for_me', params: {
+          'p_message_id': messageId,
+        });
+        return;
+      } catch (rpcErr) {
+        debugPrint('[ChatRemoteDataSource] RPC delete_message_for_me fallback: $rpcErr');
+      }
+
+      // 2. Fallback direct update
+      final msg = await supabaseClient
+          .from('messages')
+          .select('sender_id, receiver_id')
+          .eq('id', messageId)
+          .maybeSingle();
+
+      if (msg != null) {
+        final senderId = msg['sender_id']?.toString();
+        if (senderId == currentUserId) {
+          await supabaseClient
+              .from('messages')
+              .update({'deleted_by_sender': true})
+              .eq('id', messageId);
+        } else {
+          await supabaseClient
+              .from('messages')
+              .update({'deleted_by_receiver': true})
+              .eq('id', messageId);
+        }
+      }
+    } catch (e) {
+      debugPrint('[ChatRemoteDataSource] Error deleteMessageForMe: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteMessageForEveryone(String messageId, String currentUserId) async {
+    try {
+      // 1. Try secure RPC first
+      try {
+        await supabaseClient.rpc('delete_message_for_everyone', params: {
+          'p_message_id': messageId,
+        });
+        return;
+      } catch (rpcErr) {
+        debugPrint('[ChatRemoteDataSource] RPC delete_message_for_everyone fallback: $rpcErr');
+      }
+
+      // 2. Fallback direct delete
+      await supabaseClient
+          .from('messages')
+          .delete()
+          .eq('id', messageId)
+          .eq('sender_id', currentUserId);
+    } catch (e) {
+      debugPrint('[ChatRemoteDataSource] Error deleteMessageForEveryone: $e');
+      rethrow;
+    }
   }
 
   @override

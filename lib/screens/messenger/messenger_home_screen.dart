@@ -86,7 +86,11 @@ class _MessengerHomeScreenState extends State<MessengerHomeScreen> with Automati
 
           setState(() {
             final existingIndex = _chats.indexWhere((chat) => (chat['profile'] as Profile).id == senderId);
-            final bool isCurrentlyInChat = dbService.currentActiveChatUserId == senderId;
+            final activeId = dbService.currentActiveChatUserId?.trim().toLowerCase();
+            final bool isCurrentlyInChat = activeId != null &&
+                activeId.isNotEmpty &&
+                senderId != null &&
+                senderId.toString().trim().toLowerCase() == activeId;
             
             if (existingIndex >= 0) {
               final chat = _chats.removeAt(existingIndex);
@@ -472,8 +476,10 @@ class _MessengerHomeScreenState extends State<MessengerHomeScreen> with Automati
                             ],
                           )
                         : ListView.separated(
-                            physics: const AlwaysScrollableScrollPhysics(),
+                            physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                             itemCount: displayList.length,
+                            addRepaintBoundaries: true,
+                            addAutomaticKeepAlives: false,
                             padding: const EdgeInsets.fromLTRB(0, 4, 0, 72),
                             separatorBuilder: (context, index) => Divider(height: 1, color: context.border),
                             itemBuilder: (context, index) {

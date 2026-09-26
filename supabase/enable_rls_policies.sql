@@ -152,12 +152,20 @@ WITH CHECK (auth.uid() = actor_id);
 -- 9. REPORTS
 ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow select for reports" 
+CREATE POLICY "Allow users and admins to view reports" 
 ON public.reports FOR SELECT 
-USING (true);
+TO authenticated
+USING (
+  auth.uid() = user_id OR
+  EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND (role = 'Admin' OR role = 'Moderator')
+  )
+);
 
 CREATE POLICY "Allow users to insert reports" 
 ON public.reports FOR INSERT 
+TO authenticated
 WITH CHECK (auth.uid() = user_id);
 
 
@@ -182,12 +190,19 @@ USING (
 -- 11. AUDIT LOGS
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow select on audit_logs" 
+CREATE POLICY "Admins and moderators can view audit_logs" 
 ON public.audit_logs FOR SELECT 
-USING (true);
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND (role = 'Admin' OR role = 'Moderator')
+  )
+);
 
 CREATE POLICY "Allow insert on audit_logs" 
 ON public.audit_logs FOR INSERT 
+TO authenticated
 WITH CHECK (true);
 
 

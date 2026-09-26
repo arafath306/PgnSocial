@@ -13,6 +13,7 @@ import '../models/user_education.dart';
 import '../models/life_event.dart';
 import 'log_service.dart';
 import '../utils/hashtag_mention_parser.dart';
+import 'local_notification_service.dart';
 
 import '../core/injection.dart';
 import 'general_settings_provider.dart';

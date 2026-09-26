@@ -531,47 +531,129 @@ extension ChatScreenExtensions on _ChatScreenState {
   }
 
 
-  void _confirmDeleteMessage(String messageId, {List<String>? groupIds}) {
+  void _confirmDeleteMessage(String messageId, {required bool isMe, List<String>? groupIds}) {
     final List<String> targetIds = (groupIds != null && groupIds.isNotEmpty)
         ? groupIds
         : [messageId];
 
-    showDialog(
+    final isPlural = targetIds.length > 1;
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.cardBg,
-        title: Text('Delete Message',
-            style: GoogleFonts.inter(color: context.textPrimary)),
-        content: Text(
-          targetIds.length > 1
-              ? 'Are you sure you want to delete these ${targetIds.length} photos?'
-              : 'Are you sure you want to delete this message?',
-          style: GoogleFonts.inter(color: context.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel',
-                style: GoogleFonts.inter(color: context.textMuted)),
+      backgroundColor: Colors.transparent,
+      builder: (bCtx) {
+        return Container(
+          decoration: BoxDecoration(
+            color: context.cardBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              final dbService =
-                  Provider.of<DatabaseService>(context, listen: false);
-              for (final id in targetIds) {
-                await dbService.deleteMessage(id);
-              }
-              setState(() {
-                _allMessages.removeWhere((m) => targetIds.contains(m['id']));
-              });
-            },
-            child: Text('Delete',
-                style: GoogleFonts.inter(
-                    color: Colors.redAccent, fontWeight: FontWeight.bold)),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: context.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    isPlural ? 'Delete ${targetIds.length} Messages' : 'Delete Message',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: context.textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    isPlural
+                        ? 'Choose how you want to delete these messages.'
+                        : 'Choose how you want to delete this message.',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: context.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Divider(height: 1, color: context.border),
+
+                // If sent by me: option to Delete for Everyone
+                if (isMe) ...[
+                  ListTile(
+                    leading: const Icon(Icons.delete_forever_rounded, color: Colors.redAccent),
+                    title: Text(
+                      'Delete for everyone',
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.redAccent,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Remove for you and ${_realtimeOtherUser.fullName}',
+                      style: GoogleFonts.inter(fontSize: 12, color: context.textMuted),
+                    ),
+                    onTap: () async {
+                      Navigator.pop(bCtx);
+                      final dbService = Provider.of<DatabaseService>(context, listen: false);
+                      setState(() {
+                        _deletedIds.addAll(targetIds);
+                        _allMessages.removeWhere((m) => targetIds.contains(m['id']));
+                      });
+                      for (final id in targetIds) {
+                        await dbService.deleteMessage(id, forEveryone: true);
+                      }
+                    },
+                  ),
+                  Divider(height: 1, color: context.border),
+                ],
+
+                // Delete for me
+                ListTile(
+                  leading: Icon(Icons.delete_outline_rounded, color: context.textPrimary),
+                  title: Text(
+                    'Delete for me',
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: context.textPrimary,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Remove only from your device',
+                    style: GoogleFonts.inter(fontSize: 12, color: context.textMuted),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(bCtx);
+                    final dbService = Provider.of<DatabaseService>(context, listen: false);
+                    setState(() {
+                      _deletedIds.addAll(targetIds);
+                      _allMessages.removeWhere((m) => targetIds.contains(m['id']));
+                    });
+                    for (final id in targetIds) {
+                      await dbService.deleteMessage(id, forEveryone: false);
+                    }
+                  },
+                ),
+
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -652,7 +734,7 @@ extension ChatScreenExtensions on _ChatScreenState {
               .map((m) => m['id'] as String)
               .toList();
         }
-        _confirmDeleteMessage(messageId, groupIds: groupIds);
+        _confirmDeleteMessage(messageId, isMe: isMe, groupIds: groupIds);
       },
       onReport: !isMe ? () => _showReportMessageDialog(messageId) : null,
       onSaveMedia: (mediaUrl != null && mediaUrl.isNotEmpty)
@@ -802,6 +884,9 @@ extension ChatScreenExtensions on _ChatScreenState {
                   await db.deleteConversation(widget.otherUser.id);
               if (mounted) {
                 if (success) {
+                  setState(() {
+                    _allMessages.clear();
+                  });
                   Navigator.pop(context);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(

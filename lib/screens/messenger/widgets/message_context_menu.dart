@@ -765,10 +765,11 @@ class _TelegramMessageContextMenuState extends State<TelegramMessageContextMenu>
               onTap: () => _closeWith(widget.onPin),
             ),
 
-            // 6. Delete for me
+            // 6. Delete
             _MenuItem(
               icon: Icons.delete_outline_rounded,
-              label: 'Delete for me',
+              label: 'Delete',
+              isDestructive: true,
               onTap: () => _closeWith(widget.onDelete),
             ),
 
@@ -837,19 +838,24 @@ class _MenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final bool isDestructive;
 
   const _MenuItem({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.isDestructive = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final color = isDestructive ? const Color(0xFFFF5252) : const Color(0xFFDDE4EC);
+    final textColor = isDestructive ? const Color(0xFFFF5252) : Colors.white;
+
     return InkWell(
       onTap: onTap,
-      splashColor: Colors.white.withValues(alpha: 0.08),
-      highlightColor: Colors.white.withValues(alpha: 0.04),
+      splashColor: (isDestructive ? Colors.red : Colors.white).withValues(alpha: 0.08),
+      highlightColor: (isDestructive ? Colors.red : Colors.white).withValues(alpha: 0.04),
       child: Container(
         height: 42,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -858,7 +864,7 @@ class _MenuItem extends StatelessWidget {
             Icon(
               icon,
               size: 20,
-              color: const Color(0xFFDDE4EC),
+              color: color,
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -867,7 +873,7 @@ class _MenuItem extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 14.5,
                   fontWeight: FontWeight.w400,
-                  color: Colors.white,
+                  color: textColor,
                   letterSpacing: -0.1,
                 ),
                 maxLines: 1,

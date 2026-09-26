@@ -310,6 +310,7 @@ class ChatRepositoryImpl implements IChatRepository {
         }
 
         // 4. Update local cache with decrypted messages
+        await LocalChatDatabase.instance.deleteRoomMessages(_currentUid, otherUserId);
         if (messages.isNotEmpty) {
           await LocalChatDatabase.instance.cacheMessages(messages, _currentUid, otherUserId);
         }
@@ -357,11 +358,27 @@ class ChatRepositoryImpl implements IChatRepository {
         await LocalChatDatabase.instance.deleteMessage(deletedId);
         if (!controller.isClosed) controller.add(List.from(currentMessages));
       } else if (payload.eventType == sb.PostgresChangeEvent.update) {
-        final newMsg = await parseMessage(payload.newRecord);
-        if (newMsg != null) {
-          final idx = currentMessages.indexWhere((m) => m.id == newMsg.id);
-          if (idx != -1) {
-            currentMessages[idx] = newMsg;
+        final newRecord = payload.newRecord;
+        final senderId = newRecord['sender_id'] as String?;
+        final isMe = senderId == _currentUid;
+        final isDeletedForMe = isMe
+            ? (newRecord['deleted_by_sender'] == true)
+            : (newRecord['deleted_by_receiver'] == true);
+
+        if (isDeletedForMe) {
+          final id = newRecord['id'] as String;
+          currentMessages.removeWhere((m) => m.id == id);
+          await LocalChatDatabase.instance.deleteMessage(id);
+          if (!controller.isClosed) controller.add(List.from(currentMessages));
+        } else {
+          final newMsg = await parseMessage(payload.newRecord);
+          if (newMsg != null) {
+            final idx = currentMessages.indexWhere((m) => m.id == newMsg.id);
+            if (idx != -1) {
+              currentMessages[idx] = newMsg;
+            } else {
+              currentMessages.add(newMsg);
+            }
             await LocalChatDatabase.instance.cacheMessage(newMsg, _currentUid, otherUserId);
             if (!controller.isClosed) controller.add(List.from(currentMessages));
           }
@@ -421,6 +438,12 @@ class ChatRepositoryImpl implements IChatRepository {
         _currentUid,
         otherUserId,
       );
+      // Clean up local SQLite cache for this room
+      try {
+        await LocalChatDatabase.instance.deleteRoomMessages(_currentUid, otherUserId);
+      } catch (e) {
+        debugPrint('[ChatRepository] Error deleting room messages from local DB: $e');
+      }
       return Right(result);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
@@ -457,13 +480,33 @@ class ChatRepositoryImpl implements IChatRepository {
   }
 
   @override
-  Future<Either<Failure, void>> deleteMessage(String messageId) async {
+  Future<Either<Failure, void>> deleteMessage(String messageId, {bool forEveryone = false}) async {
     try {
-      await remoteDataSource.deleteMessage(messageId);
+      if (forEveryone) {
+        await remoteDataSource.deleteMessageForEveryone(messageId, _currentUid);
+      } else {
+        await remoteDataSource.deleteMessageForMe(messageId, _currentUid);
+      }
+      // Always remove from local SQLite database as well
+      try {
+        await LocalChatDatabase.instance.deleteMessage(messageId);
+      } catch (e) {
+        debugPrint('[ChatRepository] Error deleting message from local DB: $e');
+      }
       return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteMessageForMe(String messageId) async {
+    return deleteMessage(messageId, forEveryone: false);
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteMessageForEveryone(String messageId) async {
+    return deleteMessage(messageId, forEveryone: true);
   }
 
   @override

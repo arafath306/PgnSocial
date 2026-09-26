@@ -71,21 +71,29 @@ extension UnreadExtension on DatabaseService {
       }
     }
 
-    if (currentActiveChatUserId != msg['sender_id']) {
-      // Play chime sound
+    final activeId = currentActiveChatUserId?.trim().toLowerCase();
+    final senderIdStr = (msg['sender_id'] as String?)?.trim();
+    final isInsideCurrentChat = activeId != null &&
+        activeId.isNotEmpty &&
+        senderIdStr != null &&
+        senderIdStr.toLowerCase() == activeId;
+
+    if (!isInsideCurrentChat && senderIdStr != null) {
+      // Play chime sound only when OUTSIDE this chat
       sl<PlaySoundUseCase>().call(SoundType.chime);
   
       // Typed push notification — goes to Messages channel with grouping
       await sl<ShowNotificationUseCase>().call(
         type: NotificationType.message,
-        id: msg['sender_id'].hashCode,
+        id: senderIdStr.hashCode,
         senderName: senderName,
         message: body,
-        payload: 'message:${msg['sender_id']}',
+        payload: 'message:$senderIdStr',
       );
-    } else {
-      // User is already inside this chat, mark the incoming message as read immediately
-      markMessagesAsRead(msg['sender_id']);
+    } else if (senderIdStr != null) {
+      // User is already inside this chat, ensure notification tray is cleared and mark as read immediately
+      LocalNotificationService.cancelNotification(senderIdStr.hashCode);
+      markMessagesAsRead(senderIdStr);
     }
 
     _incomingNotificationStreamController.add({

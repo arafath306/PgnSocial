@@ -194,6 +194,27 @@ class LocalChatDatabase {
       whereArgs: [id],
     );
   }
+
+  Future<void> deleteMessages(List<String> ids) async {
+    if (ids.isEmpty) return;
+    final db = await instance.database;
+    final placeholders = List.filled(ids.length, '?').join(',');
+    await db.delete(
+      'messages',
+      where: 'id IN ($placeholders)',
+      whereArgs: ids,
+    );
+  }
+
+  Future<void> deleteRoomMessages(String currentUid, String otherUserId) async {
+    final db = await instance.database;
+    final roomId = _getRoomId(currentUid, otherUserId);
+    await db.delete(
+      'messages',
+      where: 'room_id = ?',
+      whereArgs: [roomId],
+    );
+  }
   
   Future<void> clearAll() async {
     final db = await instance.database;

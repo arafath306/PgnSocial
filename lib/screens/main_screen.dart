@@ -96,9 +96,9 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
       _notificationSubscription = dbService.incomingNotificationStream.listen((event) {
         if (mounted) {
           if (event['type'] == 'message') {
-            final currentActiveChatId = dbService.currentActiveChatUserId;
-            final senderId = event['sender_id'];
-            if (currentActiveChatId != null && currentActiveChatId == senderId) {
+            final currentActiveChatId = dbService.currentActiveChatUserId?.trim().toLowerCase();
+            final senderId = event['sender_id']?.toString().trim().toLowerCase();
+            if (currentActiveChatId != null && currentActiveChatId.isNotEmpty && currentActiveChatId == senderId) {
               return; // Do not show banner, because we are inside this exact chat!
             }
           }

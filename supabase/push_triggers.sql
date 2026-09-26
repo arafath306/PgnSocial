@@ -24,6 +24,8 @@ DECLARE
   push_body TEXT;
   notif_tag TEXT;
   notif_channel TEXT;
+  sender_id_text TEXT;
+  notif_type TEXT;
   is_silent BOOLEAN := false;
   payload JSONB;
 BEGIN
@@ -37,6 +39,8 @@ BEGIN
     push_body := 'Sent you a new message';
     notif_tag := 'dm_' || NEW.sender_id::text;
     notif_channel := 'pigeon_messages';
+    sender_id_text := NEW.sender_id::text;
+    notif_type := 'message';
 
   -- 2. Comments on threads
   ELSIF TG_TABLE_NAME = 'comments' THEN
@@ -48,6 +52,8 @@ BEGIN
     push_body := sender_name || ' commented on your post: ' || LEFT(NEW.content, 80);
     notif_tag := 'comment_' || NEW.thread_id::text;
     notif_channel := 'pigeon_activity';
+    sender_id_text := NEW.user_id::text;
+    notif_type := 'comment';
 
   -- 3. Notifications table (Likes, Follows, Mentions)
   ELSIF TG_TABLE_NAME = 'notifications' THEN
@@ -55,6 +61,8 @@ BEGIN
     IF receiver_id = NEW.actor_id THEN RETURN NEW; END IF;
 
     SELECT COALESCE(full_name, username, 'Someone') INTO sender_name FROM public.profiles WHERE id = NEW.actor_id;
+    sender_id_text := NEW.actor_id::text;
+    notif_type := NEW.type;
 
     IF NEW.type = 'like' THEN
       push_title := sender_name;
@@ -89,7 +97,9 @@ BEGIN
       'body', push_body,
       'tag', notif_tag,
       'channel_id', notif_channel,
-      'silent', is_silent
+      'silent', is_silent,
+      'sender_id', sender_id_text,
+      'type', notif_type
     );
 
     -- Async HTTP post via pg_net

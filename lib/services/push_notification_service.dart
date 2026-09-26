@@ -158,21 +158,38 @@ class PushNotificationService {
       final title = notification?.title ?? message.data['title'] ?? 'Dak Notification';
       final body = notification?.body ?? message.data['body'] ?? '';
       final channelId = message.data['channel_id'] as String?;
-      final type = message.data['type'] ?? (channelId == 'pigeon_messages' ? 'message' : 'activity');
+      final rawTag = message.data['tag']?.toString();
 
-      // Check if user is actively chatting with the sender
-      final senderId = message.data['sender_id'] ??
+      // Determine notification type
+      String type = (message.data['type'] as String?)?.toLowerCase() ?? '';
+      if (type.isEmpty) {
+        if (channelId == 'pigeon_messages' || (rawTag != null && rawTag.startsWith('dm_'))) {
+          type = 'message';
+        } else {
+          type = 'activity';
+        }
+      }
+
+      // Extract sender / actor ID cleanly
+      String? senderId;
+      final rawSender = message.data['sender_id'] ??
           message.data['senderId'] ??
           message.data['actor_id'] ??
-          message.data['tag'] ??
           message.data['userId'];
+      if (rawSender != null && rawSender.toString().trim().isNotEmpty) {
+        senderId = rawSender.toString().trim();
+      } else if (rawTag != null && rawTag.startsWith('dm_')) {
+        senderId = rawTag.substring(3).trim();
+      }
 
-      final activeChatId = DatabaseService.activeChatUserId;
+      // Check if user is actively chatting with the sender
+      final activeChatId = DatabaseService.activeChatUserId?.trim().toLowerCase();
       if (activeChatId != null && activeChatId.isNotEmpty) {
         if (type == 'message' || channelId == 'pigeon_messages') {
-          if (senderId != null && senderId.toString() == activeChatId) {
-            debugPrint('[PushNotificationService] Suppressed notification for active chat user: $senderId');
-            return; // Suppress notification since user is inside this exact chat!
+          if (senderId != null && senderId.toLowerCase() == activeChatId) {
+            debugPrint('[PushNotificationService] Suppressed foreground notification for active chat user: $senderId');
+            LocalNotificationService.cancelNotification(senderId.hashCode);
+            return; // Suppress notification completely since user is actively in this chat screen!
           }
         }
       }
@@ -182,7 +199,7 @@ class PushNotificationService {
       final shouldShow = notifSettings.shouldNotify(
         type: type,
         isPush: true,
-        actorId: senderId?.toString(),
+        actorId: senderId,
       );
 
       if (!shouldShow) {
@@ -191,7 +208,7 @@ class PushNotificationService {
       }
 
       final notifId = (type == 'message' && senderId != null)
-          ? senderId.toString().hashCode
+          ? senderId.hashCode
           : message.hashCode;
 
       if (body.isNotEmpty || notification != null) {
