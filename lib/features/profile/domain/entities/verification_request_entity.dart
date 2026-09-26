@@ -1,3 +1,8 @@
+// NOTE: [UNUSED / REFERENCE ONLY]
+// This entity file is currently not active in the app.
+// Active verification requests are managed directly via [VerificationRequest] in 'models/verification_request.dart'.
+// Kept for future clean-architecture reference.
+
 import 'package:image_picker/image_picker.dart';
 
 enum VerificationStatusEntity {

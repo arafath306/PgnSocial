@@ -1,3 +1,7 @@
+// NOTE: [UNUSED / REFERENCE ONLY]
+// This community settings screen is currently not active or routed in the app.
+// Kept for future community features development.
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';

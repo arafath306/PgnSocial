@@ -13,6 +13,8 @@ import 'comment_attachment_picker_panel.dart';
 import 'comment_item.dart';
 import 'reply_input_composer.dart';
 import 'content_report_helper.dart';
+import 'shared/shared_voice_composer.dart';
+import 'upgrade_premium_sheet.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 part 'comments_sheet_extensions.dart';
 
@@ -27,6 +29,7 @@ class CommentsSheet extends StatefulWidget {
 class _CommentsSheetState extends State<CommentsSheet> {
   final _commentController = TextEditingController();
   final _focusNode = FocusNode();
+  final _voiceController = VoiceRecordingController();
   List<Map<String, dynamic>> _comments = [];
   List<Map<String, dynamic>> _sortedComments = [];
   bool _isLoading = false;
@@ -41,11 +44,18 @@ class _CommentsSheetState extends State<CommentsSheet> {
   @override
   void initState() {
     super.initState();
+    _voiceController.addListener(_onVoiceStateChanged);
     _loadComments();
+  }
+
+  void _onVoiceStateChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _voiceController.removeListener(_onVoiceStateChanged);
+    _voiceController.dispose();
     _commentController.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -403,6 +413,20 @@ class _CommentsSheetState extends State<CommentsSheet> {
                     hasSelectedMedia: _selectedImageBytes != null || _selectedGifUrl != null,
                     showEmojiPanel: _showEmojiPanel,
                     pickerTabIndex: _pickerTabIndex,
+                    isVoiceRecording: _voiceController.isRecording,
+                    isVoicePaused: _voiceController.isPaused,
+                    recordingSeconds: _voiceController.recordingSeconds,
+                    voiceController: _voiceController,
+                    onStartVoiceRecord: () {
+                      final db = context.read<DatabaseService>();
+                      if (db.myProfile?.isPremium == true) {
+                        _voiceController.startRecording();
+                      } else {
+                        showVoiceCommentPremiumPaywall(context);
+                      }
+                    },
+                    onCancelVoiceRecord: () => _voiceController.stopRecording(cancel: true),
+                    onSendVoiceRecord: _submitVoiceComment,
                   ),
 
                   // Premium Emoji / GIF Picker Panel

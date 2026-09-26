@@ -737,8 +737,9 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
                   perks: [
                     "${_selectedCategory[0].toUpperCase()}${_selectedCategory.substring(1)} Verified Badge",
                     "Creator Studio & Monetization Access",
-                    "Anonymous Posts (Incognito Mode)",
                     "Voice Note Audio Posts",
+                    "Voice Audio Comments in Discussions",
+                    "Anonymous Posts (Incognito Mode)",
                     "Maximum Feed Algorithm Boost",
                     "Screenshot Protection on Content",
                     "Priority 24/7 Dedicated Support",
@@ -1095,6 +1096,10 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
       ];
     }
 
+    if (myProfile.isPremium) {
+      benefits.add('🎙️ Voice Note Audio Posts & Voice Comments unlocked.');
+    }
+
     final expires = myProfile.verifiedExpiresAt;
     String expiryText = 'Lifetime Active';
     if (expires != null) {
@@ -1274,12 +1279,16 @@ class _VerificationIntroScreenState extends State<VerificationIntroScreen> {
                         'Renewal Period',
                         style: GoogleFonts.inter(color: context.textSecondary, fontSize: 13),
                       ),
-                      Text(
-                        expiryText,
-                        style: GoogleFonts.inter(
-                          color: context.textPrimary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          expiryText,
+                          textAlign: TextAlign.right,
+                          style: GoogleFonts.inter(
+                            color: context.textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ],

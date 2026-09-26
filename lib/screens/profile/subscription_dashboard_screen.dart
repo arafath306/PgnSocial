@@ -429,23 +429,20 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
                   const SizedBox(height: 14),
 
                   // Payout notice
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: context.scaffoldBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: context.border),
-                    ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.verified_user_outlined, color: context.primaryAccent, size: 18),
-                        const SizedBox(width: 10),
+                        Icon(Icons.verified_user_outlined, color: context.primaryAccent, size: 16),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Withdrawal requests are reviewed and sent within 24–48 hours directly to your account.',
                             style: GoogleFonts.inter(
                               color: context.textSecondary,
                               fontSize: 12,
+                              height: 1.35,
                             ),
                           ),
                         ),
@@ -820,19 +817,13 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       children: [
         // Available Balance Card
+        // Available Balance Card (Crisp modern card, no bubbly curves)
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: context.cardBg,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: context.border),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: context.isDarkMode ? 0.2 : 0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -863,12 +854,12 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
                   ),
                   InkWell(
                     onTap: () => _showPlatformFeeInfo(context),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(6),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: primaryAccent.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -902,26 +893,23 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
               const SizedBox(height: 14),
 
               // Action buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _showRequestPayoutDialog(context, mc),
-                      icon: const Icon(Icons.arrow_upward_rounded, size: 16),
-                      label: Text(
-                        'Withdraw Earnings',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryAccent,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _showRequestPayoutDialog(context, mc),
+                  icon: const Icon(Icons.arrow_upward_rounded, size: 16),
+                  label: Text(
+                    'Withdraw Earnings',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
-                ],
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryAccent,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
               ),
               const SizedBox(height: 12),
 
@@ -949,9 +937,9 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
           ),
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
 
-        // Key Metrics Grid
+        // Performance Summary (Clean open layout, no rounded box)
         Text(
           'Performance Summary',
           style: GoogleFonts.inter(
@@ -960,149 +948,140 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 10),
-        GridView.count(
-          crossAxisCount: 2,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          childAspectRatio: 1.45,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
+        const SizedBox(height: 12),
+        Row(
           children: [
-            _buildStatCard(
-              context: context,
-              title: 'Active Members',
-              value: '${mc.activeSubscribers}',
-              icon: Icons.favorite_rounded,
-              accentColor: primaryAccent,
+            Expanded(
+              child: _buildMetricItem(
+                context: context,
+                title: 'Active Members',
+                value: '${mc.activeSubscribers}',
+                icon: Icons.favorite_rounded,
+                accentColor: primaryAccent,
+              ),
             ),
-            _buildStatCard(
-              context: context,
-              title: 'Monthly Run-Rate',
-              value: _fmt(mc.estimatedMonthlyGross),
-              icon: Icons.trending_up_rounded,
-              accentColor: const Color(0xFF0284C7),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildMetricItem(
+                context: context,
+                title: 'Monthly Run-Rate',
+                value: _fmt(mc.estimatedMonthlyGross),
+                icon: Icons.trending_up_rounded,
+                accentColor: const Color(0xFF0284C7),
+              ),
             ),
-            _buildStatCard(
-              context: context,
-              title: 'Total Withdrawn',
-              value: _fmt(mc.paidPayoutAmount),
-              icon: Icons.verified_rounded,
-              accentColor: const Color(0xFF7C3AED),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMetricItem(
+                context: context,
+                title: 'Total Withdrawn',
+                value: _fmt(mc.paidPayoutAmount),
+                icon: Icons.verified_rounded,
+                accentColor: const Color(0xFF7C3AED),
+              ),
             ),
-            _buildStatCard(
-              context: context,
-              title: 'In Review',
-              value: _fmt(mc.pendingPayoutAmount),
-              icon: Icons.hourglass_top_rounded,
-              accentColor: const Color(0xFFD97706),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildMetricItem(
+                context: context,
+                title: 'In Review',
+                value: _fmt(mc.pendingPayoutAmount),
+                icon: Icons.hourglass_top_rounded,
+                accentColor: const Color(0xFFD97706),
+              ),
             ),
           ],
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
 
-        // Revenue Breakdown Card
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: context.cardBg,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: context.border),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Estimated Monthly Earnings',
-                    style: GoogleFonts.inter(
-                      color: context.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.help_outline_rounded, size: 18, color: context.textMuted),
-                    onPressed: () => _showPlatformFeeInfo(context),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
+        // Revenue Breakdown (Clean open layout, no rounded box)
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Estimated Monthly Earnings',
+              style: GoogleFonts.inter(
+                color: context.textPrimary,
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 14),
-              _buildBreakdownRow(
-                context: context,
-                label: 'Gross Member Revenue',
-                value: _fmt(mc.estimatedMonthlyGross),
-                valueColor: context.textPrimary,
-              ),
-              const SizedBox(height: 10),
-              _buildBreakdownRow(
-                context: context,
-                label: 'Platform Service Fee (10%)',
-                value: '- ${_fmt(mc.estimatedMonthlyFee)}',
-                valueColor: Colors.redAccent,
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 10),
-                child: Divider(height: 1),
-              ),
-              _buildBreakdownRow(
-                context: context,
-                label: 'Your Share (90%)',
-                value: _fmt(mc.estimatedMonthlyNet),
-                valueColor: primaryAccent,
-                isBold: true,
-              ),
-            ],
-          ),
+            ),
+            IconButton(
+              icon: Icon(Icons.help_outline_rounded, size: 18, color: context.textMuted),
+              onPressed: () => _showPlatformFeeInfo(context),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _buildBreakdownRow(
+          context: context,
+          label: 'Gross Member Revenue',
+          value: _fmt(mc.estimatedMonthlyGross),
+          valueColor: context.textPrimary,
+        ),
+        const SizedBox(height: 8),
+        _buildBreakdownRow(
+          context: context,
+          label: 'Platform Service Fee (10%)',
+          value: '- ${_fmt(mc.estimatedMonthlyFee)}',
+          valueColor: Colors.redAccent,
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Divider(height: 1, color: context.border.withValues(alpha: 0.5)),
+        ),
+        _buildBreakdownRow(
+          context: context,
+          label: 'Your Share (90%)',
+          value: _fmt(mc.estimatedMonthlyNet),
+          valueColor: primaryAccent,
+          isBold: true,
         ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
 
-        // Interactive Pricing Card
+        // Interactive Pricing Section (Clean open layout, no outer rounded box)
         _buildPricingCard(context, mc),
 
         const SizedBox(height: 20),
 
-        // Creator Tip Card
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: context.cardBg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: context.border),
-          ),
+        // Creator Tip (clean inline hint, no artificial bordered box)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.lightbulb_outline_rounded, color: primaryAccent, size: 20),
-              const SizedBox(width: 12),
+              Icon(Icons.lightbulb_outline_rounded, color: primaryAccent, size: 18),
+              const SizedBox(width: 10),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Creator Tip for Higher Earnings',
-                      style: GoogleFonts.inter(
-                        color: context.textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
+                child: Text.rich(
+                  TextSpan(
+                    text: 'Creator Pro-tip: ',
+                    style: GoogleFonts.inter(
+                      color: context.textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Creators who publish 2–3 public posts alongside 1 exclusive subscriber-only thread per week see 3x higher subscriber retention over 6 months.',
-                      style: GoogleFonts.inter(
-                        color: context.textSecondary,
-                        fontSize: 12,
-                        height: 1.4,
+                    children: [
+                      TextSpan(
+                        text:
+                            'Creators who publish 2–3 public posts alongside 1 exclusive subscriber-only thread per week see 3x higher subscriber retention over 6 months.',
+                        style: GoogleFonts.inter(
+                          color: context.textSecondary,
+                          fontWeight: FontWeight.normal,
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -1114,177 +1093,165 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
     );
   }
 
-  // Pricing Card with presets and live preview
+  // Pricing Section (clean open layout, no outer card box, no bubbly corners)
   Widget _buildPricingCard(BuildContext context, MonetizationController mc) {
     final primaryAccent = context.primaryAccent;
     final currentInputPrice = double.tryParse(_priceController.text.trim()) ?? 0.0;
     final takeHomePerSub = (currentInputPrice * 0.90).clamp(0, double.infinity);
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: context.cardBg,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: context.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Monthly Subscription Tier',
-            style: GoogleFonts.inter(
-              color: context.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Monthly Subscription Tier',
+          style: GoogleFonts.inter(
+            color: context.textPrimary,
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Supporters pay this monthly fee to unlock all your exclusive posts.',
-            style: GoogleFonts.inter(
-              color: context.textSecondary,
-              fontSize: 12,
-            ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Supporters pay this monthly fee to unlock all your exclusive posts.',
+          style: GoogleFonts.inter(
+            color: context.textSecondary,
+            fontSize: 12,
           ),
-          const SizedBox(height: 14),
+        ),
+        const SizedBox(height: 12),
 
-          // Price field
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            decoration: BoxDecoration(
-              color: context.scaffoldBg,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: primaryAccent.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                Text(
-                  '৳',
+        // Price field (crisp border, radius 8, not bubbly)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+          decoration: BoxDecoration(
+            color: context.cardBg,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: context.border),
+          ),
+          child: Row(
+            children: [
+              Text(
+                '৳',
+                style: GoogleFonts.inter(
+                  color: primaryAccent,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  controller: _priceController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   style: GoogleFonts.inter(
-                    color: primaryAccent,
-                    fontSize: 20,
+                    color: context.textPrimary,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: TextField(
-                    controller: _priceController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: GoogleFonts.inter(
-                      color: context.textPrimary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    onChanged: (_) => setState(() {}),
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: '0',
-                      hintStyle: GoogleFonts.inter(color: context.textMuted),
-                    ),
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    hintText: '0',
+                    hintStyle: GoogleFonts.inter(color: context.textMuted),
                   ),
                 ),
-                Text(
-                  '/ month',
-                  style: GoogleFonts.inter(
-                    color: context.textSecondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          // Presets
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [99, 199, 299, 499].map((preset) {
-              final isCurrent = currentInputPrice == preset;
-              return InkWell(
-                onTap: () {
-                  setState(() {
-                    _priceController.text = preset.toString();
-                  });
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: isCurrent
-                        ? primaryAccent.withValues(alpha: 0.12)
-                        : context.scaffoldBg,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isCurrent ? primaryAccent : context.border,
-                    ),
-                  ),
-                  child: Text(
-                    '৳$preset',
-                    style: GoogleFonts.inter(
-                      color: isCurrent ? primaryAccent : context.textSecondary,
-                      fontSize: 12,
-                      fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 12),
-
-          // Live projection text
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: context.scaffoldBg,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.calculate_outlined, size: 16, color: primaryAccent),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    currentInputPrice > 0
-                        ? 'You take home ${_fmt(takeHomePerSub)} per subscriber each month after the 10% fee.'
-                        : 'Set an amount above ৳0 to enable monthly subscriptions.',
-                    style: GoogleFonts.inter(color: context.textSecondary, fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Save button
-          SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: ElevatedButton(
-              onPressed: _isSavingPrice ? null : _savePrice,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: primaryAccent,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: _isSavingPrice
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                  : Text(
-                      'Save Subscription Tier',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
-                    ),
-            ),
+              Text(
+                '/ month',
+                style: GoogleFonts.inter(
+                  color: context.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 10),
+
+        // Presets (crisp radius 6, not bubbly)
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          children: [99, 199, 299, 499].map((preset) {
+            final isCurrent = currentInputPrice == preset;
+            return InkWell(
+              onTap: () {
+                setState(() {
+                  _priceController.text = preset.toString();
+                });
+              },
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isCurrent
+                      ? primaryAccent.withValues(alpha: 0.12)
+                      : context.cardBg,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: isCurrent ? primaryAccent : context.border,
+                  ),
+                ),
+                child: Text(
+                  '৳$preset',
+                  style: GoogleFonts.inter(
+                    color: isCurrent ? primaryAccent : context.textSecondary,
+                    fontSize: 12,
+                    fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+
+        // Live projection text
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline_rounded, size: 15, color: primaryAccent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  currentInputPrice > 0
+                      ? 'You take home ${_fmt(takeHomePerSub)} per subscriber each month after the 10% fee.'
+                      : 'Set an amount above ৳0 to enable monthly subscriptions.',
+                  style: GoogleFonts.inter(color: context.textSecondary, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // Save button (crisp radius 8)
+        SizedBox(
+          width: double.infinity,
+          height: 44,
+          child: ElevatedButton(
+            onPressed: _isSavingPrice ? null : _savePrice,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryAccent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: _isSavingPrice
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
+                : Text(
+                    'Save Subscription Tier',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1375,104 +1342,115 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        ...mc.subscriberDetailsList.map((item) {
-          final sub = item['subscriber'] as Map<String, dynamic>?;
-          final username = sub?['username'] ?? 'subscriber';
-          final fullName = sub?['full_name'] ?? 'Pigeon Supporter';
-          final avatarUrl = sub?['avatar_url'] as String?;
-          final price = (item['plan_price'] as num?)?.toDouble() ?? mc.monthlyPrice;
-          final status = (item['status'] as String? ?? 'active').toLowerCase();
-          final createdAt = item['created_at'];
+        const SizedBox(height: 8),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: mc.subscriberDetailsList.length,
+          separatorBuilder: (_, _) => Divider(
+            height: 1,
+            indent: 52,
+            color: context.border.withValues(alpha: 0.5),
+          ),
+          itemBuilder: (context, index) {
+            final item = mc.subscriberDetailsList[index];
+            final sub = item['subscriber'] as Map<String, dynamic>?;
+            final username = sub?['username'] ?? 'subscriber';
+            final fullName = sub?['full_name'] ?? 'Pigeon Supporter';
+            final avatarUrl = sub?['avatar_url'] as String?;
+            final price = (item['plan_price'] as num?)?.toDouble() ?? mc.monthlyPrice;
+            final status = (item['status'] as String? ?? 'active').toLowerCase();
+            final createdAt = item['created_at'];
 
-          return Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: context.cardBg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: context.border),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: context.primaryAccent.withValues(alpha: 0.1),
-                  backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
-                      ? CachedNetworkImageProvider(avatarUrl)
-                      : null,
-                  child: avatarUrl == null || avatarUrl.isEmpty
-                      ? Text(
-                          username.substring(0, 1).toUpperCase(),
+            final isActive = status == 'active' || status == 'approved';
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: context.primaryAccent.withValues(alpha: 0.1),
+                    backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
+                        ? CachedNetworkImageProvider(avatarUrl)
+                        : null,
+                    child: avatarUrl == null || avatarUrl.isEmpty
+                        ? Text(
+                            username.substring(0, 1).toUpperCase(),
+                            style: GoogleFonts.inter(
+                              color: context.primaryAccent,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          fullName,
                           style: GoogleFonts.inter(
-                            color: context.primaryAccent,
-                            fontWeight: FontWeight.bold,
+                            color: context.textPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
                           ),
-                        )
-                      : null,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '@$username • Joined ${_formatShortDate(createdAt)}',
+                          style: GoogleFonts.inter(
+                            color: context.textSecondary,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        fullName,
+                        _fmt(price),
                         style: GoogleFonts.inter(
-                          color: context.textPrimary,
+                          color: context.primaryAccent,
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontSize: 13,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      Text(
-                        '@$username • Joined ${_formatShortDate(createdAt)}',
-                        style: GoogleFonts.inter(
-                          color: context.textSecondary,
-                          fontSize: 11,
-                        ),
+                      const SizedBox(height: 2),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isActive ? context.primaryAccent : Colors.amber.shade700,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            isActive ? 'Member' : 'Pending',
+                            style: GoogleFonts.inter(
+                              color: isActive ? context.primaryAccent : Colors.amber.shade700,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      _fmt(price),
-                      style: GoogleFonts.inter(
-                        color: context.primaryAccent,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: status == 'active' || status == 'approved'
-                            ? context.primaryAccent.withValues(alpha: 0.12)
-                            : Colors.amber.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        status == 'active' || status == 'approved' ? 'MEMBER' : 'PENDING',
-                        style: GoogleFonts.inter(
-                          color: status == 'active' || status == 'approved'
-                              ? context.primaryAccent
-                              : Colors.amber.shade800,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        }),
+                ],
+              ),
+            );
+          },
+        ),
       ],
     );
   }
@@ -1490,7 +1468,7 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: context.cardBg,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: context.border),
           ),
           child: Column(
@@ -1528,7 +1506,7 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
                     backgroundColor: primaryAccent,
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
               ),
@@ -1536,53 +1514,40 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
           ),
         ),
 
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
 
-        // 3-step transparent payout explanation
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: context.cardBg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: context.border),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'How Withdrawals Work',
-                style: GoogleFonts.inter(
-                  color: context.textPrimary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _buildPayoutStep(
-                context,
-                stepNumber: '1',
-                title: 'Submit Request',
-                description: 'Choose bKash, Nagad, or Bank and enter your details.',
-              ),
-              const SizedBox(height: 10),
-              _buildPayoutStep(
-                context,
-                stepNumber: '2',
-                title: 'Review & Verification',
-                description: 'Our team verifies your account within 24–48 hours to protect funds.',
-              ),
-              const SizedBox(height: 10),
-              _buildPayoutStep(
-                context,
-                stepNumber: '3',
-                title: 'Direct Deposit',
-                description: 'Money is deposited with an SMS confirmation to your wallet.',
-              ),
-            ],
+        // How Withdrawals Work (clean open section, no boxed card)
+        Text(
+          'How Withdrawals Work',
+          style: GoogleFonts.inter(
+            color: context.textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
           ),
         ),
+        const SizedBox(height: 12),
+        _buildPayoutStep(
+          context,
+          stepNumber: '1',
+          title: 'Submit Request',
+          description: 'Choose bKash, Nagad, or Bank Transfer and enter your details.',
+        ),
+        const SizedBox(height: 10),
+        _buildPayoutStep(
+          context,
+          stepNumber: '2',
+          title: 'Review & Verification',
+          description: 'Our team verifies your account within 24–48 hours to protect funds.',
+        ),
+        const SizedBox(height: 10),
+        _buildPayoutStep(
+          context,
+          stepNumber: '3',
+          title: 'Direct Deposit',
+          description: 'Money is deposited with an SMS confirmation to your wallet.',
+        ),
 
-        const SizedBox(height: 20),
+        const SizedBox(height: 22),
 
         // History
         Text(
@@ -1593,16 +1558,11 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
 
         if (mc.payoutRequests.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: context.cardBg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: context.border),
-            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
             child: Center(
               child: Text(
                 'No withdrawals requested yet. Once your available balance reaches ৳50, you can request a cashout anytime.',
@@ -1616,8 +1576,17 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
             ),
           )
         else
-          Column(
-            children: mc.payoutRequests.map((req) {
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: mc.payoutRequests.length,
+            separatorBuilder: (_, _) => Divider(
+              height: 1,
+              indent: 44,
+              color: context.border.withValues(alpha: 0.5),
+            ),
+            itemBuilder: (context, index) {
+              final req = mc.payoutRequests[index];
               final status = (req['status'] as String? ?? 'pending').toLowerCase();
               final amount = (req['amount'] as num?)?.toDouble() ?? 0.0;
               final method = req['payout_method'] as String? ?? 'bKash';
@@ -1646,23 +1615,17 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
                 statusIcon = Icons.hourglass_top_rounded;
               }
 
-              return Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: context.cardBg,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: context.border),
-                ),
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
                         color: statusBg,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(statusIcon, color: statusFg, size: 18),
+                      child: Icon(statusIcon, color: statusFg, size: 16),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -1673,7 +1636,7 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
                             '$method • ${_maskAccount(details)}',
                             style: GoogleFonts.inter(
                               color: context.textPrimary,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
                               fontSize: 13,
                             ),
                             maxLines: 1,
@@ -1715,7 +1678,7 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
                   ],
                 ),
               );
-            }).toList(),
+            },
           ),
       ],
     );
@@ -1866,53 +1829,48 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
             ),
           ],
         ),
-        const SizedBox(height: 10),
-        ...mc.lockedPostsIncomeList.map((item) {
-          final snippet = item['content'] as String;
-          final count = item['unlock_count'] as int;
-          final totalIncome = (item['total_income'] as num).toDouble();
-          final unlockers = item['unlockers'] as List<dynamic>;
-          final createdAt = item['created_at'];
+        const SizedBox(height: 8),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: mc.lockedPostsIncomeList.length,
+          separatorBuilder: (_, _) => Divider(
+            height: 1,
+            indent: 48,
+            color: context.border.withValues(alpha: 0.5),
+          ),
+          itemBuilder: (context, index) {
+            final item = mc.lockedPostsIncomeList[index];
+            final snippet = item['content'] as String;
+            final count = item['unlock_count'] as int;
+            final totalIncome = (item['total_income'] as num).toDouble();
+            final unlockers = item['unlockers'] as List<dynamic>;
+            final createdAt = item['created_at'];
 
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: context.cardBg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: context.border),
-            ),
-            child: ExpansionTile(
+            return ExpansionTile(
+              tilePadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
               shape: const Border(),
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: context.primaryAccent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.lock_open_rounded, color: context.primaryAccent, size: 18),
-              ),
+              leading: Icon(Icons.lock_outline_rounded, color: context.primaryAccent, size: 20),
               title: Text(
                 snippet,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.inter(
                   color: context.textPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
                 ),
               ),
               subtitle: Text(
                 '$count unlocks • ${_fmt(totalIncome)} revenue • ${_formatShortDate(createdAt)}',
                 style: GoogleFonts.inter(
-                  color: context.primaryAccent,
-                  fontWeight: FontWeight.w600,
+                  color: context.textSecondary,
                   fontSize: 11,
                 ),
               ),
               children: [
-                const Divider(height: 1),
                 Padding(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.only(left: 48, right: 12, bottom: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1921,7 +1879,7 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
                         style: GoogleFonts.inter(
                           color: context.textSecondary,
                           fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -1965,66 +1923,54 @@ class _SubscriptionDashboardScreenState extends State<SubscriptionDashboardScree
                   ),
                 ),
               ],
-            ),
-          );
-        }),
+            );
+          },
+        ),
       ],
     );
   }
 
-  Widget _buildStatCard({
+  Widget _buildMetricItem({
     required BuildContext context,
     required String title,
     required String value,
     required IconData icon,
     required Color accentColor,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: accentColor, size: 14),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
                 title,
                 style: GoogleFonts.inter(
                   color: context.textSecondary,
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: accentColor, size: 15),
-              ),
-            ],
-          ),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: GoogleFonts.inter(
-                color: context.textPrimary,
-                fontSize: 19,
-                fontWeight: FontWeight.bold,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            value,
+            style: GoogleFonts.inter(
+              color: context.textPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

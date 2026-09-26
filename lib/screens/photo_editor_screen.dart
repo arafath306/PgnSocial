@@ -1,3 +1,8 @@
+// NOTE: [UNUSED / REFERENCE ONLY]
+// This legacy photo editor screen is currently not active in the app.
+// The active editor used across Dak is [SharedPhotoEditorScreen] in 'utils/shared_photo_editor.dart'.
+// Kept for future UI reference.
+
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';

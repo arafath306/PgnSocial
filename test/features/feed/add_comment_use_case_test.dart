@@ -15,6 +15,7 @@ class FakeFeedRepository implements IFeedRepository {
     String content, {
     String? parentId,
     String? imageUrl,
+    String? audioUrl,
   }) async {
     return addCommentResult!;
   }

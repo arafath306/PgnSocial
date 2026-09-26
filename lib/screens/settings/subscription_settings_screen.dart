@@ -1,3 +1,8 @@
+// NOTE: [UNUSED / REFERENCE ONLY]
+// This dummy placeholder screen is currently not active in the app.
+// The active Creator Studio & Monetization dashboard is [SubscriptionDashboardScreen] in 'screens/profile/subscription_dashboard_screen.dart'.
+// Kept for future reference.
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../utils/app_theme.dart';

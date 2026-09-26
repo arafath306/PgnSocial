@@ -1,10 +1,4 @@
 import 'dart:async';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:record/record.dart';
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -14,6 +8,7 @@ import '../../../utils/chat_themes.dart';
 import '../../../models/profile.dart';
 import '../../../services/database_service.dart';
 import '../../../widgets/comment_attachment_picker_panel.dart';
+import '../../../widgets/shared/shared_voice_composer.dart';
 
 
 class ChatComposer extends StatefulWidget {
@@ -51,20 +46,16 @@ class ChatComposer extends StatefulWidget {
 class ChatComposerState extends State<ChatComposer> {
   final TextEditingController _ctrl = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final VoiceRecordingController _voiceController = VoiceRecordingController();
   bool _hasText = false;
   bool _isTyping = false;
   Timer? _typingBroadcastTimer;
   Timer? _typingStopTimer;
 
-  bool _isRecording = false;
-  int _recordingSeconds = 0;
-  Timer? _recordingTimer;
-  final _audioRecorder = AudioRecorder();
-
-
   @override
   void initState() {
     super.initState();
+    _voiceController.addListener(_onVoiceStateChanged);
     _ctrl.addListener(() {
       final has = _ctrl.text.trim().isNotEmpty;
       if (has != _hasText) setState(() => _hasText = has);
@@ -106,10 +97,14 @@ class ChatComposerState extends State<ChatComposer> {
     });
   }
 
+  void _onVoiceStateChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
-    _recordingTimer?.cancel();
-    _audioRecorder.dispose();
+    _voiceController.removeListener(_onVoiceStateChanged);
+    _voiceController.dispose();
     _typingBroadcastTimer?.cancel();
     _typingStopTimer?.cancel();
     if (_isTyping) {
@@ -119,80 +114,6 @@ class ChatComposerState extends State<ChatComposer> {
     _ctrl.dispose();
     _focusNode.dispose();
     super.dispose();
-  }
-
-  Future<void> _startRecording() async {
-    try {
-      if (await _audioRecorder.hasPermission()) {
-        HapticFeedback.mediumImpact();
-        final dir = await getTemporaryDirectory();
-        final path = '${dir.path}/chat_audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
-        
-        await _audioRecorder.start(
-          const RecordConfig(
-            encoder: AudioEncoder.aacLc,
-            sampleRate: 16000,
-            bitRate: 24000,
-            numChannels: 1,
-          ),
-          path: path,
-        );
-        setState(() {
-          _isRecording = true;
-          _recordingSeconds = 0;
-        });
-        
-        _recordingTimer?.cancel();
-        _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-          if (mounted) setState(() => _recordingSeconds++);
-        });
-      }
-    } catch (e) {
-      debugPrint("Error starting recording: $e");
-    }
-  }
-
-  Future<void> _stopRecording({bool cancel = false}) async {
-    _recordingTimer?.cancel();
-    HapticFeedback.lightImpact();
-    
-    try {
-      final isRec = await _audioRecorder.isRecording();
-      String? path;
-      if (isRec) {
-        path = await _audioRecorder.stop();
-      }
-      
-      setState(() {
-        _isRecording = false;
-        _recordingSeconds = 0;
-      });
-      
-      if (cancel && path != null) {
-        final file = File(path);
-        if (await file.exists()) {
-          await file.delete();
-        }
-        return;
-      }
-      
-      if (path != null && widget.onSendAudio != null) {
-        final file = File(path);
-        if (await file.exists()) {
-          final bytes = await file.readAsBytes();
-          if (bytes.isNotEmpty) {
-            widget.onSendAudio!(bytes);
-          }
-          await file.delete();
-        }
-      }
-    } catch (e) {
-      debugPrint("Error stopping recording: $e");
-      setState(() {
-        _isRecording = false;
-        _recordingSeconds = 0;
-      });
-    }
   }
 
   void _send() {
@@ -261,90 +182,20 @@ class ChatComposerState extends State<ChatComposer> {
           // Input row
           Padding(
             padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8, top: 4),
-            child: _isRecording
-                ? Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                      borderRadius: BorderRadius.circular(26),
-                      border: Border.all(
-                        color: Colors.redAccent.withValues(alpha: 0.6),
-                        width: 1.2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.redAccent.withValues(alpha: 0.2),
-                          blurRadius: 12,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: const BoxDecoration(
-                            color: Colors.redAccent,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          "${_recordingSeconds ~/ 60}:${(_recordingSeconds % 60).toString().padLeft(2, '0')}",
-                          style: GoogleFonts.inter(
-                            color: Colors.redAccent,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            "Recording audio...",
-                            style: GoogleFonts.inter(
-                              color: context.textSecondary,
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline_rounded,
-                              color: Colors.redAccent, size: 22),
-                          tooltip: 'Cancel recording',
-                          onPressed: () => _stopRecording(cancel: true),
-                        ),
-                        const SizedBox(width: 4),
-                        GestureDetector(
-                          onTap: () => _stopRecording(cancel: false),
-                          child: Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: widget.activeTheme.gradientColors == null
-                                  ? widget.activeTheme.primaryColor
-                                  : null,
-                              gradient: widget.activeTheme.gradientColors != null
-                                  ? LinearGradient(
-                                      colors: widget.activeTheme.gradientColors!)
-                                  : null,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: widget.activeTheme.primaryColor
-                                      .withValues(alpha: 0.4),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(Icons.send_rounded,
-                                color: Colors.white, size: 18),
-                          ),
-                        ),
-                      ],
-                    ),
+            child: _voiceController.isRecording
+                ? SharedVoiceRecordingBar(
+                    controller: _voiceController,
+                    recordingSeconds: _voiceController.recordingSeconds,
+                    isPaused: _voiceController.isPaused,
+                    primaryColor: widget.activeTheme.primaryColor,
+                    gradientColors: widget.activeTheme.gradientColors,
+                    onCancel: () => _voiceController.stopRecording(cancel: true),
+                    onSend: () async {
+                      final bytes = await _voiceController.stopRecording(cancel: false);
+                      if (bytes != null && widget.onSendAudio != null) {
+                        widget.onSendAudio!(bytes);
+                      }
+                    },
                   )
                 : Row(
               crossAxisAlignment: CrossAxisAlignment.end,
@@ -475,7 +326,7 @@ class ChatComposerState extends State<ChatComposer> {
                       if (_hasText) {
                         _send();
                       } else {
-                        _startRecording();
+                        _voiceController.startRecording();
                       }
                     },
                     padding: EdgeInsets.zero,

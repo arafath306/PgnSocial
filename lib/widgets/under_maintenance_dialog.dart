@@ -1,3 +1,7 @@
+// NOTE: [UNUSED / REFERENCE ONLY]
+// This maintenance dialog is currently not actively triggered in the app.
+// Kept for future server maintenance notifications or downtime handling.
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 

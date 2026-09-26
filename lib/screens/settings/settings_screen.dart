@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../profile/verification_dashboard_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
@@ -493,7 +492,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) =>
-                                      const VerificationDashboardScreen(),
+                                      const VerificationIntroScreen(),
                                 ),
                               );
                             } else if (myProfile?.verificationRequested ==
@@ -1054,7 +1053,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const VerificationDashboardScreen(),
+                  builder: (_) => const VerificationIntroScreen(),
                 ),
               );
             } else if (myProfile?.verificationRequested == true ||

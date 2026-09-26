@@ -146,7 +146,55 @@ extension CommentsSheetExtensions on _CommentsSheetState {
     }
   }
 
+  void _submitVoiceComment() async {
+    final dbService = Provider.of<DatabaseService>(context, listen: false);
+    if (dbService.myProfile?.isPremium != true) {
+      await _voiceController.stopRecording(cancel: true);
+      if (mounted) {
+        showVoiceCommentPremiumPaywall(context);
+      }
+      return;
+    }
+    try {
+      final bytes = await _voiceController.stopRecording(cancel: false);
+      if (bytes == null || bytes.isEmpty) return;
 
+      setState(() => _isUploading = true);
+      final audioUrl = await dbService.uploadPostAudio(bytes, 'm4a');
+      if (audioUrl == null) {
+        throw Exception("Failed to upload voice comment");
+      }
+
+      final success = await dbService.addComment(
+        _effectiveThreadId,
+        _commentController.text.trim(),
+        parentId: _replyToCommentId,
+        audioUrl: audioUrl,
+      );
+
+      if (success) {
+        _commentController.clear();
+        setState(() {
+          _selectedImageBytes = null;
+          _selectedGifUrl = null;
+          _replyToCommentId = null;
+          _showEmojiPanel = false;
+        });
+        _loadComments();
+      }
+    } catch (e) {
+      debugPrint("Post voice comment error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to post voice comment: $e")),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+    }
+  }
 
 }
 

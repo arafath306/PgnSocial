@@ -12,6 +12,7 @@ import 'formatted_content_text.dart';
 import 'share_comment_sheet.dart';
 import 'comments_sheet.dart';
 import 'verification_badge.dart';
+import 'voice_post_player.dart';
 
 class CommentItem extends StatefulWidget {
   final Map<String, dynamic> comment;
@@ -212,14 +213,24 @@ class _CommentItemState extends State<CommentItem> {
                 const SizedBox(height: 1.5),
 
                 // Content Text
-                FormattedContentText(
-                  text: widget.comment['content'] as String,
-                  style: GoogleFonts.hindSiliguri(
-                    fontSize: 15.5,
-                    color: context.textPrimary,
-                    height: 1.3,
+                if ((widget.comment['content'] as String? ?? '').trim().isNotEmpty) ...[
+                  FormattedContentText(
+                    text: widget.comment['content'] as String,
+                    style: GoogleFonts.hindSiliguri(
+                      fontSize: 15.5,
+                      color: context.textPrimary,
+                      height: 1.3,
+                    ),
                   ),
-                ),
+                ],
+                // Voice Comment Player
+                if (widget.comment['audio_url'] != null && (widget.comment['audio_url'] as String).isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  VoicePostPlayer(
+                    audioUrl: widget.comment['audio_url'] as String,
+                    isCompact: true,
+                  ),
+                ],
                 if (widget.comment['image_url'] != null && (widget.comment['image_url'] as String).isNotEmpty) ...[
                   const SizedBox(height: 6),
                   ClipRRect(

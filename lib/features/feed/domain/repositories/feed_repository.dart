@@ -27,7 +27,7 @@ abstract class IFeedRepository {
   // Comments operations
   Future<Either<Failure, List<Map<String, dynamic>>>> fetchComments(String threadId);
   Future<Either<Failure, List<Map<String, dynamic>>>> fetchCommentReplies(String commentId);
-  Future<Either<Failure, bool>> addComment(String threadId, String content, {String? parentId, String? imageUrl});
+  Future<Either<Failure, bool>> addComment(String threadId, String content, {String? parentId, String? imageUrl, String? audioUrl});
   Future<Either<Failure, bool>> toggleCommentLike(String commentId, bool isLiked);
   Future<Either<Failure, bool>> toggleSaveComment(String commentId);
   Future<Either<Failure, bool>> deleteComment(String commentId);

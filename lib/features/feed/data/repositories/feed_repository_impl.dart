@@ -309,6 +309,7 @@ class FeedRepositoryImpl implements IFeedRepository {
           'user_id': json['user_id'],
           'content': json['content'],
           'image_url': json['image_url'],
+          'audio_url': json['audio_url'],
           'parent_id': json['parent_id'],
           'created_at_raw': json['created_at'],
           'created_at': _formatRelativeTime(json['created_at'] as String?),
@@ -373,6 +374,7 @@ class FeedRepositoryImpl implements IFeedRepository {
           'user_id': json['user_id'],
           'content': json['content'],
           'image_url': json['image_url'],
+          'audio_url': json['audio_url'],
           'parent_id': json['parent_id'],
           'created_at_raw': json['created_at'],
           'created_at': _formatRelativeTime(json['created_at'] as String?),
@@ -398,6 +400,7 @@ class FeedRepositoryImpl implements IFeedRepository {
     String content, {
     String? parentId,
     String? imageUrl,
+    String? audioUrl,
   }) async {
     try {
       final result = await remoteDataSource.addComment(
@@ -406,6 +409,7 @@ class FeedRepositoryImpl implements IFeedRepository {
         content,
         parentId: parentId,
         imageUrl: imageUrl,
+        audioUrl: audioUrl,
       );
       return Right(result);
     } catch (e) {

@@ -54,6 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _isLoading = true;
   List<UserExperience> _experiences = [];
   List<UserEducation> _educations = [];
+  String? _lastLoadedUid;
   
   double? _creatorPrice;
 
@@ -98,7 +99,16 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Future<void> _loadProfileData() async {
     if (mounted) {
-      setState(() => _isLoading = true);
+      setState(() {
+        _isLoading = true;
+        if (_isOwnProfile) {
+          _viewedThreads = [];
+          _replies = [];
+          _reposts = [];
+          _experiences = [];
+          _educations = [];
+        }
+      });
     }
     final dbService = Provider.of<DatabaseService>(context, listen: false);
     final targetId = _isOwnProfile ? dbService.currentUid : widget.userId!;
@@ -164,6 +174,16 @@ class _ProfileScreenState extends State<ProfileScreen>
   Widget build(BuildContext context) {
     return Consumer<DatabaseService>(
       builder: (context, db, _) {
+        final currentTargetId = _isOwnProfile ? db.currentUid : (widget.userId ?? '');
+        if (currentTargetId.isNotEmpty && _lastLoadedUid != null && _lastLoadedUid != currentTargetId) {
+          _lastLoadedUid = currentTargetId;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _loadProfileData();
+          });
+        } else if (_lastLoadedUid == null && currentTargetId.isNotEmpty) {
+          _lastLoadedUid = currentTargetId;
+        }
+
         // Choose correct profile & posts
         final Profile? profile = _isOwnProfile ? db.myProfile : _viewedProfile;
         final List<ThreadPost> threads =

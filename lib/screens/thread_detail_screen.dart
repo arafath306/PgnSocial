@@ -16,9 +16,11 @@ import 'package:flutter/services.dart';
 import '../widgets/share_post_sheet.dart';
 import '../widgets/comment_attachment_picker_panel.dart';
 import '../widgets/reply_input_composer.dart';
+import '../widgets/shared/shared_voice_composer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../widgets/verification_badge.dart';
 import '../services/screenshot_protection_service.dart';
+import '../widgets/upgrade_premium_sheet.dart';
 
 class ThreadDetailScreen extends StatefulWidget {
   final ThreadPost post;
@@ -33,6 +35,7 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
   final _commentController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _commentFocusNode = FocusNode();
+  final VoiceRecordingController _voiceController = VoiceRecordingController();
   List<Map<String, dynamic>> _comments = [];
   bool _isLoadingComments = false;
   bool _scrolledHeader = false;
@@ -76,6 +79,7 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _voiceController.addListener(_onVoiceChanged);
     _exactCreatedAt = widget.post.createdAtRaw;
     _fetchExactCreatedAt();
     _loadComments();
@@ -93,8 +97,14 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
     });
   }
 
+  void _onVoiceChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    _voiceController.removeListener(_onVoiceChanged);
+    _voiceController.dispose();
     _commentController.dispose();
     _scrollController.dispose();
     _commentFocusNode.dispose();
@@ -207,6 +217,54 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Failed to post comment: $e")),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+    }
+  }
+
+  void _postVoiceComment() async {
+    final dbService = Provider.of<DatabaseService>(context, listen: false);
+    if (dbService.myProfile?.isPremium != true) {
+      await _voiceController.stopRecording(cancel: true);
+      if (mounted) {
+        showVoiceCommentPremiumPaywall(context);
+      }
+      return;
+    }
+    try {
+      final bytes = await _voiceController.stopRecording(cancel: false);
+      if (bytes == null || bytes.isEmpty) return;
+
+      setState(() => _isUploading = true);
+      final audioUrl = await dbService.uploadPostAudio(bytes, 'm4a');
+      if (audioUrl == null) {
+        throw Exception("Failed to upload voice comment");
+      }
+
+      final success = await dbService.addComment(
+        widget.post.id,
+        _commentController.text.trim(),
+        audioUrl: audioUrl,
+      );
+
+      if (success) {
+        _commentController.clear();
+        setState(() {
+          _selectedImageBytes = null;
+          _selectedGifUrl = null;
+          _showEmojiPanel = false;
+        });
+        _loadComments(silent: true);
+      }
+    } catch (e) {
+      debugPrint("Post voice comment error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to post voice comment: $e")),
         );
       }
     } finally {
@@ -610,6 +668,20 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
                     hasSelectedMedia: _selectedImageBytes != null || _selectedGifUrl != null,
                     showEmojiPanel: _showEmojiPanel,
                     pickerTabIndex: _pickerTabIndex,
+                    isVoiceRecording: _voiceController.isRecording,
+                    isVoicePaused: _voiceController.isPaused,
+                    recordingSeconds: _voiceController.recordingSeconds,
+                    voiceController: _voiceController,
+                    onStartVoiceRecord: () {
+                      final db = context.read<DatabaseService>();
+                      if (db.myProfile?.isPremium == true) {
+                        _voiceController.startRecording();
+                      } else {
+                        showVoiceCommentPremiumPaywall(context);
+                      }
+                    },
+                    onCancelVoiceRecord: () => _voiceController.stopRecording(cancel: true),
+                    onSendVoiceRecord: _postVoiceComment,
                   ),
                 // Premium Emoji / GIF Picker Panel
                 if (_showEmojiPanel)

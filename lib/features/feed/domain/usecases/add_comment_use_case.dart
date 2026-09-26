@@ -6,7 +6,7 @@ class AddCommentUseCase {
 
   AddCommentUseCase(this.repository);
 
-  Future<Either<Failure, bool>> call(String threadId, String content, {String? parentId, String? imageUrl}) {
-    return repository.addComment(threadId, content, parentId: parentId, imageUrl: imageUrl);
+  Future<Either<Failure, bool>> call(String threadId, String content, {String? parentId, String? imageUrl, String? audioUrl}) {
+    return repository.addComment(threadId, content, parentId: parentId, imageUrl: imageUrl, audioUrl: audioUrl);
   }
 }

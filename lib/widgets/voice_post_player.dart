@@ -6,7 +6,13 @@ import 'audio_waveform_widget.dart';
 
 class VoicePostPlayer extends StatefulWidget {
   final String audioUrl;
-  const VoicePostPlayer({super.key, required this.audioUrl});
+  final bool isCompact;
+
+  const VoicePostPlayer({
+    super.key,
+    required this.audioUrl,
+    this.isCompact = false,
+  });
 
   @override
   State<VoicePostPlayer> createState() => _VoicePostPlayerState();
@@ -74,14 +80,36 @@ class _VoicePostPlayerState extends State<VoicePostPlayer> {
         ? (_position.inMilliseconds / _duration.inMilliseconds).clamp(0.0, 1.0)
         : 0.0;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+    // Light, airy, translucent emerald tint (eliminating the heavy opaque dark box)
+    final backgroundColor = context.isDarkMode
+        ? const Color(0xFF10B981).withValues(alpha: 0.08)
+        : const Color(0xFF10B981).withValues(alpha: 0.05);
+
+    final borderColor = context.isDarkMode
+        ? const Color(0xFF10B981).withValues(alpha: 0.22)
+        : const Color(0xFF10B981).withValues(alpha: 0.18);
+
+    // High-contrast, crystal-clear waveform colors
+    const activeWaveColor = Color(0xFF10B981);
+    final inactiveWaveColor = context.isDarkMode
+        ? Colors.white.withValues(alpha: 0.32)
+        : const Color(0xFF10B981).withValues(alpha: 0.30);
+
+    final playerWidget = Container(
+      constraints: widget.isCompact
+          ? const BoxConstraints(maxWidth: 260, minWidth: 180)
+          : null,
+      padding: EdgeInsets.symmetric(
+        horizontal: widget.isCompact ? 11 : 14,
+        vertical: widget.isCompact ? 6.5 : 8.5,
+      ),
       decoration: BoxDecoration(
-        color: context.isDarkMode ? const Color(0xFF1E2030) : const Color(0xFFF3F4F6),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: context.border, width: 0.8),
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(widget.isCompact ? 20 : 22),
+        border: Border.all(color: borderColor, width: 0.8),
       ),
       child: Row(
+        mainAxisSize: widget.isCompact ? MainAxisSize.min : MainAxisSize.max,
         children: [
           // Play / Pause Circle Button
           GestureDetector(
@@ -96,24 +124,26 @@ class _VoicePostPlayerState extends State<VoicePostPlayer> {
               }
             },
             child: CircleAvatar(
-              radius: 21,
+              radius: widget.isCompact ? 16 : 18,
               backgroundColor: const Color(0xFF1E824C),
               child: Icon(
                 _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                 color: Colors.white,
-                size: 24,
+                size: widget.isCompact ? 18 : 20,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: widget.isCompact ? 8 : 11),
 
           // Waveform Visualizer
           Expanded(
             child: AudioWaveformWidget(
               progress: progress,
               seedKey: widget.audioUrl,
-              activeColor: const Color(0xFF1E824C),
-              inactiveColor: context.isDarkMode ? const Color(0xFF334155) : const Color(0xFFCBD5E1),
+              barCount: widget.isCompact ? 24 : 30,
+              height: widget.isCompact ? 22.0 : 28.0,
+              activeColor: activeWaveColor,
+              inactiveColor: inactiveWaveColor,
               onSeek: (fraction) {
                 if (_duration.inMilliseconds > 0) {
                   final targetMs = (fraction * _duration.inMilliseconds).toInt();
@@ -122,38 +152,43 @@ class _VoicePostPlayerState extends State<VoicePostPlayer> {
               },
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: widget.isCompact ? 8 : 9),
 
           // Duration Timer
           Text(
             _formatDuration(_isPlaying || _position > Duration.zero ? _position : _duration),
             style: GoogleFonts.inter(
-              fontSize: 12,
-              color: context.textSecondary,
+              fontSize: widget.isCompact ? 11.5 : 12,
+              color: context.isDarkMode
+                  ? Colors.white.withValues(alpha: 0.80)
+                  : context.textSecondary,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: widget.isCompact ? 7 : 8),
 
           // Playback Speed Toggle Chip (1.0x / 1.5x / 2.0x)
           GestureDetector(
             onTap: _togglePlaybackSpeed,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              padding: EdgeInsets.symmetric(
+                horizontal: widget.isCompact ? 6 : 7,
+                vertical: widget.isCompact ? 2.5 : 3,
+              ),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E824C).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
+                color: const Color(0xFF10B981).withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: const Color(0xFF1E824C).withValues(alpha: 0.4),
-                  width: 0.8,
+                  color: const Color(0xFF10B981).withValues(alpha: 0.38),
+                  width: 0.7,
                 ),
               ),
               child: Text(
                 '${_playbackSpeed.toStringAsFixed(_playbackSpeed == 1.0 || _playbackSpeed == 2.0 ? 0 : 1)}x',
                 style: GoogleFonts.inter(
-                  fontSize: 11,
+                  fontSize: widget.isCompact ? 10 : 10.5,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1E824C),
+                  color: const Color(0xFF10B981),
                 ),
               ),
             ),
@@ -161,5 +196,13 @@ class _VoicePostPlayerState extends State<VoicePostPlayer> {
         ],
       ),
     );
+
+    if (widget.isCompact) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: playerWidget,
+      );
+    }
+    return playerWidget;
   }
 }

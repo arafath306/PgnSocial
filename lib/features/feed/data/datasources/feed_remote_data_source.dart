@@ -31,7 +31,7 @@ abstract class FeedRemoteDataSource {
   Future<List<dynamic>> fetchCommentsRaw(String threadId);
   Future<List<dynamic>> fetchCommentLikesRaw(String userId);
   Future<List<dynamic>> fetchCommentRepliesRaw(String commentId);
-  Future<bool> addComment(String userId, String threadId, String content, {String? parentId, String? imageUrl});
+  Future<bool> addComment(String userId, String threadId, String content, {String? parentId, String? imageUrl, String? audioUrl});
   Future<bool> toggleCommentLike(String userId, String commentId, bool isLiked);
   Future<bool> toggleSaveComment(String userId, String commentId, bool isAlreadySaved);
   Future<List<dynamic>> fetchSavedCommentIdsRaw(String userId);
@@ -256,7 +256,7 @@ class FeedRemoteDataSourceImpl implements FeedRemoteDataSource {
   }
 
   @override
-  Future<bool> addComment(String userId, String threadId, String content, {String? parentId, String? imageUrl}) async {
+  Future<bool> addComment(String userId, String threadId, String content, {String? parentId, String? imageUrl, String? audioUrl}) async {
     final Map<String, dynamic> insertData = {
       'user_id': userId,
       'thread_id': threadId,
@@ -264,6 +264,7 @@ class FeedRemoteDataSourceImpl implements FeedRemoteDataSource {
     };
     if (parentId != null) insertData['parent_id'] = parentId;
     if (imageUrl != null) insertData['image_url'] = imageUrl;
+    if (audioUrl != null) insertData['audio_url'] = audioUrl;
 
     await supabaseClient.from('comments').insert(insertData);
 

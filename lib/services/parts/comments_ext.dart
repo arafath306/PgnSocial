@@ -25,7 +25,13 @@ extension CommentsExtension on DatabaseService {
     );
   }
 
-  Future<bool> addComment(String threadId, String content, {String? parentId, String? imageUrl}) async {
+  Future<bool> addComment(String threadId, String content, {String? parentId, String? imageUrl, String? audioUrl}) async {
+    if (audioUrl != null && audioUrl.isNotEmpty) {
+      if (myProfile?.isPremium != true) {
+        throw Exception("Voice comments are exclusively available for Premium members. Please upgrade your plan.");
+      }
+    }
+
     final now = DateTime.now();
     if (_lastCommentTime != null) {
       final difference = now.difference(_lastCommentTime!);
@@ -43,7 +49,7 @@ extension CommentsExtension on DatabaseService {
     if (trimmedContent.isNotEmpty) {
       _lastCommentContent = trimmedContent;
     }
-    final result = await sl<AddCommentUseCase>()(threadId, content, parentId: parentId, imageUrl: imageUrl);
+    final result = await sl<AddCommentUseCase>()(threadId, content, parentId: parentId, imageUrl: imageUrl, audioUrl: audioUrl);
     return result.fold(
       (failure) {
         debugPrint("Add comment error: ${failure.message}");
@@ -142,6 +148,7 @@ extension CommentsExtension on DatabaseService {
             'author': author,
             'content': commentMap['content'] as String,
             'image_url': commentMap['image_url'] as String?,
+            'audio_url': commentMap['audio_url'] as String?,
             'created_at': _getRelativeTime(DateTime.parse(commentMap['created_at'] as String)),
             'created_at_raw': commentMap['created_at'] as String,
             'likes_count': (commentMap['likes_count'] as int?) ?? 0,
@@ -193,6 +200,7 @@ extension CommentsExtension on DatabaseService {
         'author': author,
         'content': json['content'] as String,
         'image_url': json['image_url'] as String?,
+        'audio_url': json['audio_url'] as String?,
         'created_at': _getRelativeTime(DateTime.parse(json['created_at'] as String)),
         'created_at_raw': json['created_at'] as String,
         'likes_count': (json['likes_count'] as int?) ?? 0,

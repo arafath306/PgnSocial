@@ -1,3 +1,7 @@
+// NOTE: [UNUSED / REFERENCE ONLY]
+// This atmospheric custom painter is currently not active in auth screens.
+// Kept for future visual theme animations or background graphics reference.
+
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 

@@ -1,3 +1,7 @@
+// NOTE: [UNUSED / REFERENCE ONLY]
+// This education list card widget is currently not active in ProfileScreen.
+// Kept for future profile customization enhancements.
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/user_education.dart';

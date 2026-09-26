@@ -195,6 +195,9 @@ class Profile {
   /// Voice Post access (Premium feature)
   bool get hasVoiceAccess => isPremium;
 
+  /// Voice Comment access (Premium feature)
+  bool get hasVoiceCommentAccess => isPremium;
+
   /// Algorithm Priority access (Premium feature)
   bool get hasAlgorithmPriority => isPremium;
 

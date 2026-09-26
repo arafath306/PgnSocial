@@ -494,10 +494,16 @@ class DatabaseService with ChangeNotifier {
       LogService.database("Supabase Auth event received: ${data.event}");
       if (data.event == AuthChangeEvent.signedIn ||
           data.event == AuthChangeEvent.tokenRefreshed ||
-          data.event == AuthChangeEvent.initialSession) {
+          data.event == AuthChangeEvent.initialSession ||
+          data.event == AuthChangeEvent.userUpdated) {
         // Cache the UID so it survives brief token refresh windows
         final uid = data.session?.user.id ?? _supabase.auth.currentUser?.id ?? '';
         if (uid.isNotEmpty) {
+          final isAccountSwitch = _cachedUid.isNotEmpty && _cachedUid != uid;
+          if (isAccountSwitch) {
+            LogService.database("Account switch detected from $_cachedUid to $uid. Purging all cached data.");
+            _clearAllData();
+          }
           _cachedUid = uid;
           LogService.database("Supabase UID cached: $_cachedUid. Loading user settings and feeds.");
           _onUserReady();
@@ -513,6 +519,14 @@ class DatabaseService with ChangeNotifier {
     if (_currentUid.isNotEmpty) {
       _onUserReady();
     }
+  }
+
+  /// Explicitly reset all data and switch to a new user account
+  Future<void> onAccountSwitched(String newUid) async {
+    LogService.database("Explicit onAccountSwitched called for $newUid. Purging old session data.");
+    _clearAllData();
+    _cachedUid = newUid;
+    _onUserReady();
   }
 
   /// Called on full logout
@@ -566,6 +580,7 @@ class DatabaseService with ChangeNotifier {
     Future.wait([
       fetchFeed(silent: true),
       fetchAIFeed(silent: true),
+      fetchMyThreads(),
       fetchNotifications(),
       fetchUnreadCounts(),
       fetchSavedThreadIds(),

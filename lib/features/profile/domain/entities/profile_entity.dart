@@ -1,3 +1,8 @@
+// NOTE: [UNUSED / REFERENCE ONLY]
+// This entity file is currently not active in the app.
+// User profiles are managed across all screens via [Profile] in 'models/profile.dart'.
+// Kept for future clean-architecture reference.
+
 class ProfileEntity {
   final String id;
   final String username;

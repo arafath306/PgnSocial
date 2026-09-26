@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
 import '../models/saved_account.dart';
 import '../models/profile.dart';
 import '../services/log_service.dart';
+import '../services/database_service.dart';
 
 class AccountSwitcherService with ChangeNotifier {
   static const String _kStorageKey = 'multi_saved_accounts_v1';
@@ -165,6 +167,16 @@ class AccountSwitcherService with ChangeNotifier {
             lastActive: DateTime.now(),
           );
           await _persistAccounts();
+        }
+
+        // Explicitly clear old user caches and initialize DatabaseService for the new user
+        if (context.mounted) {
+          try {
+            final db = Provider.of<DatabaseService>(context, listen: false);
+            await db.onAccountSwitched(newSession.user.id);
+          } catch (e) {
+            LogService.error('Error refreshing DatabaseService on switch: $e', tag: 'ACCOUNT_SWITCHER');
+          }
         }
 
         _isSwitching = false;

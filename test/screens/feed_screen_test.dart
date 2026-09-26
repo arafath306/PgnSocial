@@ -78,7 +78,7 @@ class FakeFeedRepository implements IFeedRepository {
   Future<Either<Failure, List<Map<String, dynamic>>>> fetchCommentReplies(String commentId) async => Right([]);
 
   @override
-  Future<Either<Failure, bool>> addComment(String threadId, String content, {String? parentId, String? imageUrl}) async => Right(true);
+  Future<Either<Failure, bool>> addComment(String threadId, String content, {String? parentId, String? imageUrl, String? audioUrl}) async => Right(true);
 
   @override
   Future<Either<Failure, bool>> toggleCommentLike(String commentId, bool isLiked) async => Right(true);

@@ -33,7 +33,7 @@ class _FakeFeedRepo implements IFeedRepository {
   @override Future<Either<Failure, bool>> toggleHidePostFromProfile(String threadId, bool hide) async => Right(true);
   @override Future<Either<Failure, List<Map<String, dynamic>>>> fetchComments(String threadId) async => Right([]);
   @override Future<Either<Failure, List<Map<String, dynamic>>>> fetchCommentReplies(String commentId) async => Right([]);
-  @override Future<Either<Failure, bool>> addComment(String threadId, String content, {String? parentId, String? imageUrl}) async => Right(true);
+  @override Future<Either<Failure, bool>> addComment(String threadId, String content, {String? parentId, String? imageUrl, String? audioUrl}) async => Right(true);
   @override Future<Either<Failure, bool>> toggleCommentLike(String commentId, bool isLiked) async => Right(true);
   @override Future<Either<Failure, bool>> toggleSaveComment(String commentId) async => Right(true);
   @override Future<Either<Failure, bool>> deleteComment(String commentId) async => Right(true);

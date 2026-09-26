@@ -14,6 +14,9 @@ import '../widgets/comments_sheet.dart';
 import '../widgets/comment_attachment_picker_panel.dart';
 import '../widgets/reply_input_composer.dart';
 import '../widgets/verification_badge.dart';
+import '../widgets/voice_post_player.dart';
+import '../widgets/shared/shared_voice_composer.dart';
+import '../widgets/upgrade_premium_sheet.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class CommentDetailScreen extends StatefulWidget {
@@ -34,6 +37,7 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
   final _commentController = TextEditingController();
   final _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
+  final VoiceRecordingController _voiceController = VoiceRecordingController();
   
   late Map<String, dynamic> _fatherComment;
   List<Map<String, dynamic>> _replies = [];
@@ -47,12 +51,19 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _voiceController.addListener(_onVoiceChanged);
     _fatherComment = Map<String, dynamic>.from(widget.comment);
     _loadReplies();
   }
 
+  void _onVoiceChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    _voiceController.removeListener(_onVoiceChanged);
+    _voiceController.dispose();
     _commentController.dispose();
     _focusNode.dispose();
     _scrollController.dispose();
@@ -170,6 +181,57 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Failed to post reply: $e")),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+    }
+  }
+
+  void _submitVoiceReply() async {
+    final dbService = Provider.of<DatabaseService>(context, listen: false);
+    if (dbService.myProfile?.isPremium != true) {
+      await _voiceController.stopRecording(cancel: true);
+      if (mounted) {
+        showVoiceCommentPremiumPaywall(context);
+      }
+      return;
+    }
+    try {
+      final bytes = await _voiceController.stopRecording(cancel: false);
+      if (bytes == null || bytes.isEmpty) return;
+
+      setState(() => _isUploading = true);
+      final audioUrl = await dbService.uploadPostAudio(bytes, 'm4a');
+      if (audioUrl == null) {
+        throw Exception("Failed to upload voice reply");
+      }
+
+      final success = await dbService.addComment(
+        widget.threadId,
+        _commentController.text.trim(),
+        parentId: _fatherComment['id'] as String?,
+        audioUrl: audioUrl,
+      );
+
+      if (success) {
+        _commentController.clear();
+        setState(() {
+          _selectedImageBytes = null;
+          _selectedGifUrl = null;
+          _showEmojiPanel = false;
+          final currentReplies = _fatherComment['replies_count'] as int? ?? 0;
+          _fatherComment['replies_count'] = currentReplies + 1;
+        });
+        _loadReplies();
+      }
+    } catch (e) {
+      debugPrint("Post voice reply error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to post voice reply: $e")),
         );
       }
     } finally {
@@ -372,14 +434,23 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                    ],
                                  ),
                                 const SizedBox(height: 1.5),
-                                Text(
-                                  _fatherComment['content'] as String,
-                                  style: GoogleFonts.hindSiliguri(
-                                    fontSize: 16.0,
-                                    color: context.textPrimary,
-                                    height: 1.3,
+                                if ((_fatherComment['content'] as String? ?? '').trim().isNotEmpty) ...[
+                                  Text(
+                                    _fatherComment['content'] as String,
+                                    style: GoogleFonts.hindSiliguri(
+                                      fontSize: 16.0,
+                                      color: context.textPrimary,
+                                      height: 1.3,
+                                    ),
                                   ),
-                                ),
+                                ],
+                                if (_fatherComment['audio_url'] != null && (_fatherComment['audio_url'] as String).isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  VoicePostPlayer(
+                                    audioUrl: _fatherComment['audio_url'] as String,
+                                    isCompact: true,
+                                  ),
+                                ],
                                 if (_fatherComment['image_url'] != null && (_fatherComment['image_url'] as String).isNotEmpty) ...[
                                   const SizedBox(height: 8),
                                   ClipRRect(
@@ -718,14 +789,23 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                           ],
                                         ),
                                         const SizedBox(height: 1.5),
-                                        Text(
-                                          reply['content'] as String,
-                                          style: GoogleFonts.hindSiliguri(
-                                            fontSize: 15.0,
-                                            color: context.textPrimary,
-                                            height: 1.3,
+                                        if ((reply['content'] as String? ?? '').trim().isNotEmpty) ...[
+                                          Text(
+                                            reply['content'] as String,
+                                            style: GoogleFonts.hindSiliguri(
+                                              fontSize: 15.0,
+                                              color: context.textPrimary,
+                                              height: 1.3,
+                                            ),
                                           ),
-                                        ),
+                                        ],
+                                        if (reply['audio_url'] != null && (reply['audio_url'] as String).isNotEmpty) ...[
+                                          const SizedBox(height: 8),
+                                          VoicePostPlayer(
+                                            audioUrl: reply['audio_url'] as String,
+                                            isCompact: true,
+                                          ),
+                                        ],
                                         if (reply['image_url'] != null && (reply['image_url'] as String).isNotEmpty) ...[
                                           const SizedBox(height: 8),
                                           ClipRRect(
@@ -1075,6 +1155,20 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                       hasSelectedMedia: _selectedImageBytes != null || _selectedGifUrl != null,
                       showEmojiPanel: _showEmojiPanel,
                       pickerTabIndex: _pickerTabIndex,
+                      isVoiceRecording: _voiceController.isRecording,
+                      isVoicePaused: _voiceController.isPaused,
+                      recordingSeconds: _voiceController.recordingSeconds,
+                      voiceController: _voiceController,
+                      onStartVoiceRecord: () {
+                        final db = context.read<DatabaseService>();
+                        if (db.myProfile?.isPremium == true) {
+                          _voiceController.startRecording();
+                        } else {
+                          showVoiceCommentPremiumPaywall(context);
+                        }
+                      },
+                      onCancelVoiceRecord: () => _voiceController.stopRecording(cancel: true),
+                      onSendVoiceRecord: _submitVoiceReply,
                     ),
                   // Premium Emoji / GIF Picker Panel
                   if (_showEmojiPanel)

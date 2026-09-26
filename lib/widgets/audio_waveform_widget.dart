@@ -29,9 +29,13 @@ class AudioWaveformWidget extends StatelessWidget {
     final random = Random(seed);
     final List<double> heights = [];
     for (int i = 0; i < barCount; i++) {
-      // Generate pleasing wave height values between 0.2 and 1.0
-      final h = 0.25 + 0.75 * sin((i / barCount) * pi).abs() * (0.6 + 0.4 * random.nextDouble());
-      heights.add(h.clamp(0.2, 1.0));
+      final t = i / barCount;
+      // Multi-harmonic envelope with natural voice variation
+      final envelope = 0.35 + 0.55 * sin(t * pi).abs();
+      final harmonic = 0.75 + 0.25 * sin(t * 4 * pi).abs();
+      final noise = 0.70 + 0.30 * random.nextDouble();
+      final h = (envelope * harmonic * noise).clamp(0.30, 1.0);
+      heights.add(h);
     }
     return heights;
   }
@@ -51,6 +55,7 @@ class AudioWaveformWidget extends StatelessWidget {
         final totalWidth = constraints.maxWidth;
 
         return GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTapDown: (details) => _handleSeek(details.localPosition, totalWidth),
           onHorizontalDragUpdate: (details) => _handleSeek(details.localPosition, totalWidth),
           child: Container(
@@ -90,19 +95,17 @@ class _WaveformPainter extends CustomPainter {
     if (heights.isEmpty) return;
 
     final int count = heights.length;
-    final double gap = 2.5;
+    final double gap = 2.2;
     final double availableWidth = size.width - (gap * (count - 1));
-    final double barWidth = max(2.0, availableWidth / count);
+    final double barWidth = max(2.2, availableWidth / count);
 
     final activePaint = Paint()
       ..color = activeColor
-      ..style = PaintingStyle.fill
-      ..strokeCap = StrokeCap.round;
+      ..style = PaintingStyle.fill;
 
     final inactivePaint = Paint()
       ..color = inactiveColor
-      ..style = PaintingStyle.fill
-      ..strokeCap = StrokeCap.round;
+      ..style = PaintingStyle.fill;
 
     for (int i = 0; i < count; i++) {
       final double x = i * (barWidth + gap);
