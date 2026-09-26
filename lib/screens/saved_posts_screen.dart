@@ -424,7 +424,7 @@ class _SavedPostsScreenState extends State<SavedPostsScreen>
                                   author.fullName,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.hindSiliguri(
+                                  style: GoogleFonts.notoSansBengali(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14.5,
                                     color: context.textPrimary,
@@ -463,7 +463,7 @@ class _SavedPostsScreenState extends State<SavedPostsScreen>
                 const SizedBox(height: 12),
                 Text(
                   comment['content'] as String,
-                  style: GoogleFonts.hindSiliguri(
+                  style: GoogleFonts.notoSansBengali(
                     fontSize: 14.5,
                     color: context.textPrimary,
                     height: 1.45,

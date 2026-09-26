@@ -144,7 +144,7 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
               const SizedBox(height: 8),
               ListTile(
                 leading: Icon(CupertinoIcons.arrow_2_circlepath, color: context.textPrimary),
-                title: Text('Repost', style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: context.textPrimary)),
+                title: Text('Repost', style: GoogleFonts.notoSansBengali(fontWeight: FontWeight.bold, color: context.textPrimary)),
                 subtitle: Text('Instantly share this post to your feed', style: TextStyle(color: context.textSecondary, fontSize: 12)),
                 onTap: () {
                   Navigator.pop(sheetContext);
@@ -227,7 +227,7 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
             origPost.content,
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.hindSiliguri(fontSize: 14.5, color: context.textPrimary, height: 1.35),
+            style: GoogleFonts.notoSansBengali(fontSize: 14.5, color: context.textPrimary, height: 1.35),
           ),
           if (origPost.imageUrls != null && origPost.imageUrls!.isNotEmpty) ...[
             const SizedBox(height: 6),
@@ -304,7 +304,7 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
                         const SizedBox(width: 5),
                         Text(
                           'Pinned post',
-                          style: GoogleFonts.hindSiliguri(
+                          style: GoogleFonts.notoSansBengali(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: context.textMuted,
@@ -480,7 +480,7 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
                     children: [
                       TextSpan(
                         text: '${post.author.fullName} ',
-                        style: GoogleFonts.hindSiliguri(
+                        style: GoogleFonts.notoSansBengali(
                           fontWeight: FontWeight.bold,
                           fontSize: 15.5,
                           color: context.textPrimary,
@@ -598,7 +598,7 @@ class _CustomThreadCardState extends State<CustomThreadCard> {
                   children: [
                     Text(
                       "This content is for subscribers only.",
-                      style: GoogleFonts.hindSiliguri(
+                      style: GoogleFonts.notoSansBengali(
                         fontSize: 16.5,
                         color: context.textPrimary,
                         height: 1.45,

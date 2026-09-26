@@ -133,7 +133,7 @@ class _CommentItemState extends State<CommentItem> {
                                   children: [
                                     TextSpan(
                                       text: '${author.fullName} ',
-                                      style: GoogleFonts.hindSiliguri(
+                                      style: GoogleFonts.notoSansBengali(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 15.5,
                                         color: context.textPrimary,
@@ -216,7 +216,7 @@ class _CommentItemState extends State<CommentItem> {
                 if ((widget.comment['content'] as String? ?? '').trim().isNotEmpty) ...[
                   FormattedContentText(
                     text: widget.comment['content'] as String,
-                    style: GoogleFonts.hindSiliguri(
+                    style: GoogleFonts.notoSansBengali(
                       fontSize: 15.5,
                       color: context.textPrimary,
                       height: 1.3,

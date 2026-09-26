@@ -1,4 +1,4 @@
-﻿import 'package:flutter/cupertino.dart';
+import 'package:flutter/cupertino.dart';
 import '../utils/app_theme.dart';
 
 class ThreadShimmer extends StatefulWidget {

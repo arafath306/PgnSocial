@@ -381,7 +381,7 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                              children: [
                                                TextSpan(
                                                  text: author.fullName,
-                                                 style: GoogleFonts.hindSiliguri(
+                                                 style: GoogleFonts.notoSansBengali(
                                                    fontWeight: FontWeight.w700,
                                                    fontSize: 15.5,
                                                    color: context.textPrimary,
@@ -437,7 +437,7 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                 if ((_fatherComment['content'] as String? ?? '').trim().isNotEmpty) ...[
                                   Text(
                                     _fatherComment['content'] as String,
-                                    style: GoogleFonts.hindSiliguri(
+                                    style: GoogleFonts.notoSansBengali(
                                       fontSize: 16.0,
                                       color: context.textPrimary,
                                       height: 1.3,
@@ -728,7 +728,7 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                                     children: [
                                                       TextSpan(
                                                         text: rAuthor.fullName,
-                                                        style: GoogleFonts.hindSiliguri(
+                                                        style: GoogleFonts.notoSansBengali(
                                                           fontWeight: FontWeight.w700,
                                                           fontSize: 15.5,
                                                           color: context.textPrimary,
@@ -792,7 +792,7 @@ class _CommentDetailScreenState extends State<CommentDetailScreen> {
                                         if ((reply['content'] as String? ?? '').trim().isNotEmpty) ...[
                                           Text(
                                             reply['content'] as String,
-                                            style: GoogleFonts.hindSiliguri(
+                                            style: GoogleFonts.notoSansBengali(
                                               fontSize: 15.0,
                                               color: context.textPrimary,
                                               height: 1.3,

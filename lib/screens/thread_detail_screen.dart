@@ -423,7 +423,7 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
                         activePost.author.fullName,
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
-                        style: GoogleFonts.hindSiliguri(
+                        style: GoogleFonts.notoSansBengali(
                           fontSize: 16.0,
                           fontWeight: FontWeight.w900,
                           color: context.textPrimary,

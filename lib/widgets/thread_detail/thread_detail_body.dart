@@ -42,7 +42,7 @@ class ThreadDetailBody extends StatelessWidget {
           if (activePost.content.isNotEmpty)
             Text(
               activePost.content,
-              style: GoogleFonts.hindSiliguri(
+              style: GoogleFonts.notoSansBengali(
                 fontSize: 17.5,
                 color: context.textPrimary,
                 height: 1.45,
@@ -300,7 +300,7 @@ class ThreadDetailBody extends StatelessWidget {
                 leading: Icon(CupertinoIcons.arrow_2_circlepath,
                     color: context.textPrimary),
                 title: Text('Repost',
-                    style: GoogleFonts.hindSiliguri(
+                    style: GoogleFonts.notoSansBengali(
                         fontWeight: FontWeight.bold,
                         color: context.textPrimary)),
                 subtitle: Text('Instantly share this post to your feed',

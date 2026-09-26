@@ -159,7 +159,7 @@ class _LifeEventCardState extends State<LifeEventCard> with SingleTickerProvider
                       // Headline
                       Text(
                         event.title,
-                        style: GoogleFonts.hindSiliguri(
+                        style: GoogleFonts.notoSansBengali(
                           fontSize: 16.5,
                           fontWeight: FontWeight.bold,
                           color: context.textPrimary,

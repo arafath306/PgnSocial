@@ -24,7 +24,7 @@ class SubscriptionSettingsScreen extends StatelessWidget {
         ),
         title: Text(
           'Subscription',
-          style: GoogleFonts.hindSiliguri(
+          style: GoogleFonts.notoSansBengali(
             color: context.textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 18,
@@ -35,7 +35,7 @@ class SubscriptionSettingsScreen extends StatelessWidget {
       body: Center(
         child: Text(
           'Subscription Plans\n(Coming Soon)',
-          style: GoogleFonts.hindSiliguri(fontSize: 16, color: context.textMuted),
+          style: GoogleFonts.notoSansBengali(fontSize: 16, color: context.textMuted),
           textAlign: TextAlign.center,
         ),
       ),

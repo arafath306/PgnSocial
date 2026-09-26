@@ -49,7 +49,7 @@ class _CustomErrorScreenState extends State<CustomErrorScreen> {
                 // Heading
                 Text(
                   "Oops! Something went wrong",
-                  style: GoogleFonts.hindSiliguri(
+                  style: GoogleFonts.notoSansBengali(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: isDark ? Colors.white : const Color(0xFF1E293B),
@@ -60,7 +60,7 @@ class _CustomErrorScreenState extends State<CustomErrorScreen> {
                 // Subtitle
                 Text(
                   "An unexpected error occurred in the application. Don't worry, our team has been notified.",
-                  style: GoogleFonts.hindSiliguri(
+                  style: GoogleFonts.notoSansBengali(
                     fontSize: 14,
                     color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                     height: 1.5,
@@ -84,7 +84,7 @@ class _CustomErrorScreenState extends State<CustomErrorScreen> {
                       icon: const Icon(Icons.refresh_rounded, size: 18),
                       label: Text(
                         "Reload App",
-                        style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold),
+                        style: GoogleFonts.notoSansBengali(fontWeight: FontWeight.bold),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryColor,
@@ -109,7 +109,7 @@ class _CustomErrorScreenState extends State<CustomErrorScreen> {
                       ),
                       label: Text(
                         _showDetails ? "Hide Details" : "Show Details",
-                        style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold),
+                        style: GoogleFonts.notoSansBengali(fontWeight: FontWeight.bold),
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: isDark ? Colors.white70 : const Color(0xFF475569),

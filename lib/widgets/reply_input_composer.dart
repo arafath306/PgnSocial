@@ -95,7 +95,7 @@ class ReplyInputComposer extends StatelessWidget {
                     child: TextField(
                       controller: controller,
                       focusNode: focusNode,
-                      style: GoogleFonts.hindSiliguri(fontSize: 14.5, color: context.textPrimary),
+                      style: GoogleFonts.notoSansBengali(fontSize: 14.5, color: context.textPrimary),
                       maxLines: 4,
                       minLines: 1,
                       onTap: () {

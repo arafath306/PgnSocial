@@ -1207,7 +1207,7 @@ class _SearchExploreScreenState extends State<SearchExploreScreen> with Automati
                   ),
                   Text(
                     user.fullName,
-                    style: GoogleFonts.hindSiliguri(
+                    style: GoogleFonts.notoSansBengali(
                       color: context.textSecondary,
                       fontSize: 13,
                     ),
@@ -1247,7 +1247,7 @@ class _SearchExploreScreenState extends State<SearchExploreScreen> with Automati
                   ),
                   child: Text(
                     isFollowing ? "Following" : "Follow",
-                    style: GoogleFonts.hindSiliguri(
+                    style: GoogleFonts.notoSansBengali(
                       color: isFollowing ? context.textMuted : context.textPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
@@ -1322,7 +1322,7 @@ class _SearchExploreScreenState extends State<SearchExploreScreen> with Automati
           child: Center(
             child: Text(
               "No results found",
-              style: GoogleFonts.hindSiliguri(color: context.textMuted),
+              style: GoogleFonts.notoSansBengali(color: context.textMuted),
             ),
           ),
         ),
@@ -1522,7 +1522,7 @@ class _SearchExploreScreenState extends State<SearchExploreScreen> with Automati
                                     children: [
                                       Text(
                                         "Recent Searches",
-                                        style: GoogleFonts.hindSiliguri(
+                                        style: GoogleFonts.notoSansBengali(
                                           fontSize: 15,
                                           fontWeight: FontWeight.bold,
                                           color: context.textSecondary,
@@ -1542,7 +1542,7 @@ class _SearchExploreScreenState extends State<SearchExploreScreen> with Automati
                                         ),
                                         child: Text(
                                           "Clear All",
-                                          style: GoogleFonts.hindSiliguri(
+                                          style: GoogleFonts.notoSansBengali(
                                             color: context.primaryAccent,
                                             fontWeight: FontWeight.bold,
                                             fontSize: 14,
@@ -1582,7 +1582,7 @@ class _SearchExploreScreenState extends State<SearchExploreScreen> with Automati
                                               },
                                               child: Text(
                                                 search,
-                                                style: GoogleFonts.hindSiliguri(
+                                                style: GoogleFonts.notoSansBengali(
                                                   fontSize: 13,
                                                   color: context.textPrimary,
                                                 ),

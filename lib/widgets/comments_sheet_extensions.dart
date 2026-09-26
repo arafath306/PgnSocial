@@ -314,10 +314,10 @@ class CommentQuickActionsSheetState extends State<CommentQuickActionsSheet>
       builder: (dialogCtx) => AlertDialog(
         backgroundColor: context.cardBg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text("Edit Comment", style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: context.textPrimary)),
+        title: Text("Edit Comment", style: GoogleFonts.notoSansBengali(fontWeight: FontWeight.bold, color: context.textPrimary)),
         content: TextField(
           controller: controller,
-          style: GoogleFonts.hindSiliguri(color: context.textPrimary),
+          style: GoogleFonts.notoSansBengali(color: context.textPrimary),
           decoration: const InputDecoration(
             hintText: "Edit your comment...",
           ),

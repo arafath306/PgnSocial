@@ -267,7 +267,7 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
                             const SizedBox(height: 3),
                             Text(
                               event['body'] as String,
-                              style: GoogleFonts.hindSiliguri(
+                              style: GoogleFonts.notoSansBengali(
                                 fontSize: 14,
                                 color: context.textSecondary,
                                 fontWeight: FontWeight.w500,

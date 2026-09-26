@@ -1052,10 +1052,10 @@ class _AuthorActionsSheetState extends State<_AuthorActionsSheet>
       builder: (dialogCtx) => AlertDialog(
         backgroundColor: ctx.cardBg,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text("Edit Quote", style: GoogleFonts.hindSiliguri(fontWeight: FontWeight.bold, color: ctx.textPrimary)),
+        title: Text("Edit Quote", style: GoogleFonts.notoSansBengali(fontWeight: FontWeight.bold, color: ctx.textPrimary)),
         content: TextField(
           controller: controller,
-          style: GoogleFonts.hindSiliguri(color: ctx.textPrimary),
+          style: GoogleFonts.notoSansBengali(color: ctx.textPrimary),
           decoration: const InputDecoration(
             hintText: "Edit your comment...",
           ),
@@ -1540,7 +1540,7 @@ class _HidePostForUsersSheetState extends State<_HidePostForUsersSheet> {
                               ),
                               title: Text(
                                 friend.fullName,
-                                style: GoogleFonts.hindSiliguri(
+                                style: GoogleFonts.notoSansBengali(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                   color: context.textPrimary,

@@ -44,7 +44,7 @@ class _ExpandablePostTextState extends State<ExpandablePostText> {
   @override
   Widget build(BuildContext context) {
     final defaultStyle = widget.style ??
-        GoogleFonts.hindSiliguri(
+        GoogleFonts.notoSansBengali(
           fontSize: 16.5,
           color: context.textPrimary,
           height: 1.45,

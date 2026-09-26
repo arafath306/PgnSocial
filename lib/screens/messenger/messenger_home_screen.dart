@@ -544,7 +544,7 @@ class _MessengerHomeScreenState extends State<MessengerHomeScreen> with Automati
                                             Flexible(
                                               child: Text(
                                                 profile.fullName,
-                                                style: GoogleFonts.hindSiliguri(
+                                                style: GoogleFonts.notoSansBengali(
                                                   fontWeight: FontWeight.bold,
                                                   fontSize: 15,
                                                   color: context.textPrimary,
@@ -623,7 +623,7 @@ class _MessengerHomeScreenState extends State<MessengerHomeScreen> with Automati
                                                     Flexible(
                                                       child: Text(
                                                         _formatLastMessagePreview(lastMsg),
-                                                        style: GoogleFonts.hindSiliguri(
+                                                        style: GoogleFonts.notoSansBengali(
                                                           color: unreadCount > 0 ? context.textPrimary : context.textSecondary,
                                                           fontSize: 13.5,
                                                           fontWeight: unreadCount > 0 ? FontWeight.w600 : FontWeight.normal,

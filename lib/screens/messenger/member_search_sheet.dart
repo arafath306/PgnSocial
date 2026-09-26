@@ -155,7 +155,7 @@ class _MemberSearchSheetState extends State<MemberSearchSheet> {
                                 Flexible(
                                   child: Text(
                                     user.fullName,
-                                    style: GoogleFonts.hindSiliguri(
+                                    style: GoogleFonts.notoSansBengali(
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold,
                                       color: context.textPrimary,

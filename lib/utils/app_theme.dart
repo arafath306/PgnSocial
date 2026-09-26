@@ -67,7 +67,7 @@ class AppTheme {
       ),
       textTheme: _isTesting
           ? ThemeData.light().textTheme
-          : GoogleFonts.interTextTheme(
+          : GoogleFonts.notoSansBengaliTextTheme(
               ThemeData.light().textTheme,
             ),
       dividerTheme: const DividerThemeData(
@@ -97,7 +97,7 @@ class AppTheme {
         iconTheme: const IconThemeData(color: Colors.white),
         titleTextStyle: _isTesting
             ? const TextStyle(fontSize: 17.5, fontWeight: FontWeight.bold, color: Colors.white)
-            : GoogleFonts.inter(
+            : GoogleFonts.notoSansBengali(
                 fontSize: 17.5,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -105,7 +105,7 @@ class AppTheme {
       ),
       textTheme: _isTesting
           ? ThemeData.dark().textTheme
-          : GoogleFonts.interTextTheme(
+          : GoogleFonts.notoSansBengaliTextTheme(
               ThemeData.dark().textTheme,
             ),
       dividerTheme: const DividerThemeData(

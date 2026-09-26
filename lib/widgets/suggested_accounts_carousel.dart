@@ -54,7 +54,7 @@ class _SuggestedAccountsCarouselState extends State<SuggestedAccountsCarousel> {
               children: [
                 Text(
                   "Suggested for You",
-                  style: GoogleFonts.hindSiliguri(
+                  style: GoogleFonts.notoSansBengali(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: context.textPrimary,
@@ -176,7 +176,7 @@ class _SuggestedAccountsCarouselState extends State<SuggestedAccountsCarousel> {
                     profile.fullName,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.hindSiliguri(
+                    style: GoogleFonts.notoSansBengali(
                       fontSize: 13.5,
                       fontWeight: FontWeight.bold,
                       color: context.textPrimary,

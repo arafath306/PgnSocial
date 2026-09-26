@@ -62,7 +62,7 @@ class ThreadDetailHeader extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           'Pinned post',
-                          style: GoogleFonts.hindSiliguri(
+                          style: GoogleFonts.notoSansBengali(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: context.textMuted,
@@ -94,7 +94,7 @@ class ThreadDetailHeader extends StatelessWidget {
                                 activePost.author.fullName,
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 1,
-                                style: GoogleFonts.hindSiliguri(
+                                style: GoogleFonts.notoSansBengali(
                                   fontWeight: FontWeight.w700,
                                   fontSize: 16.5,
                                   color: context.textPrimary.withValues(alpha: 0.90),

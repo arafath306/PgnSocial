@@ -507,7 +507,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   Flexible(
                     child: Text(
                       profile?.fullName ?? 'User',
-                      style: GoogleFonts.hindSiliguri(
+                      style: GoogleFonts.notoSansBengali(
                         fontSize: 21,
                         fontWeight: FontWeight.bold,
                         color: context.textPrimary,
@@ -526,7 +526,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               Text(
                 '@${profile?.username ?? ''}',
-                style: GoogleFonts.hindSiliguri(
+                style: GoogleFonts.notoSansBengali(
                   fontSize: 14,
                   color: context.textSecondary,
                 ),
@@ -672,7 +672,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       text: TextSpan(children: [
         TextSpan(
           text: '$count ',
-          style: GoogleFonts.hindSiliguri(
+          style: GoogleFonts.notoSansBengali(
             fontSize: 15,
             fontWeight: FontWeight.bold,
             color: context.textPrimary,
@@ -680,7 +680,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
         TextSpan(
           text: label,
-          style: GoogleFonts.hindSiliguri(fontSize: 14, color: context.textSecondary),
+          style: GoogleFonts.notoSansBengali(fontSize: 14, color: context.textSecondary),
         ),
       ]),
     );
@@ -697,7 +697,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             border: Border.all(color: context.border),
           ),
           child: Text(label,
-              style: GoogleFonts.hindSiliguri(
+              style: GoogleFonts.notoSansBengali(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: context.textPrimary)),
@@ -717,7 +717,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 outlined ? Border.all(color: context.border) : null,
           ),
           child: Text(label,
-              style: GoogleFonts.hindSiliguri(
+              style: GoogleFonts.notoSansBengali(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: outlined ? context.textPrimary : (context.isDarkMode ? Colors.black : Colors.white))),
@@ -739,10 +739,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           unselectedLabelColor: context.textSecondary,
           indicatorColor: context.textPrimary,
           indicatorWeight: 2.5,
-          labelStyle: GoogleFonts.hindSiliguri(
+          labelStyle: GoogleFonts.notoSansBengali(
               fontSize: 14, fontWeight: FontWeight.bold),
           unselectedLabelStyle:
-              GoogleFonts.hindSiliguri(fontSize: 14),
+              GoogleFonts.notoSansBengali(fontSize: 14),
           tabs: _tabs.map((t) => Tab(text: t)).toList(),
         ),
       );
@@ -781,7 +781,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
             const SizedBox(height: 14),
             Text(AppLocalizations.of(context)!.noPostsYet,
-                style: GoogleFonts.hindSiliguri(
+                style: GoogleFonts.notoSansBengali(
                     fontSize: 16,
                     color: context.textSecondary,
                     fontWeight: FontWeight.w500)),
@@ -804,7 +804,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   elevation: 0,
                 ),
                 child: Text('Write a post',
-                    style: GoogleFonts.hindSiliguri(
+                    style: GoogleFonts.notoSansBengali(
                         fontSize: 15, fontWeight: FontWeight.bold)),
               ),
             ],
@@ -846,7 +846,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
             const SizedBox(height: 14),
             Text(AppLocalizations.of(context)!.noRepliesYet,
-                style: GoogleFonts.hindSiliguri(
+                style: GoogleFonts.notoSansBengali(
                     fontSize: 16,
                     color: context.textSecondary,
                     fontWeight: FontWeight.w500)),
@@ -890,7 +890,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
             const SizedBox(height: 14),
             Text(AppLocalizations.of(context)!.noRepostsYet,
-                style: GoogleFonts.hindSiliguri(
+                style: GoogleFonts.notoSansBengali(
                     fontSize: 16,
                     color: context.textSecondary,
                     fontWeight: FontWeight.w500)),
@@ -1689,13 +1689,13 @@ class _ProfileScreenState extends State<ProfileScreen>
               ListTile(
                 leading: const Icon(Icons.share_outlined),
                 title: Text('Share Profile',
-                    style: GoogleFonts.hindSiliguri(fontSize: 15)),
+                    style: GoogleFonts.notoSansBengali(fontSize: 15)),
                 onTap: () => Navigator.pop(context),
               ),
               ListTile(
                 leading: const Icon(Icons.logout_rounded, color: Colors.red),
                 title: Text('Log Out',
-                    style: GoogleFonts.hindSiliguri(
+                    style: GoogleFonts.notoSansBengali(
                         fontSize: 15, color: Colors.red)),
                 onTap: () {
                   Navigator.pop(context); // close bottom sheet
@@ -1706,7 +1706,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ListTile(
                 leading: const Icon(Icons.block_rounded, color: Colors.red),
                 title: Text('Block',
-                    style: GoogleFonts.hindSiliguri(
+                    style: GoogleFonts.notoSansBengali(
                         fontSize: 15, color: Colors.red)),
                 onTap: () async {
                   Navigator.pop(context); // close bottom sheet
